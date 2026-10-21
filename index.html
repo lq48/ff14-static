@@ -274,32 +274,6 @@ function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show")
 const cur=()=>surveys.find(s=>s.id===curSid)||null;
 const surveyResps=sid=>resps[sid]||{};
 
-/* ---------- boot ---------- */
-if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
-  const g=$("#gate");g.hidden=false;
-  g.innerHTML='<h2>還沒設定 Firebase</h2><p>請打開 index.html，把最上面的 FIREBASE_CONFIG 和 OWNER_EMAIL 改成你的設定。步驟請看 README.md。</p>';
-}else{
-  const app=initializeApp(FIREBASE_CONFIG);
-  db=getFirestore(app);auth=getAuth(app);
-  const want=new URLSearchParams(location.search).get("s");
-  $("#app").hidden=false;
-  setupManage();setupEvents();renderTabs();renderFoot();
-  onAuthStateChanged(auth,u=>{
-    authUser=u;isOwner=!!(u&&u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase());
-    $("#manageTab").hidden=!isOwner;if(!isOwner&&tab==="manage"){tab="fill";renderTabs();}
-    renderFoot();renderAll();
-  });
-  onSnapshot(collection(db,"surveys"),s=>{
-    surveys=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    if(!cur()){curSid=(want&&surveys.find(x=>x.id===want)?want:null)||(surveys.find(x=>!x.closed)||surveys[0]||{}).id||null;}
-    syncDraft();renderAll();
-  },e=>showErr(e));
-  onSnapshot(collectionGroup(db,"responses"),s=>{
-    resps={};
-    s.docs.forEach(d=>{const sid=d.ref.parent.parent.id;(resps[sid]||(resps[sid]={}))[d.id]=d.data();});
-    syncDraft();renderAll();
-  },e=>showErr(e));
-}
 function showErr(e){
   console.error(e);
   toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已發布":"讀取資料失敗");
@@ -586,6 +560,32 @@ function renderSList(){
     return'<li><div><div class="t">'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</div><div class="muted" style="font-size:13px">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'，'+n+' / '+TOTAL+' 人回覆</div></div>'+
       '<div class="toolbar" style="margin:0"><button class="btn sm" data-op="open" data-id="'+esc(s.id)+'">看結果</button><button class="btn sm" data-op="link" data-id="'+esc(s.id)+'">複製連結</button><button class="btn sm" data-op="toggle" data-id="'+esc(s.id)+'">'+(s.closed?"重新開放":"截止填寫")+'</button><button class="btn sm danger" data-op="del" data-id="'+esc(s.id)+'">刪除</button></div></li>';
   }).join("");
+}
+/* ---------- boot（放最後，確保所有變數都已宣告） ---------- */
+if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
+  const g=$("#gate");g.hidden=false;
+  g.innerHTML='<h2>還沒設定 Firebase</h2><p>請打開 index.html，把最上面的 FIREBASE_CONFIG 和 OWNER_EMAIL 改成你的設定。步驟請看 README.md。</p>';
+}else{
+  const app=initializeApp(FIREBASE_CONFIG);
+  db=getFirestore(app);auth=getAuth(app);
+  const want=new URLSearchParams(location.search).get("s");
+  $("#app").hidden=false;
+  setupManage();setupEvents();renderTabs();renderFoot();
+  onAuthStateChanged(auth,u=>{
+    authUser=u;isOwner=!!(u&&u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase());
+    $("#manageTab").hidden=!isOwner;if(!isOwner&&tab==="manage"){tab="fill";renderTabs();}
+    renderFoot();renderAll();
+  });
+  onSnapshot(collection(db,"surveys"),s=>{
+    surveys=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!cur()){curSid=(want&&surveys.find(x=>x.id===want)?want:null)||(surveys.find(x=>!x.closed)||surveys[0]||{}).id||null;}
+    syncDraft();renderAll();
+  },e=>showErr(e));
+  onSnapshot(collectionGroup(db,"responses"),s=>{
+    resps={};
+    s.docs.forEach(d=>{const sid=d.ref.parent.parent.id;(resps[sid]||(resps[sid]={}))[d.id]=d.data();});
+    syncDraft();renderAll();
+  },e=>showErr(e));
 }
 </script>
 </body>
