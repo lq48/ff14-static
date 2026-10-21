@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ★ 改成團長的 Google 帳號（要和 index.html 的 OWNER_EMAIL 一樣）
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email == 'your-email@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isMember(m) {
+      return m in ['satoru','paku','shanzhuang','fengzhi','sansan','lailaizi','jman','caobadao'];
+    }
+
+    // 調查：所有人可讀，只有團長能建立、修改、刪除
+    match /surveys/{sid} {
+      allow read: if true;
+      allow write: if isOwner();
+
+      // 回覆：任何拿到網址的人都能填，但只能用 8 位團員的名字，且調查必須還沒截止
+      match /responses/{member} {
+        allow read: if true;
+        allow delete: if isOwner();
+        allow create, update: if isMember(member)
+          && request.resource.data.keys().hasOnly(['slots', 'updatedAt'])
+          && request.resource.data.slots is map
+          && request.resource.data.slots.size() <= 21
+          && request.resource.data.updatedAt is number
+          && exists(/databases/$(database)/documents/surveys/$(sid))
+          && get(/databases/$(database)/documents/surveys/$(sid)).data.closed == false;
+      }
+    }
+
+    // 讓頁面能一次讀取所有調查的回覆
+    match /{path=**}/responses/{member} {
+      allow read: if true;
+    }
+  }
+}
