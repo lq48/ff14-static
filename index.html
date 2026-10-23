@@ -191,6 +191,12 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .scard .sm{font-size:13px;color:var(--muted)}
 .scard.closed{opacity:.75}
 .teamtag{display:inline-block;margin-right:8px;padding:0 8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-size:13px;font-weight:700}
+.tip{position:fixed;z-index:30;pointer-events:none;max-width:260px;padding:10px 12px;border-radius:8px;background:var(--ink);color:var(--surface);font-size:13px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.tip .tt{font-weight:700;font-size:14px}
+.tip .tc{opacity:.75;font-size:12px;margin-bottom:4px}
+.tip .tl{margin-top:4px}
+.tip .tl b{display:inline-block;min-width:3.2em;font-weight:700}
+.tip .tn{opacity:.7}
 </style>
 </head>
 <body>
@@ -267,6 +273,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tip" id="tip" hidden></div>
 
 <script type="module">
 /* ============ 設定：請改成你自己的 ============ */
@@ -312,6 +319,7 @@ let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
 let dragMode=false,picked=null,saving=false,leaveArmed=0;
 let fHol=new Set(),fMembers=[];
 const armed={};
+let lastWho={},lastResponders=[];
 
 /* ---------- 小工具 ---------- */
 function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2600);}
@@ -470,6 +478,7 @@ function renderResults(){
   if(!sv){v.innerHTML='';return;}
   const MEM=memOf(sv),TOTAL=MEM.length;
   const{who,responders}=tally(sv);const hol=new Set(sv.holidays||[]);
+  lastWho=who;lastResponders=responders;
   let max=0;for(const k in who)max=Math.max(max,who[k].size);
   const ranges=[];
   if(max>0)for(const d of sv.dates){
@@ -498,7 +507,7 @@ function renderResults(){
   }else det+='<p class="muted">點左邊表格的任一格查看。</p>';
   det+='</div>';
 
-  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
+  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">滑鼠移到格子上就能看到誰有空。格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
   document.querySelectorAll("#heatGrid td.cell").forEach(c=>{
     const s=who[c.dataset.date+"|"+c.dataset.slot];const n=s?s.size:0;
     if(n){c.textContent=n;const pct=Math.round(n/TOTAL*88);c.style.setProperty("--pct",pct+"%");if(pct>50)c.classList.add("strong");if(n===TOTAL)c.classList.add("full");}
@@ -669,7 +678,44 @@ function setupEvents(){
     const c=e.target.closest("td.cell");if(!c)return;
     picked={d:c.dataset.date,i:+c.dataset.slot};renderResults();
   });
+  setupTip();
   window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+}
+
+/* ---------- 懸浮提示 ---------- */
+function rangeLabel(d,i){return md(d)+' '+WD[wd(d)]+'　'+slotT(i)+'–'+(i===47?'24:00':slotT(i+1));}
+function tipHTML(c){
+  const sv=cur();if(!sv)return"";
+  const d=c.dataset.date,i=+c.dataset.slot;
+  const head='<div class="tt">'+rangeLabel(d,i)+'</div><div class="tc">'+periodOf(i).n+((sv.holidays||[]).includes(d)?'，假日':'')+'</div>';
+  if(!c.closest("#heatGrid"))return head;
+  const s=lastWho[d+"|"+i]||new Set();const MEM=memOf(sv);
+  const yes=MEM.filter(m=>s.has(m.k)).map(m=>esc(m.n));
+  const no=MEM.filter(m=>!s.has(m.k)&&lastResponders.includes(m.k)).map(m=>esc(m.n));
+  const na=MEM.filter(m=>!lastResponders.includes(m.k)).map(m=>esc(m.n));
+  return head+'<div class="tl"><b>有空 '+yes.length+'</b>'+(yes.join("、")||'<span class="tn">沒有人</span>')+'</div>'+
+    (no.length?'<div class="tl"><b>沒空</b><span class="tn">'+no.join("、")+'</span></div>':'')+
+    (na.length?'<div class="tl"><b>未回覆</b><span class="tn">'+na.join("、")+'</span></div>':'');
+}
+function setupTip(){
+  const tip=$("#tip");let curCell=null;
+  const hide=()=>{tip.hidden=true;curCell=null;};
+  const place=e=>{
+    const pad=14,w=tip.offsetWidth,h=tip.offsetHeight;
+    let x=e.clientX+pad,y=e.clientY+pad;
+    if(x+w>innerWidth-8)x=e.clientX-w-pad;
+    if(y+h>innerHeight-8)y=e.clientY-h-pad;
+    tip.style.left=Math.max(8,x)+"px";tip.style.top=Math.max(8,y)+"px";
+  };
+  document.addEventListener("pointermove",e=>{
+    if(e.pointerType!=="mouse"){if(!tip.hidden)hide();return;}
+    const el=e.target.closest&&e.target.closest("#heatGrid td.cell, #fillGrid td.cell");
+    if(!el){if(!tip.hidden)hide();return;}
+    if(el!==curCell){curCell=el;tip.innerHTML=tipHTML(el);tip.hidden=false;}
+    place(e);
+  });
+  document.addEventListener("scroll",hide,true);
+  document.addEventListener("pointerleave",hide);
 }
 
 /* ---------- 啟動（放最後，確保所有變數都已宣告） ---------- */
