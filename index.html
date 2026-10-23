@@ -166,6 +166,31 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 
 .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .person .done{font-size:11px;opacity:.8}
+
+.flabel{font-size:14px;font-weight:500;margin-bottom:4px}
+.teamchips{display:flex;flex-wrap:wrap;gap:6px}
+.memedit{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-height:44px;align-items:center}
+.mchip{display:inline-flex;align-items:center;gap:2px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:14px}
+.mchip button{border:0;background:none;width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:15px;line-height:1}
+.mchip button:hover{background:var(--hol-tint);color:var(--hol)}
+.addrow{display:flex;gap:8px;margin-top:8px}
+.addrow input{flex:1}
+.form label.check{display:flex;align-items:center;gap:8px;font-weight:400}
+.form label.check input{width:auto}
+.eyebrow{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.05em;margin-bottom:2px}
+.tgroup{margin:0 0 18px}
+.tgroup h3{font-family:"Noto Serif TC",serif;font-size:18px;margin:0 0 8px;padding-left:10px;border-left:3px solid var(--accent)}
+.tgroup details{margin-top:8px;font-size:14px;color:var(--muted)}
+.tgroup summary{cursor:pointer;padding:4px 0}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tgroup details .scards{margin-top:6px}
+.scard{display:grid;gap:2px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.scard:hover{border-color:var(--accent)}
+.scard .st{font-weight:700;font-size:16px}
+.scard .sr{font-size:14px}
+.scard .sm{font-size:13px;color:var(--muted)}
+.scard.closed{opacity:.75}
+.teamtag{display:inline-block;margin-right:8px;padding:0 8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -179,9 +204,8 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 
   <div id="app" hidden>
     <section id="hero"></section>
-    <div class="pickers" id="pickers"></div>
 
-    <nav class="tabs" role="tablist">
+    <nav class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-tab="fill">填寫我的時間</button>
       <button class="tab" role="tab" data-tab="results">看大家的結果</button>
       <button class="tab" role="tab" data-tab="manage" id="manageTab" hidden>發起與管理調查</button>
@@ -202,13 +226,27 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
       <div class="panel">
         <h2>發起新的調查</h2>
         <div class="form">
+          <div>
+            <div class="flabel">常用團隊（點一下帶入名單）</div>
+            <div class="teamchips" id="fTeams"></div>
+          </div>
+          <label>團名<input id="fTeam" maxlength="30" placeholder="例如：絕本固團、週末休閒團"></label>
+          <div>
+            <div class="flabel">隊員（<span id="fCount">0</span> 人）</div>
+            <div class="memedit" id="fMembers"></div>
+            <div class="addrow">
+              <input id="fNewMember" maxlength="20" placeholder="輸入隊員名字，按 Enter 加入">
+              <button class="btn" type="button" id="fAddMember">加入</button>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" id="fSaveTeam" checked> 把這個團名和名單存為常用團隊（同名會更新）</label>
           <label>調查名稱<input id="fTitle" maxlength="40" value="下週出團時間"></label>
           <div class="row2">
             <label>開始日期<input type="date" id="fStart"></label>
             <label>結束日期<input type="date" id="fEnd"></label>
           </div>
           <div>
-            <div style="font-size:14px;font-weight:500;margin-bottom:4px">假日（週末已自動勾選，點日期可加上國定假日）</div>
+            <div class="flabel">假日（週末已自動勾選，點日期可加上國定假日）</div>
             <div class="holpick" id="fHol"></div>
           </div>
           <label>給團員的備註（選填）<textarea id="fNote" rows="2" maxlength="300" placeholder="例如：這週要打絕本，請盡量勾連續 3 小時以上"></textarea></label>
@@ -218,6 +256,10 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
       <div class="panel">
         <h2>所有調查</h2>
         <ul class="slist" id="sList"></ul>
+      </div>
+      <div class="panel">
+        <h2>常用團隊</h2>
+        <ul class="slist" id="tList"></ul>
       </div>
     </section>
 
@@ -243,12 +285,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const MEMBERS=[
+// 舊版調查（沒有自己名單的）使用這份名單
+const LEGACY=[
   {k:"satoru",n:"Satoru"},{k:"paku",n:"Paku"},{k:"shanzhuang",n:"山壯"},{k:"fengzhi",n:"楓之旋律"},
   {k:"sansan",n:"三三"},{k:"lailaizi",n:"來來子"},{k:"jman",n:"Jman"},{k:"caobadao",n:"草八刀"}
 ];
-const MNAME=Object.fromEntries(MEMBERS.map(m=>[m.k,m.n]));
-const TOTAL=MEMBERS.length;
 const PERIODS=[
   {k:"night",n:"半夜",from:0,to:12},{k:"day",n:"白天",from:12,to:24},
   {k:"aft",n:"下午",from:24,to:36},{k:"eve",n:"晚上",from:36,to:48}
@@ -264,39 +305,46 @@ const slotT=i=>String(Math.floor(i/2)).padStart(2,"0")+":"+(i%2?"30":"00");
 const periodOf=i=>PERIODS.find(p=>i>=p.from&&i<p.to);
 const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}};
 
-let db,auth,authUser=null,isOwner=false;
-let surveys=[],resps={},curSid=null,tab="fill";
-let draft={},dirty=false,draftKey=null,changingName=false;
-let myMember=MNAME[store.get("ff14-member")]?store.get("ff14-member"):null;
-let dragMode=false,picked=null,saving=false;
+/* ---------- 狀態 ---------- */
+let db,auth,authUser=null,isOwner=false,teamsUnsub=null;
+let surveys=[],resps={},teams=[],curSid=null,tab="fill",firstLoad=true;
+let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
+let dragMode=false,picked=null,saving=false,leaveArmed=0;
+let fHol=new Set(),fMembers=[];
+const armed={};
 
+/* ---------- 小工具 ---------- */
 function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2600);}
 const cur=()=>surveys.find(s=>s.id===curSid)||null;
 const surveyResps=sid=>resps[sid]||{};
+const memOf=sv=>Array.isArray(sv.members)&&sv.members.length?sv.members:LEGACY;
+const nameOf=(sv,k)=>(memOf(sv).find(m=>m.k===k)||{}).n||k;
+const teamOf=sv=>sv.team||"固團";
+function meMap(){try{return JSON.parse(store.get("ff14-me")||"{}")||{};}catch(e){return{};}}
+function myKeyFor(sv){if(!sv)return null;const n=meMap()[teamOf(sv)];const m=memOf(sv).find(x=>x.n===n);return m?m.k:null;}
+function rememberMe(sv,k){const map=meMap();map[teamOf(sv)]=nameOf(sv,k);store.set("ff14-me",JSON.stringify(map));}
+function armedTwice(key,btn,label){if(armed[key]&&Date.now()-armed[key]<4000)return true;armed[key]=Date.now();btn.textContent=label;return false;}
+function confirmLeave(){if(!dirty)return true;if(Date.now()-leaveArmed<4000)return true;leaveArmed=Date.now();toast("還有未儲存的變更，再按一次放棄");return false;}
+function showErr(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新並發布":"讀取資料失敗");}
+function selectSurvey(id){curSid=id;if(id)store.set("ff14-last",id);dirty=false;picked=null;changingName=false;syncDraft();renderAll();window.scrollTo({top:0});}
 
-function showErr(e){
-  console.error(e);
-  toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已發布":"讀取資料失敗");
-}
-
-/* ---------- draft ---------- */
+/* ---------- 草稿 ---------- */
 function syncDraft(){
+  myMember=myKeyFor(cur());
   const key=curSid+"|"+myMember;
   if(dirty&&draftKey===key)return;
   draftKey=key;draft={};dirty=false;
   const r=curSid&&myMember&&surveyResps(curSid)[myMember];
   if(r&&r.slots)for(const d in r.slots)draft[d]=new Set(r.slots[d]);
 }
-function serialize(){
-  const o={};for(const d of cur().dates){const s=draft[d];if(s&&s.size)o[d]=[...s].sort((a,b)=>a-b);}return o;
-}
+function serialize(){const o={};for(const d of cur().dates){const s=draft[d];if(s&&s.size)o[d]=[...s].sort((a,b)=>a-b);}return o;}
 
-/* ---------- render ---------- */
-function renderAll(){renderWho();renderHero();renderFill();renderResults();renderSList();}
+/* ---------- 畫面 ---------- */
+function renderAll(){renderWho();renderHero();renderTabs();renderFill();renderResults();renderSList();}
 function renderWho(){
-  const el=$("#who");el.textContent="";
-  if(myMember){const s=document.createElement("span");s.innerHTML="你是 <b></b>";s.querySelector("b").textContent=MNAME[myMember];el.appendChild(s);}
-  if(isOwner){const s=document.createElement("span");s.textContent=(myMember?"，":"")+"團長模式";el.appendChild(s);}
+  const el=$("#who");el.textContent="";const sv=cur();
+  if(sv&&myMember){const s=document.createElement("span");s.innerHTML="你是 <b></b>";s.querySelector("b").textContent=nameOf(sv,myMember);el.appendChild(s);}
+  if(isOwner){const s=document.createElement("span");s.textContent=(el.textContent?"，":"")+"團長模式";el.appendChild(s);}
 }
 function renderFoot(){
   const f=$("#foot");
@@ -305,24 +353,44 @@ function renderFoot(){
     f.querySelector("span").textContent="已登入："+authUser.email+(isOwner?"（團長）":"（不是團長帳號，無法發起調查）");
   }else f.innerHTML='<span>團長要發起調查？</span><button class="linkbtn" data-act="login">用 Google 登入</button>';
 }
-function renderHero(){
-  const sv=cur();const h=$("#hero");const p=$("#pickers");
-  if(!sv){h.innerHTML='<div class="hero"><h1>還沒有調查</h1><div class="range">'+(isOwner?"到「發起與管理調查」建立第一份。":"團長發起調查後，這裡就能填寫。")+'</div></div>';p.innerHTML="";return;}
-  const a=sv.dates[0],b=sv.dates[sv.dates.length-1];
-  h.innerHTML='<div class="hero"><h1>'+esc(sv.title||"出席調查")+(sv.closed?'<span class="closedtag">已截止</span>':'')+'</h1>'+
-    '<div class="range">'+md(a)+' '+WD[wd(a)]+' 到 '+md(b)+' '+WD[wd(b)]+'，共 '+sv.dates.length+' 天</div>'+
-    (sv.note?'<p class="note">'+esc(sv.note)+'</p>':'')+'</div>';
-  p.innerHTML=surveys.length>1?surveys.map(s=>'<button class="chip" data-sid="'+esc(s.id)+'" aria-pressed="'+(s.id===curSid)+'">'+esc(s.title||"出席調查")+'（'+md(s.dates[0])+'）'+(s.closed?' 已截止':'')+'</button>').join(""):"";
+function surveyCard(s){
+  const n=Object.keys(surveyResps(s.id)).filter(k=>memOf(s).some(m=>m.k===k)).length;
+  const mine=myKeyFor(s);const done=mine&&surveyResps(s.id)[mine];
+  return'<button class="scard'+(s.closed?' closed':'')+'" data-sid="'+esc(s.id)+'"><span class="st">'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</span>'+
+    '<span class="sr">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'</span>'+
+    '<span class="sm">'+n+' / '+memOf(s).length+' 人已回覆'+(mine?(done?'，你已填寫':'，你還沒填'):'')+'</span></button>';
 }
-let leaveArmed=0;
-function confirmLeave(){if(Date.now()-leaveArmed<4000)return true;leaveArmed=Date.now();toast("還有未儲存的變更，再按一次放棄");return false;}
+function pickerHTML(){
+  const groups=new Map();
+  for(const s of surveys){const t=teamOf(s);if(!groups.has(t))groups.set(t,[]);groups.get(t).push(s);}
+  let h='';
+  for(const[t,list]of groups){
+    const open=list.filter(s=>!s.closed),closed=list.filter(s=>s.closed);
+    h+='<div class="tgroup"><h3>'+esc(t)+'</h3><div class="scards">'+(open.length?open.map(surveyCard).join(""):'<p class="muted" style="margin:0">目前沒有進行中的調查</p>')+'</div>'+
+      (closed.length?'<details><summary>已截止的調查（'+closed.length+'）</summary><div class="scards">'+closed.map(surveyCard).join("")+'</div></details>':'')+'</div>';
+  }
+  return h;
+}
+function renderHero(){
+  const sv=cur();const h=$("#hero");
+  if(!surveys.length){h.innerHTML='<div class="hero"><h1>還沒有調查</h1><div class="range">'+(isOwner?"到「發起與管理調查」建立第一份。":"團長發起調查後，這裡就能填寫。")+'</div></div>';return;}
+  if(!sv){h.innerHTML='<div class="hero"><h1>你要填哪個團？</h1><div class="range">選擇團和調查後就能開始勾時間。</div></div>'+pickerHTML();return;}
+  const a=sv.dates[0],b=sv.dates[sv.dates.length-1];
+  h.innerHTML='<div class="hero"><div class="eyebrow">'+esc(teamOf(sv))+(surveys.length>1?' <button class="linkbtn" data-act="switch">切換團或調查</button>':'')+'</div>'+
+    '<h1>'+esc(sv.title||"出席調查")+(sv.closed?'<span class="closedtag">已截止</span>':'')+'</h1>'+
+    '<div class="range">'+md(a)+' '+WD[wd(a)]+' 到 '+md(b)+' '+WD[wd(b)]+'，共 '+sv.dates.length+' 天，'+memOf(sv).length+' 位隊員</div>'+
+    (sv.note?'<p class="note">'+esc(sv.note)+'</p>':'')+'</div>';
+}
 function renderTabs(){
+  const has=!!cur();
+  if(!has&&tab!=="manage")tab=isOwner&&!surveys.length?"manage":tab;
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===tab));
+  $("#tabs").hidden=!has&&!isOwner;
   $("#fillView").hidden=tab!=="fill";$("#resultsView").hidden=tab!=="results";$("#manageView").hidden=tab!=="manage";
-  $("#legend").hidden=tab==="manage";$("#hero").hidden=tab==="manage";$("#pickers").hidden=tab==="manage";
+  $("#legend").hidden=tab==="manage"||!has;$("#hero").hidden=tab==="manage";
 }
 
-/* ---------- grid ---------- */
+/* ---------- 表格 ---------- */
 function gridHTML(sv){
   const hol=new Set(sv.holidays||[]);
   let h='<table class="grid"><thead><tr><th class="corner pcol" style="--pbg:var(--surface)"></th><th class="corner2 tcol"></th>';
@@ -341,11 +409,11 @@ function gridHTML(sv){
 
 function renderFill(){
   const v=$("#fillView");const sv=cur();
-  if(!sv){v.innerHTML='<div class="panel empty">'+(isOwner?"先發起一份調查，團員就能開始填寫。":"目前沒有進行中的調查。")+'</div>';return;}
+  if(!sv){v.innerHTML='';return;}
   if(!myMember||changingName){
     const done=surveyResps(sv.id);
-    v.innerHTML='<div class="panel"><h2>你是哪位團員？</h2><p class="muted">選一次就好，這台裝置之後開啟會記得你。</p><div class="namegrid">'+
-      MEMBERS.map(m=>'<button class="namebtn" data-member="'+m.k+'">'+esc(m.n)+(m.k===myMember?'<small>目前身分</small>':done[m.k]?'<small>這次已填過</small>':'')+'</button>').join("")+
+    v.innerHTML='<div class="panel"><h2>你是「'+esc(teamOf(sv))+'」的哪位隊員？</h2><p class="muted">選一次就好，這台裝置之後開這個團的調查會記得你。</p><div class="namegrid">'+
+      memOf(sv).map(m=>'<button class="namebtn" data-member="'+esc(m.k)+'">'+esc(m.n)+(m.k===myMember?'<small>目前身分</small>':done[m.k]?'<small>這次已填過</small>':'')+'</button>').join("")+
       '</div>'+(changingName?'<p style="margin-top:10px"><button class="linkbtn" data-act="cancelName">取消</button></p>':'')+'</div>';
     return;
   }
@@ -354,7 +422,7 @@ function renderFill(){
   v.innerHTML=
     (ro?'<div class="notice">這份調查已截止，只能查看。</div>':'')+
     '<div class="toolbar">'+
-      '<span class="muted" style="margin-right:auto">以 <b style="color:var(--ink)">'+esc(MNAME[myMember])+'</b> 身分填寫 <button class="linkbtn" data-act="changeName">更換</button></span>'+
+      '<span class="muted" style="margin-right:auto">以 <b style="color:var(--ink)">'+esc(nameOf(sv,myMember))+'</b> 身分填寫 <button class="linkbtn" data-act="changeName">更換</button></span>'+
       (ro?'':(coarse?'<button class="btn sm" data-act="drag" aria-pressed="'+dragMode+'">'+(dragMode?"拖曳塗選：開":"拖曳塗選：關")+'</button>':'')+
       '<button class="btn sm" data-act="clear">全部清除</button>')+
     '</div>'+
@@ -380,12 +448,175 @@ function setCell(c,val){
 function toggleCells(cells){const all=cells.every(c=>c.classList.contains("on"));cells.forEach(c=>setCell(c,!all));}
 function editable(){const sv=cur();return sv&&!sv.closed&&myMember&&!changingName;}
 
+async function save(){
+  if(!editable()||saving)return;
+  saving=true;updateSave();
+  try{
+    await setDoc(doc(db,"surveys",curSid,"responses",myMember),{slots:serialize(),updatedAt:Date.now()});
+    dirty=false;toast("已儲存");
+  }catch(err){console.error(err);toast(err&&err.code==="permission-denied"?"無法儲存：調查可能已截止":"儲存失敗，請稍後再試");}
+  saving=false;updateSave();
+}
+
+/* ---------- 結果 ---------- */
+function tally(sv){
+  const who={};const r=surveyResps(sv.id);const keys=new Set(memOf(sv).map(m=>m.k));
+  const responders=Object.keys(r).filter(k=>keys.has(k));
+  for(const m of responders){const sl=r[m].slots||{};for(const d of sv.dates)(sl[d]||[]).forEach(i=>{const k=d+"|"+i;(who[k]||(who[k]=new Set())).add(m);});}
+  return{who,responders};
+}
+function renderResults(){
+  const v=$("#resultsView");const sv=cur();
+  if(!sv){v.innerHTML='';return;}
+  const MEM=memOf(sv),TOTAL=MEM.length;
+  const{who,responders}=tally(sv);const hol=new Set(sv.holidays||[]);
+  let max=0;for(const k in who)max=Math.max(max,who[k].size);
+  const ranges=[];
+  if(max>0)for(const d of sv.dates){
+    let st=-1,key="";
+    for(let i=0;i<=48;i++){
+      const s=i<48&&who[d+"|"+i];const ok=s&&s.size===max;const k=ok?[...s].sort().join(","):"";
+      if(st>=0&&k!==key){ranges.push({d,a:st,b:i,people:key.split(",")});st=-1;}
+      if(ok&&st<0){st=i;key=k;}
+    }
+  }
+  ranges.sort((x,y)=>(y.b-y.a)-(x.b-x.a));
+  const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
+
+  let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2><div class="people">'+
+    MEM.map(m=>{const yes=responders.includes(m.k);return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(yes&&isOwner?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>';
+  side+='<div class="panel"><h2>'+(max===TOTAL?'全員到齊的時段':max>0?'最多人有空（'+max+' 人）':'最佳時段')+'</h2>'+
+    (max===0?'<p class="muted">還沒有人勾選時間。</p>':'<ul class="ranges">'+top.map(r=>{
+      const miss=MEM.filter(m=>!r.people.includes(m.k)).map(m=>m.n);
+      return'<li><div class="when'+(hol.has(r.d)?' hol':'')+'">'+md(r.d)+' '+WD[wd(r.d)]+'　'+slotT(r.a)+'–'+(r.b===48?'24:00':slotT(r.b))+'</div><div class="muted" style="font-size:13px">'+((r.b-r.a)/2)+' 小時</div>'+(miss.length?'<div class="miss">缺：'+esc(miss.join("、"))+'</div>':'')+'</li>';
+    }).join("")+'</ul>'+(ranges.length>8?'<p class="muted" style="font-size:13px;margin:8px 0 0">只列出最長的 8 段。</p>':''))+'</div>';
+  let det='<div class="panel detail"><h2>這個時段誰有空</h2>';
+  if(picked&&sv.dates.includes(picked.d)){
+    const s=who[picked.d+"|"+picked.i]||new Set();
+    det+='<div class="slot">'+md(picked.d)+' '+WD[wd(picked.d)]+'　'+slotT(picked.i)+'–'+(picked.i===47?'24:00':slotT(picked.i+1))+'</div><div class="people">'+
+      MEM.map(m=>{const yes=s.has(m.k);return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(!yes&&!responders.includes(m.k)?'（未回覆）':'')+'</span>';}).join("")+'</div>';
+  }else det+='<p class="muted">點左邊表格的任一格查看。</p>';
+  det+='</div>';
+
+  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
+  document.querySelectorAll("#heatGrid td.cell").forEach(c=>{
+    const s=who[c.dataset.date+"|"+c.dataset.slot];const n=s?s.size:0;
+    if(n){c.textContent=n;const pct=Math.round(n/TOTAL*88);c.style.setProperty("--pct",pct+"%");if(pct>50)c.classList.add("strong");if(n===TOTAL)c.classList.add("full");}
+    if(picked&&picked.d===c.dataset.date&&picked.i===+c.dataset.slot)c.classList.add("picked");
+  });
+}
+async function removeResp(k,btn){
+  if(!isOwner||!armedTwice("r"+k,btn,"確定？"))return;
+  try{await deleteDoc(doc(db,"surveys",curSid,"responses",k));toast("已清除");}catch(e){toast("清除失敗");}
+}
+
+/* ---------- 管理（團長） ---------- */
+function nextMonday(){const t=new Date();const d=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()));d.setUTCDate(d.getUTCDate()+(((8-d.getUTCDay())%7)||7));return d;}
+function rangeDates(){
+  const a=$("#fStart").value,b=$("#fEnd").value;if(!a||!b)return[];
+  const out=[];let d=parseD(a);const e=parseD(b);
+  while(d<=e&&out.length<22){out.push(fmtD(d));d=new Date(d.getTime()+864e5);}
+  return out;
+}
+function renderHolPick(){
+  const ds=rangeDates();fHol=new Set([...fHol].filter(d=>ds.includes(d)));
+  $("#fHol").innerHTML=ds.length?ds.map(d=>'<button type="button" data-d="'+d+'" aria-pressed="'+fHol.has(d)+'">'+md(d)+'<br>'+WD[wd(d)]+'</button>').join(""):'<span class="muted">先選日期</span>';
+}
+function resetHol(){fHol=new Set(rangeDates().filter(d=>{const w=wd(d);return w===0||w===6;}));renderHolPick();}
+function renderMemEdit(){
+  $("#fCount").textContent=fMembers.length;
+  $("#fMembers").innerHTML=fMembers.length?fMembers.map((n,i)=>'<span class="mchip">'+esc(n)+'<button type="button" data-rm="'+i+'" aria-label="移除 '+esc(n)+'">×</button></span>').join(""):'<span class="muted">還沒有隊員</span>';
+}
+function addMember(){
+  const inp=$("#fNewMember");
+  const names=inp.value.split(/[,，、\n]/).map(s=>s.trim()).filter(Boolean);
+  let skipped=0;
+  for(const n of names){if(fMembers.includes(n)||fMembers.length>=30){skipped++;continue;}fMembers.push(n);}
+  inp.value="";renderMemEdit();
+  if(skipped)toast("有重複的名字或超過 30 人，已略過");
+}
+function renderTeamChips(){
+  const el=$("#fTeams");
+  el.innerHTML=teams.length?teams.map(t=>'<button type="button" class="chip" data-team="'+esc(t.id)+'" aria-pressed="'+(t.name===$("#fTeam").value.trim())+'">'+esc(t.name)+'（'+(t.members||[]).length+'）</button>').join(""):'<span class="muted">還沒有常用團隊，發起調查時勾選「存為常用團隊」就會出現在這裡。</span>';
+  $("#tList").innerHTML=teams.length?teams.map(t=>'<li><div><div class="t">'+esc(t.name)+'</div><div class="muted" style="font-size:13px">'+esc((t.members||[]).join("、"))+'</div></div><div class="toolbar" style="margin:0"><button class="btn sm danger" data-tdel="'+esc(t.id)+'">刪除</button></div></li>').join(""):'<li class="muted">還沒有常用團隊。</li>';
+}
+function setupManage(){
+  const m=nextMonday();$("#fStart").value=fmtD(m);$("#fEnd").value=fmtD(new Date(m.getTime()+6*864e5));
+  resetHol();
+  fMembers=LEGACY.map(x=>x.n);renderMemEdit();
+  $("#fStart").addEventListener("change",resetHol);$("#fEnd").addEventListener("change",resetHol);
+  $("#fHol").addEventListener("click",e=>{const b=e.target.closest("[data-d]");if(!b)return;const d=b.dataset.d;fHol.has(d)?fHol.delete(d):fHol.add(d);b.setAttribute("aria-pressed",fHol.has(d));});
+  $("#fAddMember").addEventListener("click",addMember);
+  $("#fNewMember").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();addMember();}});
+  $("#fMembers").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;fMembers.splice(+b.dataset.rm,1);renderMemEdit();});
+  $("#fTeam").addEventListener("input",renderTeamChips);
+  $("#fTeams").addEventListener("click",e=>{
+    const b=e.target.closest("[data-team]");if(!b)return;const t=teams.find(x=>x.id===b.dataset.team);if(!t)return;
+    $("#fTeam").value=t.name;fMembers=[...(t.members||[])];renderMemEdit();renderTeamChips();
+  });
+  $("#tList").addEventListener("click",async e=>{
+    const b=e.target.closest("[data-tdel]");if(!b)return;
+    if(!armedTwice("t"+b.dataset.tdel,b,"再按一次刪除"))return;
+    try{await deleteDoc(doc(db,"teams",b.dataset.tdel));toast("已刪除常用團隊（已發起的調查不受影響）");}catch(err){toast("刪除失敗");}
+  });
+  $("#fCreate").addEventListener("click",async()=>{
+    const ds=rangeDates();const msg=$("#fMsg");const team=$("#fTeam").value.trim();
+    if(!team){msg.textContent="請輸入團名。";return;}
+    if(!fMembers.length){msg.textContent="至少要有一位隊員。";return;}
+    if(!ds.length){msg.textContent="結束日期要在開始日期之後。";return;}
+    if(ds.length>21){msg.textContent="一次最多 21 天。";return;}
+    const btn=$("#fCreate");btn.disabled=true;msg.textContent="";
+    const members=fMembers.map((n,i)=>({k:"m"+(i+1),n}));
+    try{
+      if($("#fSaveTeam").checked){
+        const ex=teams.find(t=>t.name===team);
+        if(ex)await updateDoc(doc(db,"teams",ex.id),{members:[...fMembers],updatedAt:Date.now()});
+        else await addDoc(collection(db,"teams"),{name:team,members:[...fMembers],updatedAt:Date.now()});
+      }
+      const ref=await addDoc(collection(db,"surveys"),{
+        team,title:$("#fTitle").value.trim()||"出席調查",dates:ds,holidays:[...fHol],note:$("#fNote").value.trim(),
+        members,memberKeys:members.map(m=>m.k),closed:false,createdAt:Date.now()
+      });
+      $("#fNote").value="";tab="fill";selectSurvey(ref.id);toast("已發起，用「複製連結」把網址傳給團員吧");
+    }catch(e){console.error(e);msg.textContent=e&&e.code==="permission-denied"?"沒有權限：請確認登入的是團長帳號，且 Firestore 規則已更新為新版。":"發起失敗，請再試一次。";}
+    btn.disabled=false;
+  });
+  $("#sList").addEventListener("click",async e=>{
+    const b=e.target.closest("[data-op]");if(!b)return;const id=b.dataset.id;const sv=surveys.find(s=>s.id===id);if(!sv)return;
+    try{
+      if(b.dataset.op==="toggle"){await updateDoc(doc(db,"surveys",id),{closed:!sv.closed});toast(sv.closed?"已重新開放":"已截止填寫");}
+      else if(b.dataset.op==="open"){tab="results";selectSurvey(id);}
+      else if(b.dataset.op==="link"){
+        const url=location.origin+location.pathname+"?s="+encodeURIComponent(id);
+        try{await navigator.clipboard.writeText(url);toast("已複製「"+teamOf(sv)+"」這份調查的連結");}catch(_){prompt("複製這個連結：",url);}
+      }
+      else if(b.dataset.op==="del"){
+        if(!armedTwice("s"+id,b,"再按一次刪除"))return;
+        const rs=await getDocs(collection(db,"surveys",id,"responses"));
+        for(const d of rs.docs)await deleteDoc(d.ref);
+        await deleteDoc(doc(db,"surveys",id));
+        if(curSid===id)curSid=null;toast("已刪除");
+      }
+    }catch(err){console.error(err);toast("操作失敗");}
+  });
+}
+function renderSList(){
+  if(!isOwner)return;
+  const el=$("#sList");
+  if(!surveys.length){el.innerHTML='<li class="muted">還沒有調查。</li>';return;}
+  el.innerHTML=surveys.map(s=>{
+    const n=tally(s).responders.length;
+    return'<li><div><div class="t"><span class="teamtag">'+esc(teamOf(s))+'</span>'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</div><div class="muted" style="font-size:13px">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'，'+n+' / '+memOf(s).length+' 人回覆</div></div>'+
+      '<div class="toolbar" style="margin:0"><button class="btn sm" data-op="open" data-id="'+esc(s.id)+'">看結果</button><button class="btn sm" data-op="link" data-id="'+esc(s.id)+'">複製連結</button><button class="btn sm" data-op="toggle" data-id="'+esc(s.id)+'">'+(s.closed?"重新開放":"截止填寫")+'</button><button class="btn sm danger" data-op="del" data-id="'+esc(s.id)+'">刪除</button></div></li>';
+  }).join("");
+}
+
+/* ---------- 事件 ---------- */
 function setupEvents(){
-  document.querySelector(".tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;tab=t.dataset.tab;renderTabs();});
-  $("#pickers").addEventListener("click",e=>{
-    const b=e.target.closest("[data-sid]");if(!b||b.dataset.sid===curSid)return;
-    if(dirty&&!confirmLeave())return;
-    curSid=b.dataset.sid;dirty=false;picked=null;syncDraft();renderAll();
+  $("#tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;tab=t.dataset.tab;renderTabs();});
+  $("#hero").addEventListener("click",e=>{
+    const c=e.target.closest("[data-sid]");if(c){if(!confirmLeave())return;selectSurvey(c.dataset.sid);return;}
+    const sw=e.target.closest('[data-act="switch"]');if(sw){if(!confirmLeave())return;if(tab==="manage")tab="fill";selectSurvey(null);}
   });
   $("#foot").addEventListener("click",async e=>{
     const a=e.target.closest("[data-act]");if(!a)return;
@@ -414,8 +645,9 @@ function setupEvents(){
   fv.addEventListener("click",e=>{
     const nb=e.target.closest("[data-member]");
     if(nb){
-      if(dirty&&nb.dataset.member!==myMember&&!confirmLeave())return;
-      myMember=nb.dataset.member;store.set("ff14-member",myMember);changingName=false;dirty=false;syncDraft();renderAll();toast("你好，"+MNAME[myMember]);return;
+      const sv=cur();if(!sv)return;
+      if(nb.dataset.member!==myMember&&!confirmLeave())return;
+      rememberMe(sv,nb.dataset.member);changingName=false;dirty=false;syncDraft();renderAll();toast("你好，"+nameOf(sv,nb.dataset.member));return;
     }
     const act=e.target.closest("[data-act]");
     if(act){
@@ -440,128 +672,7 @@ function setupEvents(){
   window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
 }
 
-async function save(){
-  if(!editable()||saving)return;
-  saving=true;updateSave();
-  try{
-    await setDoc(doc(db,"surveys",curSid,"responses",myMember),{slots:serialize(),updatedAt:Date.now()});
-    dirty=false;toast("已儲存");
-  }catch(err){console.error(err);toast(err&&err.code==="permission-denied"?"無法儲存：調查可能已截止":"儲存失敗，請稍後再試");}
-  saving=false;updateSave();
-}
-
-/* ---------- results ---------- */
-function tally(sv){
-  const who={};const r=surveyResps(sv.id);
-  for(const m in r){if(!MNAME[m])continue;const sl=r[m].slots||{};for(const d of sv.dates)(sl[d]||[]).forEach(i=>{const k=d+"|"+i;(who[k]||(who[k]=new Set())).add(m);});}
-  return{who,responders:Object.keys(r).filter(m=>MNAME[m])};
-}
-function renderResults(){
-  const v=$("#resultsView");const sv=cur();
-  if(!sv){v.innerHTML='<div class="panel empty">還沒有調查結果。</div>';return;}
-  const{who,responders}=tally(sv);const hol=new Set(sv.holidays||[]);
-  let max=0;for(const k in who)max=Math.max(max,who[k].size);
-  const ranges=[];
-  if(max>0)for(const d of sv.dates){
-    let st=-1,key="";
-    for(let i=0;i<=48;i++){
-      const s=i<48&&who[d+"|"+i];const ok=s&&s.size===max;const k=ok?[...s].sort().join(","):"";
-      if(st>=0&&k!==key){ranges.push({d,a:st,b:i,people:key.split(",")});st=-1;}
-      if(ok&&st<0){st=i;key=k;}
-    }
-  }
-  ranges.sort((x,y)=>(y.b-y.a)-(x.b-x.a));
-  const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
-
-  let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2><div class="people">'+
-    MEMBERS.map(m=>{const yes=responders.includes(m.k);return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(yes&&isOwner?'<button data-remove="'+m.k+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>';
-  side+='<div class="panel"><h2>'+(max===TOTAL?'全員到齊的時段':max>0?'最多人有空（'+max+' 人）':'最佳時段')+'</h2>'+
-    (max===0?'<p class="muted">還沒有人勾選時間。</p>':'<ul class="ranges">'+top.map(r=>{
-      const miss=MEMBERS.filter(m=>!r.people.includes(m.k)).map(m=>m.n);
-      return'<li><div class="when'+(hol.has(r.d)?' hol':'')+'">'+md(r.d)+' '+WD[wd(r.d)]+'　'+slotT(r.a)+'–'+(r.b===48?'24:00':slotT(r.b))+'</div><div class="muted" style="font-size:13px">'+((r.b-r.a)/2)+' 小時</div>'+(miss.length?'<div class="miss">缺：'+esc(miss.join("、"))+'</div>':'')+'</li>';
-    }).join("")+'</ul>'+(ranges.length>8?'<p class="muted" style="font-size:13px;margin:8px 0 0">只列出最長的 8 段。</p>':''))+'</div>';
-  let det='<div class="panel detail"><h2>這個時段誰有空</h2>';
-  if(picked&&sv.dates.includes(picked.d)){
-    const s=who[picked.d+"|"+picked.i]||new Set();
-    det+='<div class="slot">'+md(picked.d)+' '+WD[wd(picked.d)]+'　'+slotT(picked.i)+'–'+(picked.i===47?'24:00':slotT(picked.i+1))+'</div><div class="people">'+
-      MEMBERS.map(m=>{const yes=s.has(m.k);return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(!yes&&!responders.includes(m.k)?'（未回覆）':'')+'</span>';}).join("")+'</div>';
-  }else det+='<p class="muted">點左邊表格的任一格查看。</p>';
-  det+='</div>';
-
-  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
-  document.querySelectorAll("#heatGrid td.cell").forEach(c=>{
-    const s=who[c.dataset.date+"|"+c.dataset.slot];const n=s?s.size:0;
-    if(n){c.textContent=n;const pct=Math.round(n/TOTAL*88);c.style.setProperty("--pct",pct+"%");if(pct>50)c.classList.add("strong");if(n===TOTAL)c.classList.add("full");}
-    if(picked&&picked.d===c.dataset.date&&picked.i===+c.dataset.slot)c.classList.add("picked");
-  });
-}
-const armed={};
-function armedTwice(key,btn,label){if(armed[key]&&Date.now()-armed[key]<4000)return true;armed[key]=Date.now();btn.textContent=label;return false;}
-async function removeResp(m,btn){
-  if(!isOwner||!armedTwice("r"+m,btn,"確定？"))return;
-  try{await deleteDoc(doc(db,"surveys",curSid,"responses",m));toast("已清除");}catch(e){toast("清除失敗");}
-}
-
-/* ---------- manage ---------- */
-let fHol=new Set();
-function nextMonday(){const t=new Date();const d=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()));d.setUTCDate(d.getUTCDate()+(((8-d.getUTCDay())%7)||7));return d;}
-function rangeDates(){
-  const a=$("#fStart").value,b=$("#fEnd").value;if(!a||!b)return[];
-  const out=[];let d=parseD(a);const e=parseD(b);
-  while(d<=e&&out.length<22){out.push(fmtD(d));d=new Date(d.getTime()+864e5);}
-  return out;
-}
-function renderHolPick(){
-  const ds=rangeDates();fHol=new Set([...fHol].filter(d=>ds.includes(d)));
-  $("#fHol").innerHTML=ds.length?ds.map(d=>'<button type="button" data-d="'+d+'" aria-pressed="'+fHol.has(d)+'">'+md(d)+'<br>'+WD[wd(d)]+'</button>').join(""):'<span class="muted">先選日期</span>';
-}
-function resetHol(){fHol=new Set(rangeDates().filter(d=>{const w=wd(d);return w===0||w===6;}));renderHolPick();}
-function setupManage(){
-  const m=nextMonday();$("#fStart").value=fmtD(m);$("#fEnd").value=fmtD(new Date(m.getTime()+6*864e5));
-  resetHol();
-  $("#fStart").addEventListener("change",resetHol);$("#fEnd").addEventListener("change",resetHol);
-  $("#fHol").addEventListener("click",e=>{const b=e.target.closest("[data-d]");if(!b)return;const d=b.dataset.d;fHol.has(d)?fHol.delete(d):fHol.add(d);b.setAttribute("aria-pressed",fHol.has(d));});
-  $("#fCreate").addEventListener("click",async()=>{
-    const ds=rangeDates();const msg=$("#fMsg");
-    if(!ds.length){msg.textContent="結束日期要在開始日期之後。";return;}
-    if(ds.length>21){msg.textContent="一次最多 21 天。";return;}
-    const btn=$("#fCreate");btn.disabled=true;msg.textContent="";
-    try{
-      const ref=await addDoc(collection(db,"surveys"),{title:$("#fTitle").value.trim()||"出席調查",dates:ds,holidays:[...fHol],note:$("#fNote").value.trim(),closed:false,createdAt:Date.now()});
-      curSid=ref.id;dirty=false;syncDraft();$("#fNote").value="";
-      tab="fill";renderTabs();renderAll();toast("已發起，把網址傳給團員吧");
-    }catch(e){console.error(e);msg.textContent=e&&e.code==="permission-denied"?"沒有權限：請確認登入的是團長帳號，且規則裡的 email 正確。":"發起失敗，請再試一次。";}
-    btn.disabled=false;
-  });
-  $("#sList").addEventListener("click",async e=>{
-    const b=e.target.closest("[data-op]");if(!b)return;const id=b.dataset.id;const sv=surveys.find(s=>s.id===id);if(!sv)return;
-    try{
-      if(b.dataset.op==="toggle"){await updateDoc(doc(db,"surveys",id),{closed:!sv.closed});toast(sv.closed?"已重新開放":"已截止填寫");}
-      else if(b.dataset.op==="open"){curSid=id;dirty=false;syncDraft();tab="results";renderTabs();renderAll();}
-      else if(b.dataset.op==="link"){
-        const url=location.origin+location.pathname+"?s="+encodeURIComponent(id);
-        try{await navigator.clipboard.writeText(url);toast("已複製這份調查的連結");}catch(_){prompt("複製這個連結：",url);}
-      }
-      else if(b.dataset.op==="del"){
-        if(!armedTwice("s"+id,b,"再按一次刪除"))return;
-        const rs=await getDocs(collection(db,"surveys",id,"responses"));
-        for(const d of rs.docs)await deleteDoc(d.ref);
-        await deleteDoc(doc(db,"surveys",id));toast("已刪除");
-      }
-    }catch(err){console.error(err);toast("操作失敗");}
-  });
-}
-function renderSList(){
-  if(!isOwner)return;
-  const el=$("#sList");
-  if(!surveys.length){el.innerHTML='<li class="muted">還沒有調查。</li>';return;}
-  el.innerHTML=surveys.map(s=>{
-    const n=tally(s).responders.length;
-    return'<li><div><div class="t">'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</div><div class="muted" style="font-size:13px">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'，'+n+' / '+TOTAL+' 人回覆</div></div>'+
-      '<div class="toolbar" style="margin:0"><button class="btn sm" data-op="open" data-id="'+esc(s.id)+'">看結果</button><button class="btn sm" data-op="link" data-id="'+esc(s.id)+'">複製連結</button><button class="btn sm" data-op="toggle" data-id="'+esc(s.id)+'">'+(s.closed?"重新開放":"截止填寫")+'</button><button class="btn sm danger" data-op="del" data-id="'+esc(s.id)+'">刪除</button></div></li>';
-  }).join("");
-}
-/* ---------- boot（放最後，確保所有變數都已宣告） ---------- */
+/* ---------- 啟動（放最後，確保所有變數都已宣告） ---------- */
 if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
   const g=$("#gate");g.hidden=false;
   g.innerHTML='<h2>還沒設定 Firebase</h2><p>請打開 index.html，把最上面的 FIREBASE_CONFIG 和 OWNER_EMAIL 改成你的設定。步驟請看 README.md。</p>';
@@ -573,12 +684,24 @@ if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
   setupManage();setupEvents();renderTabs();renderFoot();
   onAuthStateChanged(auth,u=>{
     authUser=u;isOwner=!!(u&&u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase());
-    $("#manageTab").hidden=!isOwner;if(!isOwner&&tab==="manage"){tab="fill";renderTabs();}
-    renderFoot();renderAll();
+    $("#manageTab").hidden=!isOwner;if(!isOwner&&tab==="manage")tab="fill";
+    if(teamsUnsub){teamsUnsub();teamsUnsub=null;teams=[];}
+    if(isOwner)teamsUnsub=onSnapshot(collection(db,"teams"),s=>{
+      teams=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));renderTeamChips();
+    },e=>showErr(e));
+    renderTeamChips();renderFoot();renderAll();
   });
   onSnapshot(collection(db,"surveys"),s=>{
     surveys=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    if(!cur()){curSid=(want&&surveys.find(x=>x.id===want)?want:null)||(surveys.find(x=>!x.closed)||surveys[0]||{}).id||null;}
+    if(curSid&&!cur())curSid=null;
+    if(firstLoad){
+      firstLoad=false;
+      const open=surveys.filter(x=>!x.closed);const last=store.get("ff14-last");
+      if(want&&surveys.some(x=>x.id===want))curSid=want;
+      else if(open.length===1)curSid=open[0].id;
+      else if(last&&open.some(x=>x.id===last))curSid=last;
+      else if(!open.length&&surveys.length===1)curSid=surveys[0].id;
+    }
     syncDraft();renderAll();
   },e=>showErr(e));
   onSnapshot(collectionGroup(db,"responses"),s=>{
