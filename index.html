@@ -191,6 +191,17 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .scard .sm{font-size:13px;color:var(--muted)}
 .scard.closed{opacity:.75}
 .teamtag{display:inline-block;margin-right:8px;padding:0 8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-size:13px;font-weight:700}
+.evadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.evadd select,.evadd input{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:7px 8px}
+.evadd input{flex:1;min-width:150px}
+.evlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.evchip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 10px;border-radius:6px;font-size:14px;background:color-mix(in srgb,var(--gold) 22%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 55%,var(--line))}
+.evchip button{border:0;background:none;width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:15px;line-height:1}
+.evchip button:hover{color:var(--hol)}
+.grid td.cell.ev{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--gold) 34%,var(--surface)) 0 6px,color-mix(in srgb,var(--gold) 18%,var(--surface)) 6px 12px);cursor:not-allowed;vertical-align:top;text-align:left;padding:3px 4px;color:var(--ink);box-shadow:inset 3px 0 0 var(--gold)}
+.grid td.cell.ev .evl{overflow:hidden;font-size:11px;font-weight:700;line-height:1.3;word-break:break-all}
+.evnote{margin-top:6px;font-size:14px}
+.evnote b{color:var(--gold)}
 .tip{position:fixed;z-index:30;pointer-events:none;max-width:260px;padding:10px 12px;border-radius:8px;background:var(--ink);color:var(--surface);font-size:13px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .tip .tt{font-weight:700;font-size:14px}
 .tip .tc{opacity:.75;font-size:12px;margin-bottom:4px}
@@ -255,6 +266,16 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
             <div class="flabel">假日（週末已自動勾選，點日期可加上國定假日）</div>
             <div class="holpick" id="fHol"></div>
           </div>
+          <div>
+            <div class="flabel">既定活動（選填，這些時段會被鎖住，團員不能勾選）</div>
+            <div class="evadd">
+              <select id="eDate" aria-label="活動日期"></select>
+              <select id="eFrom" aria-label="開始時間"></select><span class="muted">到</span><select id="eTo" aria-label="結束時間"></select>
+              <input id="eLabel" maxlength="20" placeholder="活動名稱，例如：萬聖節晚會">
+              <button class="btn" type="button" id="eAdd">加入</button>
+            </div>
+            <div class="evlist" id="eList"></div>
+          </div>
           <label>給團員的備註（選填）<textarea id="fNote" rows="2" maxlength="300" placeholder="例如：這週要打絕本，請盡量勾連續 3 小時以上"></textarea></label>
           <div><button class="btn primary" id="fCreate">發起調查</button> <span class="muted" id="fMsg"></span></div>
         </div>
@@ -317,7 +338,7 @@ let db,auth,authUser=null,isOwner=false,teamsUnsub=null;
 let surveys=[],resps={},teams=[],curSid=null,tab="fill",firstLoad=true;
 let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
 let dragMode=false,picked=null,saving=false,leaveArmed=0;
-let fHol=new Set(),fMembers=[];
+let fHol=new Set(),fMembers=[],fEvents=[];
 const armed={};
 let lastWho={},lastResponders=[];
 
@@ -328,6 +349,9 @@ const surveyResps=sid=>resps[sid]||{};
 const memOf=sv=>Array.isArray(sv.members)&&sv.members.length?sv.members:LEGACY;
 const nameOf=(sv,k)=>(memOf(sv).find(m=>m.k===k)||{}).n||k;
 const teamOf=sv=>sv.team||"固團";
+const eventsOf=sv=>Array.isArray(sv.events)?sv.events:[];
+function evMap(sv){const m={};for(const e of eventsOf(sv))for(let i=e.a;i<e.b;i++)m[e.d+"|"+i]=e;return m;}
+const evTime=e=>slotT(e.a)+"–"+(e.b===48?"24:00":slotT(e.b));
 function meMap(){try{return JSON.parse(store.get("ff14-me")||"{}")||{};}catch(e){return{};}}
 function myKeyFor(sv){if(!sv)return null;const n=meMap()[teamOf(sv)];const m=memOf(sv).find(x=>x.n===n);return m?m.k:null;}
 function rememberMe(sv,k){const map=meMap();map[teamOf(sv)]=nameOf(sv,k);store.set("ff14-me",JSON.stringify(map));}
@@ -345,7 +369,7 @@ function syncDraft(){
   const r=curSid&&myMember&&surveyResps(curSid)[myMember];
   if(r&&r.slots)for(const d in r.slots)draft[d]=new Set(r.slots[d]);
 }
-function serialize(){const o={};for(const d of cur().dates){const s=draft[d];if(s&&s.size)o[d]=[...s].sort((a,b)=>a-b);}return o;}
+function serialize(){const o={};const ev=evMap(cur());for(const d of cur().dates){const s=draft[d];const arr=s?[...s].filter(i=>!ev[d+"|"+i]).sort((a,b)=>a-b):[];if(arr.length)o[d]=arr;}return o;}
 
 /* ---------- 畫面 ---------- */
 function renderAll(){renderWho();renderHero();renderTabs();renderFill();renderResults();renderSList();}
@@ -387,6 +411,7 @@ function renderHero(){
   h.innerHTML='<div class="hero"><div class="eyebrow">'+esc(teamOf(sv))+(surveys.length>1?' <button class="linkbtn" data-act="switch">切換團或調查</button>':'')+'</div>'+
     '<h1>'+esc(sv.title||"出席調查")+(sv.closed?'<span class="closedtag">已截止</span>':'')+'</h1>'+
     '<div class="range">'+md(a)+' '+WD[wd(a)]+' 到 '+md(b)+' '+WD[wd(b)]+'，共 '+sv.dates.length+' 天，'+memOf(sv).length+' 位隊員</div>'+
+    (eventsOf(sv).length?'<div class="evnote"><b>既定活動</b>　'+eventsOf(sv).map(e=>md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+' '+esc(e.label)).join('；')+'</div>':'')+
     (sv.note?'<p class="note">'+esc(sv.note)+'</p>':'')+'</div>';
 }
 function renderTabs(){
@@ -400,7 +425,7 @@ function renderTabs(){
 
 /* ---------- 表格 ---------- */
 function gridHTML(sv){
-  const hol=new Set(sv.holidays||[]);
+  const hol=new Set(sv.holidays||[]);const ev=evMap(sv);
   let h='<table class="grid"><thead><tr><th class="corner pcol" style="--pbg:var(--surface)"></th><th class="corner2 tcol"></th>';
   for(const d of sv.dates){const H=hol.has(d);h+='<th class="dh'+(H?' hol':'')+'" data-date="'+d+'"><span class="md">'+md(d)+'</span><span class="wd">'+WD[wd(d)]+'</span></th>';}
   h+='</tr></thead><tbody>';
@@ -409,7 +434,14 @@ function gridHTML(sv){
     h+='<tr class="p-'+p.k+(i%2?' half':'')+(i===p.from&&i>0?' pstart':'')+'">';
     if(i===p.from)h+='<th class="pcol" rowspan="12" data-period="'+p.k+'" title="'+p.n+'"><span>'+p.n+'</span></th>';
     h+='<th class="tcol" data-slot="'+i+'">'+slotT(i)+'</th>';
-    for(const d of sv.dates)h+='<td class="cell'+(hol.has(d)?' hol':'')+'" data-date="'+d+'" data-slot="'+i+'"></td>';
+    for(const d of sv.dates){
+      const e=ev[d+"|"+i];
+      if(e){
+        if(i===e.a){const n=e.b-e.a;h+='<td class="cell ev" rowspan="'+n+'" data-date="'+d+'" data-slot="'+i+'"><div class="evl" style="max-height:'+(n*22-6)+'px">'+esc(e.label)+'</div></td>';}
+        continue;
+      }
+      h+='<td class="cell'+(hol.has(d)?' hol':'')+'" data-date="'+d+'" data-slot="'+i+'"></td>';
+    }
     h+='</tr>';
   }
   return h+'</tbody></table>';
@@ -449,11 +481,12 @@ function updateSave(){
   $("#saveBtn").disabled=saving;
 }
 function setCell(c,val){
+  if(c.classList.contains("ev"))return;
   const d=c.dataset.date,i=+c.dataset.slot;const s=draft[d]||(draft[d]=new Set());
   if(val===s.has(i))return;
   val?s.add(i):s.delete(i);c.classList.toggle("on",val);dirty=true;updateSave();
 }
-function toggleCells(cells){const all=cells.every(c=>c.classList.contains("on"));cells.forEach(c=>setCell(c,!all));}
+function toggleCells(cells){cells=cells.filter(c=>!c.classList.contains("ev"));if(!cells.length)return;const all=cells.every(c=>c.classList.contains("on"));cells.forEach(c=>setCell(c,!all));}
 function editable(){const sv=cur();return sv&&!sv.closed&&myMember&&!changingName;}
 
 async function save(){
@@ -469,8 +502,8 @@ async function save(){
 /* ---------- 結果 ---------- */
 function tally(sv){
   const who={};const r=surveyResps(sv.id);const keys=new Set(memOf(sv).map(m=>m.k));
-  const responders=Object.keys(r).filter(k=>keys.has(k));
-  for(const m of responders){const sl=r[m].slots||{};for(const d of sv.dates)(sl[d]||[]).forEach(i=>{const k=d+"|"+i;(who[k]||(who[k]=new Set())).add(m);});}
+  const responders=Object.keys(r).filter(k=>keys.has(k));const ev=evMap(sv);
+  for(const m of responders){const sl=r[m].slots||{};for(const d of sv.dates)(sl[d]||[]).forEach(i=>{const k=d+"|"+i;if(ev[k])return;(who[k]||(who[k]=new Set())).add(m);});}
   return{who,responders};
 }
 function renderResults(){
@@ -509,6 +542,7 @@ function renderResults(){
 
   v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">滑鼠移到格子上就能看到誰有空。格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
   document.querySelectorAll("#heatGrid td.cell").forEach(c=>{
+    if(c.classList.contains("ev"))return;
     const s=who[c.dataset.date+"|"+c.dataset.slot];const n=s?s.size:0;
     if(n){c.textContent=n;const pct=Math.round(n/TOTAL*88);c.style.setProperty("--pct",pct+"%");if(pct>50)c.classList.add("strong");if(n===TOTAL)c.classList.add("full");}
     if(picked&&picked.d===c.dataset.date&&picked.i===+c.dataset.slot)c.classList.add("picked");
@@ -531,7 +565,37 @@ function renderHolPick(){
   const ds=rangeDates();fHol=new Set([...fHol].filter(d=>ds.includes(d)));
   $("#fHol").innerHTML=ds.length?ds.map(d=>'<button type="button" data-d="'+d+'" aria-pressed="'+fHol.has(d)+'">'+md(d)+'<br>'+WD[wd(d)]+'</button>').join(""):'<span class="muted">先選日期</span>';
 }
-function resetHol(){fHol=new Set(rangeDates().filter(d=>{const w=wd(d);return w===0||w===6;}));renderHolPick();}
+function resetHol(){fHol=new Set(rangeDates().filter(d=>{const w=wd(d);return w===0||w===6;}));renderHolPick();renderEvDates();}
+function renderEvDates(){
+  const ds=rangeDates();const sel=$("#eDate");const keep=sel.value;
+  sel.innerHTML=ds.map(d=>'<option value="'+d+'">'+md(d)+' '+WD[wd(d)]+'</option>').join("");
+  if(ds.includes(keep))sel.value=keep;
+  const before=fEvents.length;fEvents=fEvents.filter(e=>ds.includes(e.d));
+  if(fEvents.length!==before)toast("超出日期範圍的既定活動已移除");
+  renderEvList();
+}
+function renderEvList(){
+  fEvents.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
+  $("#eList").innerHTML=fEvents.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-erm="'+i+'" aria-label="移除">×</button></span>').join("");
+}
+function setupEvEditor(){
+  let opts="";for(let i=0;i<48;i++)opts+='<option value="'+i+'">'+slotT(i)+'</option>';
+  $("#eFrom").innerHTML=opts;
+  let opts2="";for(let i=1;i<=48;i++)opts2+='<option value="'+i+'">'+(i===48?'24:00':slotT(i))+'</option>';
+  $("#eTo").innerHTML=opts2;
+  $("#eFrom").value="40";$("#eTo").value="44";
+  $("#eFrom").addEventListener("change",()=>{const a=+$("#eFrom").value;if(+$("#eTo").value<=a)$("#eTo").value=String(Math.min(48,a+2));});
+  $("#eAdd").addEventListener("click",()=>{
+    const d=$("#eDate").value,a=+$("#eFrom").value,b=+$("#eTo").value,label=$("#eLabel").value.trim();
+    if(!d){toast("先選日期範圍");return;}
+    if(!label){toast("請輸入活動名稱");$("#eLabel").focus();return;}
+    if(b<=a){toast("結束時間要晚於開始時間");return;}
+    if(fEvents.some(e=>e.d===d&&a<e.b&&b>e.a)){toast("和已加入的活動時間重疊了");return;}
+    fEvents.push({d,a,b,label});$("#eLabel").value="";renderEvList();
+  });
+  $("#eLabel").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("#eAdd").click();}});
+  $("#eList").addEventListener("click",e=>{const b=e.target.closest("[data-erm]");if(!b)return;fEvents.splice(+b.dataset.erm,1);renderEvList();});
+}
 function renderMemEdit(){
   $("#fCount").textContent=fMembers.length;
   $("#fMembers").innerHTML=fMembers.length?fMembers.map((n,i)=>'<span class="mchip">'+esc(n)+'<button type="button" data-rm="'+i+'" aria-label="移除 '+esc(n)+'">×</button></span>').join(""):'<span class="muted">還沒有隊員</span>';
@@ -551,7 +615,7 @@ function renderTeamChips(){
 }
 function setupManage(){
   const m=nextMonday();$("#fStart").value=fmtD(m);$("#fEnd").value=fmtD(new Date(m.getTime()+6*864e5));
-  resetHol();
+  setupEvEditor();resetHol();
   fMembers=LEGACY.map(x=>x.n);renderMemEdit();
   $("#fStart").addEventListener("change",resetHol);$("#fEnd").addEventListener("change",resetHol);
   $("#fHol").addEventListener("click",e=>{const b=e.target.closest("[data-d]");if(!b)return;const d=b.dataset.d;fHol.has(d)?fHol.delete(d):fHol.add(d);b.setAttribute("aria-pressed",fHol.has(d));});
@@ -584,9 +648,9 @@ function setupManage(){
       }
       const ref=await addDoc(collection(db,"surveys"),{
         team,title:$("#fTitle").value.trim()||"出席調查",dates:ds,holidays:[...fHol],note:$("#fNote").value.trim(),
-        members,memberKeys:members.map(m=>m.k),closed:false,createdAt:Date.now()
+        members,memberKeys:members.map(m=>m.k),events:fEvents.map(e=>({d:e.d,a:e.a,b:e.b,label:e.label})),closed:false,createdAt:Date.now()
       });
-      $("#fNote").value="";tab="fill";selectSurvey(ref.id);toast("已發起，用「複製連結」把網址傳給團員吧");
+      $("#fNote").value="";fEvents=[];renderEvList();tab="fill";selectSurvey(ref.id);toast("已發起，用「複製連結」把網址傳給團員吧");
     }catch(e){console.error(e);msg.textContent=e&&e.code==="permission-denied"?"沒有權限：請確認登入的是團長帳號，且 Firestore 規則已更新為新版。":"發起失敗，請再試一次。";}
     btn.disabled=false;
   });
@@ -675,7 +739,7 @@ function setupEvents(){
   });
   $("#resultsView").addEventListener("click",e=>{
     const rm=e.target.closest("[data-remove]");if(rm){removeResp(rm.dataset.remove,rm);return;}
-    const c=e.target.closest("td.cell");if(!c)return;
+    const c=e.target.closest("td.cell");if(!c||c.classList.contains("ev"))return;
     picked={d:c.dataset.date,i:+c.dataset.slot};renderResults();
   });
   setupTip();
@@ -687,6 +751,8 @@ function rangeLabel(d,i){return md(d)+' '+WD[wd(d)]+'　'+slotT(i)+'–'+(i===47
 function tipHTML(c){
   const sv=cur();if(!sv)return"";
   const d=c.dataset.date,i=+c.dataset.slot;
+  const e=evMap(sv)[d+"|"+i];
+  if(e)return'<div class="tt">'+md(d)+' '+WD[wd(d)]+'　'+evTime(e)+'</div><div class="tc">既定活動，這段時間不開放勾選</div><div class="tl"><b>'+esc(e.label)+'</b></div>';
   const head='<div class="tt">'+rangeLabel(d,i)+'</div><div class="tc">'+periodOf(i).n+((sv.holidays||[]).includes(d)?'，假日':'')+'</div>';
   if(!c.closest("#heatGrid"))return head;
   const s=lastWho[d+"|"+i]||new Set();const MEM=memOf(sv);
