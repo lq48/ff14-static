@@ -185,6 +185,8 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .reasons{list-style:none;margin:0;padding:0}
 .reasons li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}
 .reasons li:first-child{border-top:0}
+.postdc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.postdc label{display:flex;align-items:center;gap:6px;font-size:13px;margin-right:auto}
 .slist li.editing{flex-direction:column;align-items:stretch}
 .didedit{width:100%;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .didedit .memedit{background:var(--surface)}
@@ -361,6 +363,7 @@ let db,auth,authUser=null,isOwner=false,teamsUnsub=null;
 let surveys=[],resps={},teams=[],curSid=null,tab="fill",firstLoad=true;
 let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
 let noneOpen=false,noneText="";
+let postTag=true,posting=false;
 let dragMode=false,picked=null,saving=false,leaveArmed=0;
 let fHol=new Set(),fMembers=[],fEvents=[];
 const armed={};
@@ -518,6 +521,18 @@ function setCell(c,val){
 function toggleCells(cells){cells=cells.filter(c=>!c.classList.contains("ev"));if(!cells.length)return;const all=cells.every(c=>c.classList.contains("on"));cells.forEach(c=>setCell(c,!all));}
 function editable(){const sv=cur();return sv&&!sv.closed&&myMember&&!changingName;}
 
+async function postStatus(){
+  if(!isOwner||!NOTIFY_URL||posting||!curSid||!authUser)return;
+  posting=true;renderResults();
+  try{
+    const idToken=await authUser.getIdToken();
+    const r=await fetch(NOTIFY_URL.replace(/\/+$/,"")+"/status",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sid:curSid,idToken,tag:postTag})});
+    const j=await r.json().catch(()=>({}));
+    if(j.ok)toast("已發布到 Discord"+(j.tagged?"，tag 了 "+j.tagged+" 人":""));
+    else toast("發布失敗："+(j.error||("HTTP "+r.status)));
+  }catch(err){console.error(err);toast("發布失敗：連不到提醒機器人");}
+  posting=false;renderResults();
+}
 function notifyWorker(sid){
   if(!NOTIFY_URL||!sid)return;
   fetch(NOTIFY_URL.replace(/\/+$/,"")+"/notify",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sid}),keepalive:true}).catch(()=>{});
@@ -561,7 +576,9 @@ function renderResults(){
   const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
 
   let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2><div class="people">'+
-    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&isOwner?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>';
+    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&isOwner?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>'+
+    (isOwner&&NOTIFY_URL?'<div class="postdc"><label><input type="checkbox" id="postTag"'+(postTag?' checked':'')+'> 順便 tag 還沒填的人</label><button class="btn sm primary" data-act="postdc"'+(posting?' disabled':'')+'>'+(posting?'發送中…':'發布目前狀況到 DC')+'</button></div>':'')+
+    '</div>';
   const outs=MEM.filter(m=>{const r=surveyResps(sv.id)[m.k];return r&&responders.includes(m.k)&&!Object.values(r.slots||{}).some(x=>x&&x.length);});
   if(outs.length)side+='<div class="panel"><h2>此時段皆無法參與（'+outs.length+'）</h2><ul class="reasons">'+outs.map(m=>{const n=(surveyResps(sv.id)[m.k]||{}).note;return'<li><b>'+esc(m.n)+'</b>'+(n?'：'+esc(n):'<span class="muted">（沒有填原因）</span>')+'</li>';}).join("")+'</ul></div>';
   side+='<div class="panel"><h2>'+(max===TOTAL?'全員到齊的時段':max>0?'最多人有空（'+max+' 人）':'最佳時段')+'</h2>'+
@@ -887,6 +904,8 @@ function setupEvents(){
   });
   $("#resultsView").addEventListener("click",e=>{
     const rm=e.target.closest("[data-remove]");if(rm){removeResp(rm.dataset.remove,rm);return;}
+    if(e.target.id==="postTag"){postTag=e.target.checked;return;}
+    if(e.target.closest('[data-act="postdc"]')){postStatus();return;}
     const c=e.target.closest("td.cell");if(!c||c.classList.contains("ev"))return;
     picked={d:c.dataset.date,i:+c.dataset.slot};renderResults();
   });
