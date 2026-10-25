@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>莫古莫古★大收集～奇譚探究者～兌換試算</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEEAF6; --surface:#FBFAFE; --surface2:#E3DDF0; --ink:#2B2350; --muted:#6A6290;
+  --line:#D3CBE6; --pom:#D8344B; --pom-soft:#F6D9DE; --gold:#B8871F; --gold-soft:#F3E6C4;
+  --ok:#2F7D5B; --ok-soft:#D7EEE2;
+  --p1:#D8344B; --p2:#C0761B; --p3:#6B58C9; --p4:#4C7A9A; --p5:#8A8499;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17132A; --surface:#211C3A; --surface2:#2B2549; --ink:#ECE6FA; --muted:#A79FC9;
+    --line:#3A3360; --pom:#FF6176; --pom-soft:#4A2232; --gold:#E3B54D; --gold-soft:#433717;
+    --ok:#6BCB9C; --ok-soft:#1D3A2E;
+    --p1:#FF6176; --p2:#E99A45; --p3:#9C8CF0; --p4:#7FB0D1; --p5:#A9A3B8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17132A; --surface:#211C3A; --surface2:#2B2549; --ink:#ECE6FA; --muted:#A79FC9;
+  --line:#3A3360; --pom:#FF6176; --pom-soft:#4A2232; --gold:#E3B54D; --gold-soft:#433717;
+  --ok:#6BCB9C; --ok-soft:#1D3A2E;
+  --p1:#FF6176; --p2:#E99A45; --p3:#9C8CF0; --p4:#7FB0D1; --p5:#A9A3B8;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 170px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2{font-family:"Noto Serif TC","Songti TC",serif;margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--pom);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+
+/* intro */
+.intro{padding:28px 0 18px}
+.intro h1{font-size:clamp(24px,4.6vw,36px);font-weight:900;line-height:1.25;letter-spacing:.01em}
+.back{display:inline-block;margin-bottom:10px;font-size:14px;color:var(--p3);text-decoration:underline;text-underline-offset:3px}
+.intro p{margin:8px 0 0;color:var(--muted);max-width:62ch}
+
+/* sticky budget */
+.budget{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 6px 18px -14px rgba(30,20,70,.5)}
+.budget .wrap{padding-top:12px;padding-bottom:12px}
+.brow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 22px}
+.stat{display:flex;flex-direction:column}
+.stat small{color:var(--muted);font-size:12.5px}
+.stat b{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.stat.need b{color:var(--pom)}
+.stat.left b.neg{color:var(--pom)}
+.stat.left b.pos{color:var(--ok)}
+.hold input{width:110px;font-size:22px;font-weight:700;padding:2px 8px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);font-variant-numeric:tabular-nums}
+.hold input:focus{border-color:var(--pom);outline:none}
+.meter{margin-top:10px;height:14px;border-radius:7px;background:var(--surface2);position:relative;overflow:hidden;display:flex}
+.meter span{display:block;height:100%;transition:width .35s ease}
+.meter .cap{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--ink);border-radius:2px;transition:left .35s ease}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:0}
+.warn{font-size:13px;color:var(--pom);margin-top:4px;min-height:0}
+
+/* toolbar */
+.tools{padding:16px 0 4px;display:flex;flex-direction:column;gap:10px}
+.presets,.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.presets span,.filters span{font-size:13px;color:var(--muted);margin-right:2px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13.5px;cursor:pointer}
+.chip:hover{border-color:var(--ink)}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.ghost{border-style:dashed}
+.search{flex:1 1 200px;min-width:160px;border:1.5px solid var(--line);border-radius:999px;padding:5px 14px;background:var(--surface)}
+select.chip{appearance:none;padding-right:26px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 13px) 55%,calc(100% - 8px) 55%;background-size:5px 5px;background-repeat:no-repeat}
+
+/* groups */
+.group{margin:22px 0 8px}
+.ghead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:8px;border-bottom:2px solid var(--gc)}
+.ghead h2{font-size:22px;font-weight:900;color:var(--gc)}
+.ghead .gdesc{color:var(--muted);font-size:13.5px;flex:1 1 260px}
+.ghead .gsum{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.list{list-style:none;margin:0;padding:0}
+.item{border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 12px;align-items:center;padding:10px 4px}
+.ck{width:22px;height:22px;accent-color:var(--pom);cursor:pointer}
+.nm{min-width:0}
+.nm .t{font-weight:700;font-size:15.5px}
+.nm .meta{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;padding:0 7px;border-radius:4px;background:var(--surface2);color:var(--muted);margin-left:6px;vertical-align:1px;font-weight:500}
+.tag.ev{background:var(--pom-soft);color:var(--pom)}
+.cost{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cost b{font-size:18px}
+.cost small{color:var(--muted);font-size:12px;margin-left:2px}
+.qty{display:inline-flex;align-items:center;gap:2px;margin-top:2px}
+.qty button{width:22px;height:22px;border:1px solid var(--line);background:var(--surface);border-radius:5px;cursor:pointer;line-height:1;padding:0}
+.qty em{font-style:normal;min-width:24px;text-align:center;font-size:13px}
+.more{border:none;background:none;cursor:pointer;color:var(--muted);padding:6px;border-radius:6px;font-size:13px;white-space:nowrap}
+.more:hover{color:var(--ink);background:var(--surface2)}
+.item.sel{background:linear-gradient(90deg,var(--pom-soft),transparent 70%)}
+.item.own .nm .t{text-decoration:line-through;text-decoration-color:var(--muted)}
+.item.own{opacity:.62}
+.detail{display:none;padding:0 6px 14px 38px;font-size:14px}
+.item.open .detail{display:block}
+.detail dl{display:grid;grid-template-columns:7.5em 1fr;gap:4px 12px;margin:0}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0}
+.detail .why{grid-column:1/-1;background:var(--gold-soft);border-left:3px solid var(--gold);padding:8px 12px;border-radius:0 6px 6px 0;margin:2px 0 6px}
+.detail a{color:var(--p3)}
+.ownbtn{margin-top:10px;border:1.5px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:13px}
+.item.own .ownbtn{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.empty{padding:30px 0;color:var(--muted);text-align:center}
+.mode{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mbtn{border:1.5px solid var(--line);background:var(--surface);padding:7px 16px;border-radius:8px;cursor:pointer;font-weight:500}
+.mbtn.on{background:var(--pom);border-color:var(--pom);color:#fff}
+.mbtn[data-mode="own"].on{background:var(--ok);border-color:var(--ok)}
+.mhint{font-size:13px;color:var(--muted)}
+body.own-mode .ck{accent-color:var(--ok)}
+body.own-mode .item.own{opacity:.75}
+body.own-mode .presets{opacity:.4;pointer-events:none}
+
+footer{margin:34px 0 40px;color:var(--muted);font-size:12.5px;line-height:1.7}
+footer a{color:var(--muted)}
+.themebtn{float:right}
+
+@media (max-width:600px){
+  .stat b{font-size:22px}
+  .hold input{width:90px;font-size:19px}
+  .row{grid-template-columns:auto 1fr auto;}
+  .row .more{grid-column:2/4;justify-self:start;padding:0}
+  .detail{padding-left:8px}
+  .detail dl{grid-template-columns:1fr}
+  .detail dt{margin-top:6px}
+}
+@media (prefers-reduced-motion:reduce){.meter span,.meter .cap{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="wrap intro">
+  <a class="back" href="./">← 回光之戰士飛地</a>
+  <h1>莫古莫古★大收集～奇譚探究者～<br>稀少奇譚神點石兌換試算</h1>
+  <p>勾選想換的道具，上方會即時算出需要多少石、手上的石還差多少。展開每項可看其他取得方式、單人難度與推薦理由。勾選內容會記在這台裝置的瀏覽器裡。</p>
+</header>
+
+<section class="budget" aria-label="試算結果">
+  <div class="wrap">
+    <div class="brow">
+      <label class="stat hold"><small>目前持有</small><input id="hold" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+      <div class="stat need"><small>已選所需</small><b id="need">0</b></div>
+      <div class="stat left"><small id="leftLabel">剩餘</small><b id="left">0</b></div>
+      <div class="stat"><small>已選項目</small><b id="cnt">0</b></div>
+      <div class="stat"><small>全部未取得合計</small><b id="all">0</b></div>
+    </div>
+    <div class="meter" id="meter" role="img" aria-label="各優先級所需石數比例"></div>
+    <div class="legend" id="legend"></div>
+    <div class="warn" id="warn"></div>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="tools">
+    <div class="mode" role="radiogroup" aria-label="勾選模式">
+      <button class="mbtn on" data-mode="want" role="radio" aria-checked="true">勾選想兌換</button>
+      <button class="mbtn" data-mode="own" role="radio" aria-checked="false">勾掉已擁有</button>
+      <span class="mhint" id="mhint"></span>
+    </div>
+    <div class="presets">
+      <span>快速勾選</span>
+      <button class="chip" data-preset="1">只選 P1</button>
+      <button class="chip" data-preset="2">P1 + P2</button>
+      <button class="chip" data-preset="3">P1 ～ P3</button>
+      <button class="chip" data-preset="5">全部</button>
+      <button class="chip ghost" data-preset="0">清除勾選</button>
+    </div>
+    <div class="filters">
+      <span>顯示</span>
+      <select class="chip" id="fCat" aria-label="分類篩選"></select>
+      <select class="chip" id="fShow" aria-label="狀態篩選">
+        <option value="all">全部狀態</option>
+        <option value="sel">只看已勾選</option>
+        <option value="todo">隱藏已取得</option>
+      </select>
+      <select class="chip" id="fSort" aria-label="排序">
+        <option value="pri">依優先級分組</option>
+        <option value="cost">依石數高到低</option>
+        <option value="gold">依每石換算金幣</option>
+      </select>
+      <input class="search" id="q" type="search" placeholder="搜尋道具名稱或取得方式">
+    </div>
+  </div>
+  <div id="out"></div>
+
+  <footer>
+    <button class="chip themebtn" id="themeBtn">切換深淺色</button>
+    資料取自
+    <a href="https://docs.google.com/spreadsheets/d/10wdDlVCRoiyUN8HI9exb8xCc4yNy7JzFTSr6qTkjvco/edit?gid=293173202" target="_blank" rel="noopener">FF14繁中｜莫古莫古★大收集～奇譚探究者～收藏追蹤表</a>，市價為全繁中伺服器 Universalis 資料，查詢時間 2026/10/21 09:01（台灣）。
+    優先級與理由沿用原表判斷；「每石換算金幣」= 近7日成交均價 ÷ 所需石數，可交易物品才有。成交樣本少時僅供參考，請以遊戲內實際兌換清單為準。
+  </footer>
+</main>
+
+<script>
+const PRI = {
+  P1:{c:'var(--p1)',d:'活動限定或回歸物品，未查得常駐來源，錯過可能要等下次復刻。'},
+  P2:{c:'var(--p2)',d:'原取得方式困難（極蠻神、8人或24人副本、大型 FATE）或市價很高，用石換最划算。'},
+  P3:{c:'var(--p3)',d:'依喜好兌換：小額省刷取、女式泳裝、特殊必開門藏寶圖。'},
+  P4:{c:'var(--p4)',d:'有常駐來源或市場便宜就買得到，石有剩再換。'},
+  P5:{c:'var(--p5)',d:'消耗品，依需求加購。'}
+};
+// id, 名稱, 每次石數, 每次獲得數, 優先級, 分類, 其他取得方式, 單人難度, 理由, 限制, wiki, 近7日成交均價, 每石換算
+const D = [
+[1,'咖啡杯耳墜',100,1,'P1','活動收藏','本期莫古活動新物品，未查得常駐來源','無常駐單人來源','先確保活動來源物品；不保證未來不復刻','官網未另列兌換前置','Coffee_Cup_Earring'],
+[2,'管弦樂琴樂譜：忘卻的此岸',100,1,'P2','常駐收藏','Eden’s Verse: Refulgence（一般E8）掉落；可查市場','高：8人副本，需先解鎖','P2後段：需100石，石數效益低於7石樂譜與髮型；不是活動限定。','官網未另列兌換前置','Return_to_Oblivion_Orchestrion_Roll',983333,9833],
+[3,'惡魔磚塊耳墜',50,1,'P1','活動收藏','歷史活動物品回歸；未查得常駐來源','無常駐單人來源','避免錯過本次窗口；不稱永久絕版','官網未另列兌換前置','Demon_Brick_Earring'],
+[4,'紅寶石玲龍魔笛',50,1,'P2','常駐收藏','Cinder Drift (Extreme)掉落或99枚圖騰兌換','高：極蠻神，通常組隊；需先解鎖','非容易單刷的來源，適合用活動跳過','官網未另列兌換前置','Ruby_Gwiber_Trumpet'],
+[5,'青蛙號M啟動鑰匙',50,1,'P2','常駐收藏','珂露西亞島特殊FATE A Finale Most Formidable材料12個向Fathard交換','高：大型FATE需多人及等待刷新','節省集合、前置與等候時間','官網未另列兌換前置','Ironfrog_Mover_Ignition_Key'],
+[6,'髮型樣式：基拉巴尼亞編髮',50,1,'P2','常駐收藏','天之御柱 Silver-haloed Sack隨機；可查市場','中高：深層寶藏隨機，單刷投入大','P2前段：高價隨機髮型，優先於一般外觀與家具；先確認是否已學。','官網未另列兌換前置','Modern_Aesthetics_-_Gyr_Abanian_Plait',1151638,23033],
+[7,'幻影亡靈法師',50,1,'P2','常駐收藏','The Heroes’ Gauntlet（5.3）尾王寶箱；可查市場','中：解鎖後可劇情輔助器刷，但隨機','保留P2：目前無全服掛單，歷史成交便宜不等於買得到；原副本掉落隨機。','官網未另列兌換前置','Ephemeral_Necromancer',120000,2400],
+[8,'機工士裝甲',30,1,'P4','常駐收藏','蒼天街Enie：振興票1200；亦可由Fête Present取得','低：解鎖蒼天街後，可單人累積票','維持P4：目前僅1筆高價掛單，不能據此升級；仍可用振興票取得。','官網未另列兌換前置','Machinist_Barding',82175,2739],
+[9,'演技教材・振作精神',30,1,'P4','常駐收藏','優雷卡Hydatos的Moisture-warped Lockbox；可查市場','高：優雷卡進度與變異怪箱，通常多人較合適','降至P4：市場低價即可補，不建議先花30石。','官網未另列兌換前置','Ballroom_Etiquette_-_Overzealous_Affirmations',485,16],
+[10,'田園圓點陽傘',30,1,'P4','常駐收藏','蒼天街Enie：振興票1800；亦有Fête Present','低：單人可累積振興票','維持P4：有常駐振興票替代，不先於稀有收藏兌換。','官網未另列兌換前置','Pastoral_Dot_Parasol',92500,3083],
+[11,'金碟幣白金卡',30,1,'P5','消耗品','天書奇談連線獎勵；使用得50000金碟幣','低至中：單人能累積MGP，但天書連線隨機','非永久收藏，依缺MGP程度加購','官網未另列兌換前置','MGP_Platinum_Card'],
+[12,'火蛟角笛',30,1,'P4','常駐收藏','蜥蜴人族聲望Trusted後向族群商人購買','低：單人日常，需天數','聲望與持有狀態請自行核對','官網未另列兌換前置','Drake_Horn'],
+[13,'恐狼角笛',30,1,'P4','常駐收藏','鳥人族聲望Sworn後向族群商人以120000金幣購買','低：單人日常，需天數','常駐可單人，先確認聲望','官網未另列兌換前置','Direwolf_Whistle'],
+[14,'狂歡神威魔笛',30,1,'P4','常駐收藏','The Pool of Tribute (Extreme)掉落或99枚圖騰','中：可嘗試高等解限，視職業與機制','高等解限可嘗試單刷；先確認坐騎清單，已有就標記已取得','官網未另列兌換前置','Reveling_Kamuy_Fife'],
+[15,'極樂神威魔笛',30,1,'P4','常駐收藏','Emanation (Extreme)掉落或99枚圖騰','中：可嘗試高等解限，視職業與機制','高等解限可嘗試單刷；先確認坐騎清單，已有就標記已取得','官網未另列兌換前置','Blissful_Kamuy_Fife'],
+[16,'木製垃圾桶',20,1,'P4','家具','86級製作配方；可查市場','低（市場）／中（自製需製作等級材料）','維持P4、後補：家具市價低，優先比較直接購買。','官網未另列兌換前置','Wooden_Bin',483,24],
+[17,'伊爾美格花園噴泉',20,1,'P4','家具','86級製作配方；可查市場','低（市場）／中（自製需製作等級材料）','維持P4、後補：家具市價低，優先比較直接購買。','官網未另列兌換前置','Il_Mheg_Garden_Fountain',948,47],
+[18,'鞦韆椅',20,1,'P4','家具','86級製作配方；可查市場','低（市場）／中（自製需製作等級材料）','維持P4、後補：家具市價低，優先比較直接購買。','官網未另列兌換前置','Hanging_Bench',1221,61],
+[19,'胡桃木立架花瓶',20,1,'P4','家具','86級製作配方；可查市場','低（市場）／中（自製需製作等級材料）','維持P4、後補：家具市價低，優先比較直接購買。','官網未另列兌換前置','Walnut_Flower_Vases',1807,90],
+[20,'庭院智蛙擺飾',20,1,'P4','家具','86級製作配方；可查市場','低（市場）／中（自製需製作等級材料）','維持P4、後補：家具市價低，優先比較直接購買。','官網未另列兌換前置','Poroggo_Lawn_Ornament',393,20],
+[21,'地靈娃娃',15,1,'P4','常駐收藏','地靈族Trusted後向族群商人購買','低：單人部族日常，需天數','聲望與持有狀態請自行核對','官網未另列兌換前置','Wind-up_Kobold'],
+[22,'伊修加爾德新型禦敵上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Fending',23000,1533],
+[23,'伊修加爾德新型禦敵下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Fending',7100,473],
+[24,'伊修加爾德新型制敵上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Maiming',9000,600],
+[25,'伊修加爾德新型制敵下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Maiming',4813,321],
+[26,'伊修加爾德新型強襲上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Striking',8555,570],
+[27,'伊修加爾德新型強襲下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Striking',6006,400],
+[28,'伊修加爾德新型游擊上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Scouting',5417,361],
+[29,'伊修加爾德新型游擊下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Scouting',4100,273],
+[30,'伊修加爾德新型精準上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Aiming',18470,1231],
+[31,'伊修加爾德新型精準下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Aiming',29999,2000],
+[32,'伊修加爾德新型治癒上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Healing',28343,1890],
+[33,'伊修加爾德新型治癒下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Healing',11924,795],
+[34,'伊修加爾德新型詠咒上衣',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Top_of_Casting',8711,581],
+[35,'伊修加爾德新型詠咒下身',15,1,'P4','外觀裝備','80級三星製作配方；可查市場','低（市場）／中（自製80級三星）','維持P4：常駐製作外觀，依喜好補齊；不要為省少量金幣先花活動石。','官網未另列兌換前置','Neo-Ishgardian_Bottoms_of_Casting',10760,717],
+[36,'月火男式坎肩',15,1,'P4','泳裝外觀','50級一星裁縫配方；亦有死者宮殿銅／鐵鑲邊寶藏袋；可查市場','低至中：可自製','降至P4：男式泳裝的市場替代便宜，非活動限定。','官網未另列兌換前置','Moonfire_Vest',18923,1262],
+[37,'月火男式短褲',15,1,'P4','泳裝外觀','50級一星裁縫配方；亦有死者宮殿銅／鐵鑲邊寶藏袋；可查市場','低至中：可自製','降至P4：男式泳裝的市場替代便宜，非活動限定。','官網未另列兌換前置','Moonfire_Trunks',17699,1180],
+[38,'月火女式夏衣',15,1,'P3','泳裝外觀','50級一星裁縫配方；亦有死者宮殿銅／鐵鑲邊寶藏袋；可查市場','低至中：可自製','維持P3：女式泳裝較男式貴，依外觀喜好安排；非活動限定。','官網未另列兌換前置','Moonfire_Halter',62035,4136],
+[39,'月火女式夏褲',15,1,'P3','泳裝外觀','50級一星裁縫配方；亦有死者宮殿銅／鐵鑲邊寶藏袋；可查市場','低至中：可自製','維持P3：女式泳裝較男式貴，依外觀喜好安排；非活動限定。','官網未另列兌換前置','Moonfire_Tanga',80674,5378],
+[40,'陳舊的地圖S1',15,1,'P3','活動消耗品','特殊必開門版本由莫古活動取得；一般採集地圖不是同一物品','兌換低；實際使用為等級同步多人尋寶','70級多人藏寶地圖，必開烏茲奈爾傳送門；非永久收藏，先各存1張','需4.x地區可達及解鎖尋寶','Seemingly_Special_Timeworn_Map'],
+[41,'陳舊的地圖S2',15,1,'P3','活動消耗品','特殊必開門版本由莫古活動取得；一般採集地圖不是同一物品','兌換低；實際使用為等級同步多人尋寶','80級多人藏寶地圖，必開里耶基亞傳送門；非永久收藏，先各存1張','使用需5.x對應地區可達','Ostensibly_Special_Timeworn_Map'],
+[42,'陳舊的地圖S3',15,1,'P3','活動消耗品','特殊必開門版本由莫古活動取得；一般採集地圖不是同一物品','兌換低；實際使用為等級同步多人尋寶','90級多人藏寶地圖，必開Excitatron 6000；非永久收藏，先各存1張','使用需6.x對應地區可達','Potentially_Special_Timeworn_Map'],
+[43,'陳舊的地圖S4',15,1,'P3','活動消耗品','特殊必開門版本由莫古活動取得；一般採集地圖不是同一物品','兌換低；實際使用為等級同步多人尋寶','90級多人藏寶地圖，必開The Shifting Gymnasion Agonon；非永久收藏，先各存1張','使用需厄爾庇斯可達','Conceivably_Special_Timeworn_Map'],
+[44,'西薩納蘭詳細地圖',10,1,'P4','常駐功能','大國聯軍狩獵負責人：同盟徽章250','低：可單人狩獵累積徽章','只影響地面坐騎速度，已會飛時效益低','需「超越幻想，究極武器」','Western_Thanalan_Riding_Map'],
+[45,'中薩納蘭詳細地圖',10,1,'P4','常駐功能','大國聯軍狩獵負責人：同盟徽章250','低：可單人狩獵累積徽章','只影響地面坐騎速度，已會飛時效益低','需「超越幻想，究極武器」','Central_Thanalan_Riding_Map'],
+[46,'東薩納蘭詳細地圖',10,1,'P4','常駐功能','大國聯軍狩獵負責人：同盟徽章250','低：可單人狩獵累積徽章','只影響地面坐騎速度，已會飛時效益低','需「超越幻想，究極武器」','Eastern_Thanalan_Riding_Map'],
+[47,'南薩納蘭詳細地圖',10,1,'P4','常駐功能','大國聯軍狩獵負責人：同盟徽章250','低：可單人狩獵累積徽章','只影響地面坐騎速度，已會飛時效益低','需「超越幻想，究極武器」','Southern_Thanalan_Riding_Map'],
+[48,'北薩納蘭詳細地圖',10,1,'P4','常駐功能','大國聯軍狩獵負責人：同盟徽章250','低：可單人狩獵累積徽章','只影響地面坐騎速度，已會飛時效益低','需「超越幻想，究極武器」','Northern_Thanalan_Riding_Map'],
+[49,'九宮幻卡：羅羅力特・納納力特',10,1,'P4','常駐收藏','與Wymond對戰隨機取得','低：單人NPC對戰','可單人刷，先核對卡冊','需「決鬥！九宮幻卡」','Lolorito_Nanarito_Card'],
+[50,'九宮幻卡：吉布里隆',10,1,'P4','常駐收藏','與Elaisse對戰隨機取得','低至中：單人NPC對戰','常駐NPC可刷','需「女商人的陷阱」','Gibrillont_Card'],
+[51,'九宮幻卡：不明物體',7,1,'P3','常駐收藏','Anamnesis Anyder（5.2）尾王掉落','中：解鎖後可用劇情輔助器，但隨機','僅7石省刷取；先保留預算','需「潛入更深處」','Unknown_Card'],
+[52,'九宮幻卡：瓦厲斯・耶・加爾烏斯',7,1,'P2','常駐收藏','Memoria Misera (Extreme)掉落','高：極戰鬥通常需多人','7石可省極戰鬥刷取，但先滿足前置','需「博茲雅堡壘蒸發事件」','Varis_yae_Galvus_Card'],
+[53,'九宮幻卡：2B',7,1,'P2','常駐收藏','The Tower at Paradigm’s Breach（5.5聯盟戰）尾王掉落','高：24人副本，不適合當作輕鬆單刷','僅7石，但活動兌換本身也卡前置','需「敵人現身」','2B_Card'],
+[54,'虎斑次郎',7,1,'P3','常駐收藏','Estrild／Leuekin：兵團徽章800','低：單人狩獵累積徽章','只需7石可省徽章，非活動限定','官網未另列兌換前置','Tora-jiro'],
+[55,'管弦樂琴樂譜：走向世界',7,1,'P2','常駐收藏','50級鍊金製作；原譜來自部隊飛空艇雲海23區；可查市場','自取高：需部隊工房飛空艇；市場購入低','P2優先：只需7石，工房原譜來源麻煩，省金幣效益高。近期成交與掛價落差大，勿把掛價當成交價。','官網未另列兌換前置','A_World_Apart_Orchestrion_Roll',495000,70714],
+[56,'巧兒鳥耳墜',1,1,'P1','活動收藏','歷史活動回歸；未查得常駐來源','無常駐單人來源','僅1石先收','官網未另列兌換前置','Hatchling_Earring'],
+[57,'道士莫古利娃娃',1,1,'P1','活動收藏','歷史活動回歸；未查得常駐來源','無常駐單人來源','僅1石先收','官網未另列兌換前置','Taoist_Moogle'],
+[58,'魔法棱晶（職業大師）×10',1,10,'P5','消耗品','莫古活動常見兌換消耗品，每次10個','低：有活動石即可換','一次兌換為10個，可依需要多換幾次','官網未另列兌換前置','Magicked_Prism_(Job_Mastery)']
+].map(r=>({id:r[0],name:r[1],cost:r[2],per:r[3],pri:r[4],cat:r[5],src:r[6],diff:r[7],why:r[8],lim:r[9],wiki:r[10],avg:r[11]||null,gps:r[12]||null}));
+
+const MULTI = it => /消耗品/.test(it.cat) && it.pri==='P5';
+const KEY='moogle-trove-qitan-v1';
+let S={hold:'',sel:{},own:{},open:{},mode:'want'};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s){S.hold=s.hold??'';S.sel=s.sel||{};S.own=s.own||{};}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({hold:S.hold,sel:S.sel,own:S.own}))}catch(e){}};
+const fmt=n=>n.toLocaleString('zh-TW');
+const $=id=>document.getElementById(id);
+
+// category filter
+const cats=[...new Set(D.map(d=>d.cat))];
+$('fCat').innerHTML='<option value="all">全部分類</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+
+function totals(){
+  const by={P1:0,P2:0,P3:0,P4:0,P5:0}; let need=0,cnt=0,all=0;
+  D.forEach(it=>{
+    if(!S.own[it.id]) all+=it.cost;
+    const q=S.sel[it.id]; if(q&&!S.own[it.id]){const c=it.cost*q;by[it.pri]+=c;need+=c;cnt++;}
+  });
+  return {by,need,cnt,all};
+}
+
+function renderBudget(){
+  const t=totals(); const hold=parseInt(S.hold)||0;
+  $('need').textContent=fmt(t.need); $('cnt').textContent=t.cnt; $('all').textContent=fmt(t.all);
+  const diff=hold-t.need; const L=$('left');
+  $('leftLabel').textContent = diff<0?'還差':'剩餘';
+  L.textContent=fmt(Math.abs(diff)); L.className = diff<0?'neg':'pos';
+  const scale=Math.max(t.need,hold,1);
+  $('meter').innerHTML=Object.keys(t.by).map(p=>`<span style="width:${t.by[p]/scale*100}%;background:${PRI[p].c}"></span>`).join('')
+    +(hold?`<i class="cap" style="left:calc(${Math.min(hold/scale*100,100)}% - 2px)" title="目前持有"></i>`:'');
+  $('legend').innerHTML=Object.keys(t.by).filter(p=>t.by[p]).map(p=>`<span><i style="background:${PRI[p].c}"></i>${p} ${fmt(t.by[p])}</span>`).join('')
+    +(hold?'<span>｜直線 = 目前持有</span>':'');
+  $('warn').textContent = (hold && diff<0) ? `還差 ${fmt(-diff)} 石。可以先取消 P4、P5 的項目，或繼續累積。` : '';
+}
+
+function itemHTML(it){
+  const q=S.sel[it.id]||0, own=!!S.own[it.id];
+  const cls=['item',q&&!own?'sel':'',own?'own':'',S.open[it.id]?'open':''].join(' ');
+  const evTag=/活動/.test(it.cat)?' ev':'';
+  const qty = MULTI(it) && q ? `<div class="qty"><button data-dec="${it.id}" aria-label="減少次數">−</button><em>×${q}</em><button data-inc="${it.id}" aria-label="增加次數">＋</button></div>` : '';
+  const mk = it.avg ? `<dt>市場（7日成交）</dt><dd>約 ${fmt(it.avg)} 金幣／每石約 ${fmt(it.gps)} 金幣</dd>` : `<dt>市場</dt><dd>${it.id===58?'查無市價資料':'不可交易'}</dd>`;
+  return `<li class="${cls}" data-id="${it.id}">
+    <div class="row">
+      ${S.mode==='own'
+        ? `<input type="checkbox" class="ck" data-ck="${it.id}" ${own?'checked':''} aria-label="已擁有 ${it.name}">`
+        : `<input type="checkbox" class="ck" data-ck="${it.id}" ${q?'checked':''} ${own?'disabled':''} aria-label="勾選 ${it.name}">`}
+      <div class="nm"><div class="t">${it.name}<span class="tag${evTag}">${it.cat}</span></div>
+        <div class="meta">${it.src}</div></div>
+      <div class="cost"><b>${it.cost}</b><small>石${it.per>1?`／${it.per}個`:''}</small>${qty}</div>
+      <button class="more" data-open="${it.id}" aria-expanded="${!!S.open[it.id]}">${S.open[it.id]?'收合':'詳情'}</button>
+    </div>
+    <div class="detail"><dl>
+      <dd class="why"><b>${it.pri} 推薦理由：</b>${it.why}</dd>
+      <dt>其他取得方式</dt><dd>${it.src}</dd>
+      <dt>單人難度</dt><dd>${it.diff}</dd>
+      <dt>兌換限制</dt><dd>${it.lim}</dd>
+      ${mk}
+      <dt>資料</dt><dd><a href="https://ffxiv.consolegameswiki.com/wiki/${it.wiki}" target="_blank" rel="noopener">Console Games Wiki</a></dd>
+    </dl>
+    <button class="ownbtn" data-own="${it.id}">${own?'✓ 已取得（點此取消）':'標記為已取得'}</button>
+    </div></li>`;
+}
+
+function render(){
+  const cat=$('fCat').value, show=$('fShow').value, sort=$('fSort').value, q=$('q').value.trim().toLowerCase();
+  let items=D.filter(it=>(cat==='all'||it.cat===cat)
+    &&(show!=='sel'||S.sel[it.id])&&(show!=='todo'||!S.own[it.id])
+    &&(!q||(it.name+it.src+it.cat).toLowerCase().includes(q)));
+  const out=$('out');
+  if(!items.length){out.innerHTML='<p class="empty">沒有符合的道具。試試清除搜尋文字或改選「全部分類」。</p>';renderBudget();return;}
+  if(sort==='pri'){
+    out.innerHTML=Object.keys(PRI).map(p=>{
+      const g=items.filter(i=>i.pri===p); if(!g.length) return '';
+      const gAll=D.filter(i=>i.pri===p&&!S.own[i.id]).reduce((a,i)=>a+i.cost,0);
+      const gSel=D.filter(i=>i.pri===p&&S.sel[i.id]&&!S.own[i.id]).reduce((a,i)=>a+i.cost*S.sel[i.id],0);
+      return `<section class="group" style="--gc:${PRI[p].c}"><div class="ghead"><h2>${p}</h2><span class="gdesc">${PRI[p].d}</span><span class="gsum">已選 ${fmt(gSel)}／全換 ${fmt(gAll)} 石</span></div><ul class="list">${g.map(itemHTML).join('')}</ul></section>`;
+    }).join('');
+  }else{
+    const s=[...items].sort(sort==='cost'?(a,b)=>b.cost-a.cost||a.id-b.id:(a,b)=>(b.gps||-1)-(a.gps||-1)||a.id-b.id);
+    out.innerHTML=`<section class="group" style="--gc:var(--ink)"><div class="ghead"><h2>${sort==='cost'?'依石數排序':'依每石換算金幣排序'}</h2><span class="gdesc">${sort==='gold'?'越前面代表用石換越省金幣；不可交易物品排在最後。':'石數相同時依原表編號。'}</span></div><ul class="list">${s.map(it=>itemHTML(it).replace('<div class="t">',`<div class="t"><span class="tag" style="margin:0 6px 0 0;color:${PRI[it.pri].c}">${it.pri}</span>`)).join('')}</ul></section>`;
+  }
+  renderBudget();
+  const n=Object.keys(S.own).length;
+  $('mhint').textContent = S.mode==='own'
+    ? `勾選你已經有的道具（已勾 ${n} 項），完成後切回「勾選想兌換」。`
+    : (n?`已擁有 ${n} 項，不計入試算。`:'先切到「勾掉已擁有」把有的道具勾掉，試算會更準。');
+}
+
+function setMode(m){
+  S.mode=m;
+  document.body.classList.toggle('own-mode',m==='own');
+  document.querySelectorAll('[data-mode]').forEach(b=>{const on=b.dataset.mode===m;b.classList.toggle('on',on);b.setAttribute('aria-checked',on);});
+  render();
+}
+
+$('hold').value=S.hold;
+$('hold').addEventListener('input',e=>{S.hold=e.target.value;save();renderBudget();});
+['fCat','fShow','fSort'].forEach(id=>$(id).addEventListener('change',render));
+$('q').addEventListener('input',render);
+
+document.addEventListener('click',e=>{
+  const mb=e.target.closest('[data-mode]');
+  if(mb){ setMode(mb.dataset.mode); return; }
+  const t=e.target.closest('[data-ck],[data-open],[data-own],[data-inc],[data-dec],[data-preset]'); if(!t) return;
+  const d=t.dataset;
+  if(d.ck && S.mode==='own'){ if(t.checked){S.own[d.ck]=1; delete S.sel[d.ck];} else delete S.own[d.ck]; }
+  else if(d.ck){ if(t.checked) S.sel[d.ck]=1; else delete S.sel[d.ck]; }
+  else if(d.open){ S.open[d.open]=!S.open[d.open]; }
+  else if(d.own){ if(S.own[d.own]) delete S.own[d.own]; else {S.own[d.own]=1; delete S.sel[d.own];} }
+  else if(d.inc){ S.sel[d.inc]=Math.min((S.sel[d.inc]||1)+1,99); }
+  else if(d.dec){ const v=(S.sel[d.dec]||1)-1; if(v<1) delete S.sel[d.dec]; else S.sel[d.dec]=v; }
+  else if(d.preset!==undefined){
+    const n=+d.preset; S.sel={};
+    if(n) D.forEach(it=>{ if(+it.pri.slice(1)<=n && !S.own[it.id]) S.sel[it.id]=1; });
+  }
+  save(); render();
+});
+
+$('themeBtn').addEventListener('click',()=>{
+  const r=document.documentElement; const cur=r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  r.dataset.theme = cur==='dark'?'light':'dark';
+});
+
+render();
+</script>
+</body>
+</html>
