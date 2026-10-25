@@ -82,6 +82,12 @@ a{color:var(--accent)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:3px 11px;font-size:13px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.jobcat{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:start;margin-bottom:8px}
+.jobcat .catn{font-size:13px;color:var(--muted);padding-top:4px}
+@media (max-width:560px){.jobcat{grid-template-columns:1fr;gap:4px}}
+.chip.jc-tank[aria-pressed="true"]{background:var(--tank);border-color:var(--tank);color:#fff}
+.chip.jc-heal[aria-pressed="true"]{background:var(--heal);border-color:var(--heal);color:#fff}
+.chip.jc-dps[aria-pressed="true"]{background:var(--dps);border-color:var(--dps);color:#fff}
 
 /* roster */
 .roster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -161,12 +167,14 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, si
 
 /* ---------- 常數 ---------- */
 const JOBS=[
-  {k:"PLD",n:"騎士",r:"tank"},{k:"WAR",n:"戰士",r:"tank"},{k:"DRK",n:"暗黑騎士",r:"tank"},{k:"GNB",n:"絕槍戰士",r:"tank"},
-  {k:"WHM",n:"白魔道士",r:"heal"},{k:"SCH",n:"學者",r:"heal"},{k:"AST",n:"占星術士",r:"heal"},{k:"SGE",n:"賢者",r:"heal"},
-  {k:"MNK",n:"武僧",r:"dps"},{k:"DRG",n:"龍騎士",r:"dps"},{k:"NIN",n:"忍者",r:"dps"},{k:"SAM",n:"武士",r:"dps"},{k:"RPR",n:"鐮刀",r:"dps"},{k:"VPR",n:"蝰蛇",r:"dps"},
-  {k:"BRD",n:"吟遊詩人",r:"dps"},{k:"MCH",n:"機工士",r:"dps"},{k:"DNC",n:"舞者",r:"dps"},
-  {k:"BLM",n:"黑魔道士",r:"dps"},{k:"SMN",n:"召喚士",r:"dps"},{k:"RDM",n:"赤魔道士",r:"dps"},{k:"PCT",n:"繪靈法師",r:"dps"}
-];
+  {k:"PLD",n:"騎士",c:"tank"},{k:"WAR",n:"戰士",c:"tank"},{k:"DRK",n:"暗黑騎士",c:"tank"},{k:"GNB",n:"絕槍戰士",c:"tank"},
+  {k:"WHM",n:"白魔道士",c:"heal"},{k:"SCH",n:"學者",c:"heal"},{k:"AST",n:"占星術師",c:"heal"},{k:"SGE",n:"賢者",c:"heal"},
+  {k:"MNK",n:"武僧",c:"melee"},{k:"DRG",n:"龍騎士",c:"melee"},{k:"NIN",n:"忍者",c:"melee"},{k:"SAM",n:"武士",c:"melee"},{k:"RPR",n:"奪魂者",c:"melee"},{k:"VPR",n:"毒蛇劍士",c:"melee"},
+  {k:"BRD",n:"吟遊詩人",c:"phys"},{k:"MCH",n:"機工士",c:"phys"},{k:"DNC",n:"舞者",c:"phys"},
+  {k:"BLM",n:"黑魔道士",c:"magic"},{k:"SMN",n:"召喚士",c:"magic"},{k:"RDM",n:"赤魔道士",c:"magic"},{k:"PCT",n:"繪靈法師",c:"magic"}
+].map(j=>({...j,r:j.c==="tank"||j.c==="heal"?j.c:"dps"}));
+const JOB_CATS=[{k:"tank",n:"防護職業"},{k:"heal",n:"治療職業"},{k:"melee",n:"近戰職業"},{k:"phys",n:"遠程物理職業"},{k:"magic",n:"遠程魔法職業"}];
+const SERVERS=["伊弗利特","迦樓羅","利維坦","鳳凰","奧汀","巴哈姆特","泰坦"];
 const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
 const ROLE_NAME={tank:"坦克",heal:"補師",dps:"輸出"};
 const SLOTS=[{k:"MT",r:"tank"},{k:"ST",r:"tank"},{k:"H1",r:"heal"},{k:"H2",r:"heal"},{k:"D1",r:"dps"},{k:"D2",r:"dps"},{k:"D3",r:"dps"},{k:"D4",r:"dps"}];
@@ -200,10 +208,10 @@ function avatarUrl(u){
   return "https://cdn.discordapp.com/embed/avatars/"+i+".png";
 }
 const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"未知成員";
-const jobLabel=k=>JOB[k]?JOB[k].k+" "+JOB[k].n:"";
+const jobLabel=k=>JOB[k]?JOB[k].n:"";
 function jobOptions(sel,blank){
   let h=blank?'<option value="">'+blank+'</option>':"";
-  for(const r of ["tank","heal","dps"])h+='<optgroup label="'+ROLE_NAME[r]+'">'+JOBS.filter(j=>j.r===r).map(j=>'<option value="'+j.k+'"'+(j.k===sel?" selected":"")+'>'+j.k+" "+j.n+'</option>').join("")+'</optgroup>';
+  for(const c of JOB_CATS)h+='<optgroup label="'+c.n+'">'+JOBS.filter(j=>j.c===c.k).map(j=>'<option value="'+j.k+'"'+(j.k===sel?" selected":"")+'>'+j.n+'</option>').join("")+'</optgroup>';
   return h;
 }
 
@@ -287,7 +295,7 @@ function renderMe(){
   const p=users[me.uid];
   const nm=p?nameOf(p):(claims.dcn||me.email||"");
   el.innerHTML=(claims.dc?'<img src="'+esc(avatarUrl(p||{dc:claims.dc,avatar:claims.dca}))+'" alt="">':'')+'<span>'+esc(nm)+(isOwner?'（團長）':'')+'</span>'+
-    (claims.dc&&p?'<button class="linkbtn" data-act="profile">我的角色卡</button>':'')+'<button class="linkbtn" data-act="logout">登出</button>';
+    (claims.dc&&p?'<button class="linkbtn" data-act="profile">我的靈魂水晶</button>':'')+'<button class="linkbtn" data-act="logout">登出</button>';
   const st=cur();document.title=st?st.name+"｜光之戰士飛地":"光之戰士飛地";
 }
 const scheduleLink=()=>'<p><a href="schedule.html">前往出席時間調查 →</a></p>';
@@ -298,34 +306,36 @@ function signedOutHTML(){
     '<p class="small"><button class="linkbtn" data-act="glogin">團長備用登入（Google）</button></p></div>';
 }
 
-/* 角色卡 */
+/* 靈魂水晶 */
 function profileHTML(){
   const p=users[me.uid];const first=!p;
   if(!profileDraft)profileDraft=p?{...p,subJobs:[...(p.subJobs||[])]}:{nick:dirName(claims.dc)||claims.dcn||"",charName:"",server:"",job:"",subJobs:[],bio:""};
   const d=profileDraft;
-  return'<div class="panel"><h2>'+(first?'歡迎'+(dirName(claims.dc)?'，'+esc(dirName(claims.dc)):'')+'！先建立你的角色卡':'編輯我的角色卡')+'</h2>'+
+  return'<div class="panel"><h2>'+(first?'歡迎'+(dirName(claims.dc)?'，'+esc(dirName(claims.dc)):'')+'！先建立你的靈魂水晶':'編輯我的靈魂水晶')+'</h2>'+
     (first?'<p class="muted">這些資料會顯示在固定團的陣容上，之後隨時可以修改。</p>':'')+
     '<div class="form">'+
     '<div class="row2"><label>暱稱<input id="pNick" maxlength="20" value="'+esc(d.nick)+'" placeholder="團裡大家怎麼叫你"></label>'+
     '<label>遊戲角色名稱<input id="pChar" maxlength="30" value="'+esc(d.charName)+'" placeholder="例如：Satoru Gojo"></label></div>'+
-    '<div class="row2"><label>伺服器<input id="pServer" maxlength="20" value="'+esc(d.server)+'" placeholder="例如：Ultros、鳳凰"></label>'+
+    '<div class="row2"><label>伺服器<select id="pServer"><option value="">請選擇</option>'+
+      [...SERVERS,...(d.server&&!SERVERS.includes(d.server)?[d.server]:[])].map(x=>'<option'+(x===d.server?' selected':'')+'>'+esc(x)+'</option>').join("")+'</select></label>'+
     '<label>主職業<select id="pJob">'+jobOptions(d.job,"請選擇")+'</select></label></div>'+
-    '<div><div style="font-size:14px;font-weight:500;margin-bottom:4px">副職業（可複選）</div><div class="chips" id="pSubs">'+
-      JOBS.map(j=>'<button type="button" class="chip" data-sub="'+j.k+'" aria-pressed="'+d.subJobs.includes(j.k)+'">'+j.k+'</button>').join("")+'</div></div>'+
+    '<div><div style="font-size:14px;font-weight:500;margin-bottom:4px">副職業（可複選）</div><div id="pSubs">'+
+      JOB_CATS.map(c=>'<div class="jobcat"><span class="catn">'+c.n+'</span><div class="chips">'+JOBS.filter(j=>j.c===c.k).map(j=>'<button type="button" class="chip jc-'+j.r+'" data-sub="'+j.k+'" aria-pressed="'+d.subJobs.includes(j.k)+'">'+j.n+'</button>').join("")+'</div></div>').join("")+'</div></div>'+
     '<label>開荒宣言（選填）<input id="pBio" maxlength="60" value="'+esc(d.bio)+'" placeholder="例如：這次一定要過 P5！"></label>'+
-    '<div><button class="btn primary" data-act="saveProfile">'+(first?'建立角色卡':'儲存')+'</button>'+(first?'':' <button class="btn" data-act="cancelProfile">取消</button>')+'</div>'+
+    '<div><button class="btn primary" data-act="saveProfile">'+(first?'建立靈魂水晶':'儲存')+'</button>'+(first?'':' <button class="btn" data-act="cancelProfile">取消</button>')+'</div>'+
     '</div></div>';
 }
 function bindProfile(){
   const sync=()=>{const d=profileDraft;d.nick=$("#pNick").value;d.charName=$("#pChar").value;d.server=$("#pServer").value;d.job=$("#pJob").value;d.bio=$("#pBio").value;};
   ["#pNick","#pChar","#pServer","#pJob","#pBio"].forEach(s=>$(s).addEventListener("input",sync));
-  $("#pJob").addEventListener("change",sync);
+  ["#pJob","#pServer"].forEach(s=>$(s).addEventListener("change",sync));
 }
 async function saveProfile(btn){
   const d=profileDraft;
   const nick=d.nick.trim(),charName=d.charName.trim(),server=d.server.trim();
   if(!nick){toast("請填暱稱");return;}
   if(!d.job){toast("請選主職業");return;}
+  if(!d.server){toast("請選伺服器");return;}
   btn.disabled=true;
   const p=users[me.uid];
   try{
@@ -336,7 +346,7 @@ async function saveProfile(btn){
     };
     await setDoc(doc(db,"users",me.uid),data);
     users[me.uid]=data; // 先更新畫面，不等資料庫回傳
-    profileDraft=null;view="home";toast(p?"已更新角色卡":"角色卡建立完成！");render();
+    profileDraft=null;view="home";toast(p?"已更新靈魂水晶":"靈魂水晶建立完成！");render();
   }catch(e){console.error(e);toast("儲存失敗，請再試一次");btn.disabled=false;}
 }
 
@@ -346,7 +356,7 @@ function createStaticHTML(){
     '<label>固定團名稱<input id="cName" maxlength="30" value="絕伊甸固定團"></label>'+
     '<div class="hint">目標副本預設會放入絕伊甸，以及打 BiS 用的輕量級零式 1～4 層，之後可以在「管理」裡修改。</div>'+
     '<div><button class="btn primary" data-act="createStatic">建立</button></div></div></div>'+
-    (claims.dc?'':'<div class="notice">你目前是用 Google 備用登入。建議改用 Discord 登入，才能建立自己的角色卡並出現在陣容裡。</div>');
+    (claims.dc?'':'<div class="notice">你目前是用 Google 備用登入。建議改用 Discord 登入，才能建立自己的靈魂水晶並出現在陣容裡。</div>');
 }
 async function createStatic(btn){
   const name=$("#cName").value.trim();if(!name){toast("請輸入名稱");return;}
@@ -382,7 +392,7 @@ function cardHTML(slot,uid){
   if(!u)return'<div class="slot r-'+slot.r+' empty"><span class="lab">'+slot.k+'</span>尚未分配</div>';
   const j=JOB[u.job];
   return'<div class="slot r-'+slot.r+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
-    '<div class="nm">'+esc(nameOf(u))+'</div><div class="ch">'+esc(u.charName||"")+(u.server?' @ '+esc(u.server):'')+'</div>'+
+    '<div class="nm">'+esc(nameOf(u))+'</div><div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
     (j?'<div class="jb">'+esc(jobLabel(u.job))+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
 function rosterHTML(st){
@@ -390,7 +400,7 @@ function rosterHTML(st){
   const assigned=new Set(Object.values(roles));
   const rest=active.filter(id=>!assigned.has(id));
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+
-    (rest.length?'<h3>其他成員</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=u&&JOB[u.job];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+j.k+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+    (rest.length?'<h3>其他成員</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=u&&JOB[u.job];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+j.n+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
   const mods=(st.modules||{});
@@ -431,9 +441,9 @@ function membersMgHTML(st,pending){
         (id===me.uid?'<span></span>':'<button class="btn sm danger" data-remove="'+id+'">移出</button>')+'</div>';}).join("")+'</div></div>'+
     '<p class="hint" style="margin:8px 0 0">權限只在功能設為「指定成員」或「全團開放」時才有作用；「不可見」在「指定成員」模式下會看不到該功能。</p>';
   h+='</div>';
-  h+='<div class="panel"><h2>直接加入成員</h2>'+(outsiders.length?'<p class="muted small">這些人已經用 Discord 登入、建立過角色卡，但還不是成員。</p><div class="others">'+
+  h+='<div class="panel"><h2>直接加入成員</h2>'+(outsiders.length?'<p class="muted small">這些人已經用 Discord 登入、建立過靈魂水晶，但還不是成員。</p><div class="others">'+
     outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+id+'">加入</button></div>';}).join("")+'</div>':
-    '<p class="muted">目前沒有其他登入過的人。請團員先用 Discord 登入並建立角色卡。</p>')+'</div>';
+    '<p class="muted">目前沒有其他登入過的人。請團員先用 Discord 登入並建立靈魂水晶。</p>')+'</div>';
   return h;
 }
 function modulesMgHTML(st){
