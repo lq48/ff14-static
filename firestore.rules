@@ -2,15 +2,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ★ 改成團長的 Google 帳號（要和 index.html 的 OWNER_EMAIL 一樣）
+    // ★ 團長：Discord ID（主要）或 Google 帳號（備用），要和 config.js 一致
     function isOwner() {
-      return request.auth != null
-        && request.auth.token.email == 'your-email@gmail.com'
-        && request.auth.token.email_verified == true;
+      return request.auth != null && (
+        request.auth.token.get('dc', '') == '886243755051601921'
+        || (request.auth.token.get('email', '') == 'lq0408@gmail.com'
+            && request.auth.token.get('email_verified', false) == true)
+      );
     }
 
-    function isMember(m) {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Discord 登入的使用者：帳號 ID 一定是 dc_ 加上 Discord ID（只有 Worker 能發這種帳號）
+    function isDiscordUser(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && uid == 'dc_' + request.auth.token.get('dc', 'x');
+    }
+
+    // 舊版調查（沒有自己名單的）使用的固定名單
+    function isLegacyMember(m) {
       return m in ['satoru','paku','shanzhuang','fengzhi','sansan','lailaizi','jman','caobadao'];
+    }
+
+    // 回覆者必須是這份調查名單裡的人
+    function isSurveyMember(s, m) {
+      return (s.get('memberKeys', []).size() > 0 && m in s.memberKeys)
+          || (s.get('memberKeys', []).size() == 0 && isLegacyMember(m));
+    }
+
+    // 常用團隊：只有團長能讀寫
+    match /teams/{tid} {
+      allow read, write: if isOwner();
     }
 
     // 調查：所有人可讀，只有團長能建立、修改、刪除
@@ -18,17 +43,55 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isOwner();
 
-      // 回覆：任何拿到網址的人都能填，但只能用 8 位團員的名字，且調查必須還沒截止
+      // 回覆：拿到網址的人都能填，但必須是該調查名單裡的隊員，且調查還沒截止
       match /responses/{member} {
         allow read: if true;
         allow delete: if isOwner();
-        allow create, update: if isMember(member)
-          && request.resource.data.keys().hasOnly(['slots', 'updatedAt'])
+        allow create, update: if exists(/databases/$(database)/documents/surveys/$(sid))
+          && isSurveyMember(get(/databases/$(database)/documents/surveys/$(sid)).data, member)
+          && get(/databases/$(database)/documents/surveys/$(sid)).data.closed == false
+          && request.resource.data.keys().hasOnly(['slots', 'updatedAt', 'note'])
+          && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 100))
           && request.resource.data.slots is map
           && request.resource.data.slots.size() <= 21
-          && request.resource.data.updatedAt is number
-          && exists(/databases/$(database)/documents/surveys/$(sid))
-          && get(/databases/$(database)/documents/surveys/$(sid)).data.closed == false;
+          && request.resource.data.updatedAt is number;
+      }
+    }
+
+    // ===== 固定團基地 =====
+
+    // 角色卡：登入的人都能看；只能改自己的（團長可改任何人）
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow delete: if isOwner();
+      allow create, update: if isOwner() || (
+        isDiscordUser(uid)
+        && request.resource.data.dc == request.auth.token.dc
+        && request.resource.data.keys().hasOnly(['dc','dcName','avatar','nick','charName','server','job','subJobs','bio','createdAt','updatedAt'])
+        && request.resource.data.get('nick', '').size() <= 20
+        && request.resource.data.get('charName', '').size() <= 30
+        && request.resource.data.get('server', '').size() <= 20
+        && request.resource.data.get('bio', '').size() <= 60
+        && request.resource.data.get('subJobs', []).size() <= 10
+      );
+    }
+
+    // 固定團：登入的人都能看基本資料；只有團長能改
+    match /statics/{tid} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+
+      // 成員：自己只能送出「申請中」或取消/退出；核准、權限、移出都由團長處理
+      match /members/{uid} {
+        allow read: if signedIn();
+        allow create: if isOwner() || (
+          isDiscordUser(uid)
+          && request.resource.data.status == 'pending'
+          && request.resource.data.keys().hasOnly(['status','requestedAt','note'])
+          && request.resource.data.get('note', '').size() <= 100
+        );
+        allow update: if isOwner();
+        allow delete: if isOwner() || request.auth.uid == uid;
       }
     }
 

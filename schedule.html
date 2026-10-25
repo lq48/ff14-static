@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>出席時間調查｜固團</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
+  --accent:#2F63C9; --accent-ink:#FFFFFF; --gold:#C9971A;
+  --hol:#C23A4F; --hol-tint:rgba(194,58,79,.10);
+  --p-night:#D8DCF0; --p-day:#F4F2DD; --p-aft:#F7E4CD; --p-eve:#E7DDF1;
+  --s-night:#3B4790; --s-day:#7D6E14; --s-aft:#AA5B12; --s-eve:#74439F;
+  --shadow:0 1px 0 rgba(27,34,50,.06);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+    --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B;
+    --hol:#FF7D8F; --hol-tint:rgba(255,125,143,.10);
+    --p-night:#1B2040; --p-day:#28281C; --p-aft:#32251A; --p-eve:#291F39;
+    --s-night:#9CA8F2; --s-day:#DCCB68; --s-aft:#F0A35C; --s-eve:#C49BF0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+  --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B;
+  --hol:#FF7D8F; --hol-tint:rgba(255,125,143,.10);
+  --p-night:#1B2040; --p-day:#28281C; --p-aft:#32251A; --p-eve:#291F39;
+  --s-night:#9CA8F2; --s-day:#DCCB68; --s-aft:#F0A35C; --s-eve:#C49BF0;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{max-width:1120px;margin:0 auto;padding:20px 16px 40px}
+
+/* masthead */
+.mast{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.brand{font-family:"Noto Serif TC",serif;font-weight:900;font-size:15px;letter-spacing:.2em;color:var(--muted);margin:0}
+.who{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.who b{color:var(--ink);font-weight:700}
+.linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+
+/* hero: the survey itself */
+.hero{border-left:4px solid var(--accent);padding:4px 0 4px 16px;margin-bottom:16px}
+.hero h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(26px,5vw,40px);line-height:1.2;margin:0 0 6px}
+.hero .range{font-size:16px;color:var(--muted)}
+.hero .note{margin:8px 0 0;max-width:62ch;white-space:pre-wrap}
+.closedtag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:4px;background:var(--ink);color:var(--surface);font-size:13px;vertical-align:middle}
+.pickers{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+/* tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font-weight:500;color:var(--muted);white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:0 0 10px;align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+
+/* grid */
+.gridwrap{overflow:auto;max-height:min(72vh,1120px);border:1px solid var(--line);border-radius:8px;background:var(--surface);-webkit-user-select:none;user-select:none}
+.gridwrap.drag td.cell{touch-action:none}
+table.grid{border-collapse:separate;border-spacing:0;min-width:100%}
+.grid th,.grid td{padding:0}
+.grid thead th{position:sticky;top:0;z-index:3;background:var(--surface);border-bottom:1px solid var(--line)}
+.grid th.dh{min-width:52px;padding:6px 4px;font-weight:500;text-align:center;line-height:1.25}
+.grid th.dh .md{display:block;font-family:"Noto Serif TC",serif;font-weight:600;font-size:15px}
+.grid th.dh .wd{display:block;font-size:12px;color:var(--muted)}
+.grid th.dh.hol .md,.grid th.dh.hol .wd{color:var(--hol)}
+.grid th.dh.hol{box-shadow:inset 0 -3px 0 var(--hol)}
+.fillmode th.dh,.fillmode th.tcol,.fillmode th.pcol[data-period]{cursor:pointer}
+.grid thead th.corner{left:0;z-index:5}
+.grid thead th.corner2{left:30px;z-index:5}
+.grid th.pcol{position:sticky;left:0;z-index:2;width:30px;min-width:30px;font-weight:700;font-size:13px;color:var(--pc);background:var(--pbg);border-right:1px solid var(--line)}
+.grid tbody th.pcol span{writing-mode:vertical-rl;letter-spacing:.3em;display:inline-block}
+.grid th.tcol{position:sticky;left:30px;z-index:2;width:56px;min-width:56px;font-weight:400;font-size:12px;text-align:right;padding-right:8px;color:var(--muted);background:var(--surface);border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
+tr.half th.tcol{color:transparent}
+tr.half th.tcol::after{content:"";}
+.grid td.cell{height:22px;background-color:var(--pbg);border-right:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 45%,transparent);text-align:center;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+tr.half td.cell{border-bottom-color:var(--line)}
+tr.pstart td,tr.pstart th.tcol{border-top:2px solid var(--pc)}
+.grid td.cell.hol{background-image:linear-gradient(var(--hol-tint),var(--hol-tint))}
+.grid td.cell.on{background-color:var(--accent);background-image:none}
+.fillmode td.cell{cursor:pointer}
+.readonly td.cell{cursor:not-allowed}
+.heatmode td.cell{background-color:color-mix(in srgb,var(--accent) var(--pct,0%),var(--pbg));color:var(--ink);cursor:pointer}
+.heatmode td.cell.strong{color:var(--accent-ink)}
+.heatmode td.cell.full{box-shadow:inset 0 0 0 2px var(--gold)}
+.heatmode td.cell.picked{outline:2px solid var(--ink);outline-offset:-2px}
+tr.p-night{--pbg:var(--p-night);--pc:var(--s-night)}
+tr.p-day{--pbg:var(--p-day);--pc:var(--s-day)}
+tr.p-aft{--pbg:var(--p-aft);--pc:var(--s-aft)}
+tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin:0 0 14px;box-shadow:var(--shadow)}
+.panel h2{font-family:"Noto Serif TC",serif;font-size:19px;margin:0 0 10px}
+.panel p{margin:0 0 10px}
+.muted{color:var(--muted)}
+.namegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.namebtn{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:10px;text-align:left;font-weight:700}
+.namebtn small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.namebtn:disabled{opacity:.5;cursor:not-allowed}
+.namebtn:not(:disabled):hover{border-color:var(--accent)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 14px;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--hol);border-color:color-mix(in srgb,var(--hol) 50%,var(--line))}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:3px 10px;font-size:13px}
+.savebar{position:sticky;bottom:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.savebar .state{font-size:14px}
+.savebar .state.dirty{color:var(--hol);font-weight:700}
+.notice{padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--hol) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--hol) 35%,var(--line));margin:0 0 14px}
+
+/* results */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.people{display:flex;flex-wrap:wrap;gap:6px}
+.person{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:13px;border:1px solid var(--line)}
+.person.yes{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.person.no{color:var(--muted);border-style:dashed}
+.person button{background:none;border:0;padding:0 0 0 4px;color:inherit;font-size:12px;text-decoration:underline}
+.ranges{list-style:none;margin:0;padding:0}
+.ranges li{padding:8px 0;border-top:1px solid var(--line)}
+.ranges li:first-child{border-top:0}
+.ranges .when{font-weight:700}
+.ranges .when.hol{color:var(--hol)}
+.ranges .miss{font-size:13px;color:var(--muted)}
+.detail .slot{font-family:"Noto Serif TC",serif;font-weight:600;font-size:17px;margin-bottom:8px}
+
+/* manage */
+.form{display:grid;gap:12px;max-width:640px}
+.form label{display:grid;gap:4px;font-size:14px;font-weight:500}
+.form input,.form textarea{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 10px;width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.holpick{display:flex;flex-wrap:wrap;gap:6px}
+.holpick button{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:4px 8px;font-size:13px;line-height:1.3;text-align:center;min-width:54px}
+.holpick button[aria-pressed="true"]{background:var(--hol);border-color:var(--hol);color:#fff}
+.slist{list-style:none;margin:0;padding:0}
+.slist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+.slist li:first-child{border-top:0}
+.slist .t{font-weight:700}
+.empty{padding:32px 16px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+[hidden]{display:none!important}
+
+.foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.person .done{font-size:11px;opacity:.8}
+
+.flabel{font-size:14px;font-weight:500;margin-bottom:4px}
+.teamchips{display:flex;flex-wrap:wrap;gap:6px}
+.memedit{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-height:44px}
+.mrow{display:grid;grid-template-columns:minmax(80px,140px) 1fr 30px;gap:8px;align-items:center}
+.mrow .mname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 8px;font-size:13px;width:100%;font-variant-numeric:tabular-nums}
+.mrow input.bad{border-color:var(--hol)}
+.mrow button{border:0;background:none;width:28px;height:28px;border-radius:50%;color:var(--muted);font-size:16px;line-height:1}
+.mrow button:hover{background:var(--hol-tint);color:var(--hol)}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.dirchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:13px}
+.dirchips .chip{font-size:13px;padding:2px 10px}
+.nonebox{margin:0 0 12px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.nonebox textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 10px;resize:vertical}
+.nonebox .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.reasons{list-style:none;margin:0;padding:0}
+.reasons li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.reasons li:first-child{border-top:0}
+.postdc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.postdc label{display:flex;align-items:center;gap:6px;font-size:13px;margin-right:auto}
+.slist li.editing{flex-direction:column;align-items:stretch}
+.didedit{width:100%;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.didedit .memedit{background:var(--surface)}
+.didedit .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.didedit label{display:flex;align-items:center;gap:6px;font-size:13px;margin-right:auto}
+.mchip{display:inline-flex;align-items:center;gap:2px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:14px}
+.mchip button{border:0;background:none;width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:15px;line-height:1}
+.mchip button:hover{background:var(--hol-tint);color:var(--hol)}
+.addrow{display:flex;gap:8px;margin-top:8px}
+.addrow input{flex:1}
+.form label.check{display:flex;align-items:center;gap:8px;font-weight:400}
+.form label.check input{width:auto}
+.eyebrow{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:.05em;margin-bottom:2px}
+.tgroup{margin:0 0 18px}
+.tgroup h3{font-family:"Noto Serif TC",serif;font-size:18px;margin:0 0 8px;padding-left:10px;border-left:3px solid var(--accent)}
+.tgroup details{margin-top:8px;font-size:14px;color:var(--muted)}
+.tgroup summary{cursor:pointer;padding:4px 0}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tgroup details .scards{margin-top:6px}
+.scard{display:grid;gap:2px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.scard:hover{border-color:var(--accent)}
+.scard .st{font-weight:700;font-size:16px}
+.scard .sr{font-size:14px}
+.scard .sm{font-size:13px;color:var(--muted)}
+.scard.closed{opacity:.75}
+.teamtag{display:inline-block;margin-right:8px;padding:0 8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-size:13px;font-weight:700}
+.evadd{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.evadd select,.evadd input{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:7px 8px}
+.evadd input{flex:1;min-width:150px}
+.evlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.evchip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 10px;border-radius:6px;font-size:14px;background:color-mix(in srgb,var(--gold) 22%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 55%,var(--line))}
+.evchip button{border:0;background:none;width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:15px;line-height:1}
+.evchip button:hover{color:var(--hol)}
+.grid td.cell.ev{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--gold) 34%,var(--surface)) 0 6px,color-mix(in srgb,var(--gold) 18%,var(--surface)) 6px 12px);cursor:not-allowed;vertical-align:top;text-align:left;padding:3px 4px;color:var(--ink);box-shadow:inset 3px 0 0 var(--gold)}
+.grid td.cell.ev .evl{overflow:hidden;font-size:11px;font-weight:700;line-height:1.3;word-break:break-all}
+.evnote{margin-top:6px;font-size:14px}
+.evnote b{color:var(--gold)}
+.tip{position:fixed;z-index:30;pointer-events:none;max-width:260px;padding:10px 12px;border-radius:8px;background:var(--ink);color:var(--surface);font-size:13px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.tip .tt{font-weight:700;font-size:14px}
+.tip .tc{opacity:.75;font-size:12px;margin-bottom:4px}
+.tip .tl{margin-top:4px}
+.tip .tl b{display:inline-block;min-width:3.2em;font-weight:700}
+.tip .tn{opacity:.7}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="mast">
+    <p class="brand">固團出席表</p>
+    <div class="who" id="who"></div>
+  </header>
+
+  <div id="gate" class="panel" hidden></div>
+
+  <div id="app" hidden>
+    <section id="hero"></section>
+
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-tab="fill">填寫我的時間</button>
+      <button class="tab" role="tab" data-tab="results">看大家的結果</button>
+      <button class="tab" role="tab" data-tab="manage" id="manageTab" hidden>發起與管理調查</button>
+    </nav>
+
+    <div class="legend" id="legend">
+      <span><i class="sw" style="background:var(--p-night)"></i>半夜 00:00–06:00</span>
+      <span><i class="sw" style="background:var(--p-day)"></i>白天 06:00–12:00</span>
+      <span><i class="sw" style="background:var(--p-aft)"></i>下午 12:00–18:00</span>
+      <span><i class="sw" style="background:var(--p-eve)"></i>晚上 18:00–24:00</span>
+      <span><i class="sw" style="background:var(--hol)"></i>假日</span>
+      <span>時間皆為台灣時間</span>
+    </div>
+
+    <section id="fillView"></section>
+    <section id="resultsView" hidden></section>
+    <section id="manageView" hidden>
+      <div class="panel">
+        <h2>發起新的調查</h2>
+        <div class="form">
+          <div>
+            <div class="flabel">常用團隊（點一下帶入名單）</div>
+            <div class="teamchips" id="fTeams"></div>
+          </div>
+          <label>團名<input id="fTeam" maxlength="30" placeholder="例如：絕本固團、週末休閒團"></label>
+          <div>
+            <div class="flabel">隊員（<span id="fCount">0</span> 人）</div>
+            <div class="memedit" id="fMembers"></div>
+            <div class="dirchips" id="fDir"></div>
+            <div class="hint">Discord ID 用來讓提醒機器人 tag 人，沒填的只會顯示名字。取得方式：Discord 設定開啟「開發者模式」，對名字按右鍵選「複製使用者 ID」。</div>
+            <div class="addrow">
+              <input id="fNewMember" maxlength="20" placeholder="輸入隊員名字，按 Enter 加入">
+              <button class="btn" type="button" id="fAddMember">加入</button>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" id="fSaveTeam" checked> 把這個團名和名單存為常用團隊（同名會更新）</label>
+          <label>調查名稱<input id="fTitle" maxlength="40" value="下週出團時間"></label>
+          <div class="row2">
+            <label>開始日期<input type="date" id="fStart"></label>
+            <label>結束日期<input type="date" id="fEnd"></label>
+          </div>
+          <div>
+            <div class="flabel">假日（週末已自動勾選，點日期可加上國定假日）</div>
+            <div class="holpick" id="fHol"></div>
+          </div>
+          <div>
+            <div class="flabel">既定活動（選填，這些時段會被鎖住，團員不能勾選）</div>
+            <div class="evadd">
+              <select id="eDate" aria-label="活動日期"></select>
+              <select id="eFrom" aria-label="開始時間"></select><span class="muted">到</span><select id="eTo" aria-label="結束時間"></select>
+              <input id="eLabel" maxlength="20" placeholder="活動名稱，例如：萬聖節晚會">
+              <button class="btn" type="button" id="eAdd">加入</button>
+            </div>
+            <div class="evlist" id="eList"></div>
+          </div>
+          <label>給團員的備註（選填）<textarea id="fNote" rows="2" maxlength="300" placeholder="例如：這週要打絕本，請盡量勾連續 3 小時以上"></textarea></label>
+          <div><button class="btn primary" id="fCreate">發起調查</button> <span class="muted" id="fMsg"></span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>所有調查</h2>
+        <ul class="slist" id="sList"></ul>
+      </div>
+      <div class="panel">
+        <h2>常用團隊</h2>
+        <ul class="slist" id="tList"></ul>
+      </div>
+    </section>
+
+    <footer class="foot" id="foot"></footer>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tip" id="tip" hidden></div>
+
+<script type="module">
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
+const NOTIFY_URL = WORKER_URL;   // 設定都在 config.js
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// 舊版調查（沒有自己名單的）使用這份名單
+const LEGACY=[
+  {k:"satoru",n:"Satoru"},{k:"paku",n:"Paku"},{k:"shanzhuang",n:"山壯"},{k:"fengzhi",n:"楓之旋律"},
+  {k:"sansan",n:"三三"},{k:"lailaizi",n:"來來子"},{k:"jman",n:"Jman"},{k:"caobadao",n:"草八刀"}
+];
+const PERIODS=[
+  {k:"night",n:"半夜",from:0,to:12},{k:"day",n:"白天",from:12,to:24},
+  {k:"aft",n:"下午",from:24,to:36},{k:"eve",n:"晚上",from:36,to:48}
+];
+const WD=["週日","週一","週二","週三","週四","週五","週六"];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const parseD=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(Date.UTC(y,m-1,d));};
+const fmtD=dt=>dt.toISOString().slice(0,10);
+const wd=s=>parseD(s).getUTCDay();
+const md=s=>{const d=parseD(s);return(d.getUTCMonth()+1)+"/"+d.getUTCDate();};
+const slotT=i=>String(Math.floor(i/2)).padStart(2,"0")+":"+(i%2?"30":"00");
+const periodOf=i=>PERIODS.find(p=>i>=p.from&&i<p.to);
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}};
+
+/* ---------- 狀態 ---------- */
+let authClaims={};
+let db,auth,authUser=null,isOwner=false,teamsUnsub=null;
+let surveys=[],resps={},teams=[],curSid=null,tab="fill",firstLoad=true;
+let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
+let noneOpen=false,noneText="";
+let postTag=true,posting=false;
+let dragMode=false,picked=null,saving=false,leaveArmed=0;
+let fHol=new Set(),fMembers=[],fEvents=[];
+const armed={};
+let lastWho={},lastResponders=[];
+let evBuf=null; // {sid, list:[...], form:{d,a,b,label}} 正在編輯既定活動的調查
+let didBuf=null; // {sid, vals:[...]} 正在編輯 Discord ID 的調查
+
+/* ---------- 小工具 ---------- */
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2600);}
+const cur=()=>surveys.find(s=>s.id===curSid)||null;
+const surveyResps=sid=>resps[sid]||{};
+const memOf=sv=>Array.isArray(sv.members)&&sv.members.length?sv.members:LEGACY;
+const nameOf=(sv,k)=>(memOf(sv).find(m=>m.k===k)||{}).n||k;
+const teamOf=sv=>sv.team||"固團";
+const eventsOf=sv=>Array.isArray(sv.events)?sv.events:[];
+function evMap(sv){const m={};for(const e of eventsOf(sv))for(let i=e.a;i<e.b;i++)m[e.d+"|"+i]=e;return m;}
+const evTime=e=>slotT(e.a)+"–"+(e.b===48?"24:00":slotT(e.b));
+function meMap(){try{return JSON.parse(store.get("ff14-me")||"{}")||{};}catch(e){return{};}}
+function myKeyFor(sv){if(!sv)return null;const n=meMap()[teamOf(sv)];const m=memOf(sv).find(x=>x.n===n);return m?m.k:null;}
+function rememberMe(sv,k){const map=meMap();map[teamOf(sv)]=nameOf(sv,k);store.set("ff14-me",JSON.stringify(map));}
+function armedTwice(key,btn,label){if(armed[key]&&Date.now()-armed[key]<4000)return true;armed[key]=Date.now();btn.textContent=label;return false;}
+function confirmLeave(){if(!dirty)return true;if(Date.now()-leaveArmed<4000)return true;leaveArmed=Date.now();toast("還有未儲存的變更，再按一次放棄");return false;}
+function showErr(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新並發布":"讀取資料失敗");}
+function selectSurvey(id){curSid=id;if(id)store.set("ff14-last",id);dirty=false;picked=null;changingName=false;syncDraft();renderAll();window.scrollTo({top:0});}
+
+/* ---------- 草稿 ---------- */
+function syncDraft(){
+  myMember=myKeyFor(cur());
+  const key=curSid+"|"+myMember;
+  if(dirty&&draftKey===key)return;
+  draftKey=key;draft={};dirty=false;noneOpen=false;
+  const r=curSid&&myMember&&surveyResps(curSid)[myMember];
+  if(r&&r.slots)for(const d in r.slots)draft[d]=new Set(r.slots[d]);
+}
+function serialize(){const o={};const ev=evMap(cur());for(const d of cur().dates){const s=draft[d];const arr=s?[...s].filter(i=>!ev[d+"|"+i]).sort((a,b)=>a-b):[];if(arr.length)o[d]=arr;}return o;}
+
+/* ---------- 畫面 ---------- */
+function renderAll(){renderWho();renderHero();renderTabs();renderFill();renderResults();renderSList();}
+function renderWho(){
+  const el=$("#who");el.textContent="";const sv=cur();
+  if(sv&&myMember){const s=document.createElement("span");s.innerHTML="你是 <b></b>";s.querySelector("b").textContent=nameOf(sv,myMember);el.appendChild(s);}
+  if(isOwner){const s=document.createElement("span");s.textContent=(el.textContent?"，":"")+"團長模式";el.appendChild(s);}
+}
+function renderFoot(){
+  const f=$("#foot");
+  const home='<a class="linkbtn" href="./">回固定團首頁</a>';
+  if(authUser){
+    f.innerHTML=home+'<span></span><button class="linkbtn" data-act="logout">登出</button>';
+    f.querySelector("span").textContent="已登入："+(authClaims.dcn||authUser.email||"")+(isOwner?"（團長）":"");
+  }else f.innerHTML=home+'<span>團長要發起調查？</span><button class="linkbtn" data-act="dclogin">用 Discord 登入</button><button class="linkbtn" data-act="login">Google 備用登入</button>';
+}
+function surveyCard(s){
+  const n=Object.keys(surveyResps(s.id)).filter(k=>memOf(s).some(m=>m.k===k)).length;
+  const mine=myKeyFor(s);const done=mine&&surveyResps(s.id)[mine];
+  return'<button class="scard'+(s.closed?' closed':'')+'" data-sid="'+esc(s.id)+'"><span class="st">'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</span>'+
+    '<span class="sr">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'</span>'+
+    '<span class="sm">'+n+' / '+memOf(s).length+' 人已回覆'+(mine?(done?'，你已填寫':'，你還沒填'):'')+'</span></button>';
+}
+function pickerHTML(){
+  const groups=new Map();
+  for(const s of surveys){const t=teamOf(s);if(!groups.has(t))groups.set(t,[]);groups.get(t).push(s);}
+  let h='';
+  for(const[t,list]of groups){
+    const open=list.filter(s=>!s.closed),closed=list.filter(s=>s.closed);
+    h+='<div class="tgroup"><h3>'+esc(t)+'</h3><div class="scards">'+(open.length?open.map(surveyCard).join(""):'<p class="muted" style="margin:0">目前沒有進行中的調查</p>')+'</div>'+
+      (closed.length?'<details><summary>已截止的調查（'+closed.length+'）</summary><div class="scards">'+closed.map(surveyCard).join("")+'</div></details>':'')+'</div>';
+  }
+  return h;
+}
+function renderHero(){
+  const sv=cur();const h=$("#hero");
+  if(!surveys.length){h.innerHTML='<div class="hero"><h1>還沒有調查</h1><div class="range">'+(isOwner?"到「發起與管理調查」建立第一份。":"團長發起調查後，這裡就能填寫。")+'</div></div>';return;}
+  if(!sv){h.innerHTML='<div class="hero"><h1>你要填哪個團？</h1><div class="range">選擇團和調查後就能開始勾時間。</div></div>'+pickerHTML();return;}
+  const a=sv.dates[0],b=sv.dates[sv.dates.length-1];
+  h.innerHTML='<div class="hero"><div class="eyebrow">'+esc(teamOf(sv))+(surveys.length>1?' <button class="linkbtn" data-act="switch">切換團或調查</button>':'')+'</div>'+
+    '<h1>'+esc(sv.title||"出席調查")+(sv.closed?'<span class="closedtag">已截止</span>':'')+'</h1>'+
+    '<div class="range">'+md(a)+' '+WD[wd(a)]+' 到 '+md(b)+' '+WD[wd(b)]+'，共 '+sv.dates.length+' 天，'+memOf(sv).length+' 位隊員</div>'+
+    (eventsOf(sv).length?'<div class="evnote"><b>既定活動</b>　'+eventsOf(sv).map(e=>md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+' '+esc(e.label)).join('；')+'</div>':'')+
+    (sv.note?'<p class="note">'+esc(sv.note)+'</p>':'')+'</div>';
+}
+function renderTabs(){
+  const has=!!cur();
+  if(!has&&tab!=="manage")tab=isOwner&&!surveys.length?"manage":tab;
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===tab));
+  $("#tabs").hidden=!has&&!isOwner;
+  $("#fillView").hidden=tab!=="fill";$("#resultsView").hidden=tab!=="results";$("#manageView").hidden=tab!=="manage";
+  $("#legend").hidden=tab==="manage"||!has;$("#hero").hidden=tab==="manage";
+}
+
+/* ---------- 表格 ---------- */
+function gridHTML(sv){
+  const hol=new Set(sv.holidays||[]);const ev=evMap(sv);
+  let h='<table class="grid"><thead><tr><th class="corner pcol" style="--pbg:var(--surface)"></th><th class="corner2 tcol"></th>';
+  for(const d of sv.dates){const H=hol.has(d);h+='<th class="dh'+(H?' hol':'')+'" data-date="'+d+'"><span class="md">'+md(d)+'</span><span class="wd">'+WD[wd(d)]+'</span></th>';}
+  h+='</tr></thead><tbody>';
+  for(let i=0;i<48;i++){
+    const p=periodOf(i);
+    h+='<tr class="p-'+p.k+(i%2?' half':'')+(i===p.from&&i>0?' pstart':'')+'">';
+    if(i===p.from)h+='<th class="pcol" rowspan="12" data-period="'+p.k+'" title="'+p.n+'"><span>'+p.n+'</span></th>';
+    h+='<th class="tcol" data-slot="'+i+'">'+slotT(i)+'</th>';
+    for(const d of sv.dates){
+      const e=ev[d+"|"+i];
+      if(e){
+        if(i===e.a){const n=e.b-e.a;h+='<td class="cell ev" rowspan="'+n+'" data-date="'+d+'" data-slot="'+i+'"><div class="evl" style="max-height:'+(n*22-6)+'px">'+esc(e.label)+'</div></td>';}
+        continue;
+      }
+      h+='<td class="cell'+(hol.has(d)?' hol':'')+'" data-date="'+d+'" data-slot="'+i+'"></td>';
+    }
+    h+='</tr>';
+  }
+  return h+'</tbody></table>';
+}
+
+function renderFill(){
+  const v=$("#fillView");const sv=cur();
+  if(!sv){v.innerHTML='';return;}
+  if(!myMember||changingName){
+    const done=surveyResps(sv.id);
+    v.innerHTML='<div class="panel"><h2>你是「'+esc(teamOf(sv))+'」的哪位隊員？</h2><p class="muted">選一次就好，這台裝置之後開這個團的調查會記得你。</p><div class="namegrid">'+
+      memOf(sv).map(m=>'<button class="namebtn" data-member="'+esc(m.k)+'">'+esc(m.n)+(m.k===myMember?'<small>目前身分</small>':done[m.k]?'<small>這次已填過</small>':'')+'</button>').join("")+
+      '</div>'+(changingName?'<p style="margin-top:10px"><button class="linkbtn" data-act="cancelName">取消</button></p>':'')+'</div>';
+    return;
+  }
+  const ro=!!sv.closed;
+  const coarse=matchMedia("(pointer:coarse)").matches;
+  v.innerHTML=
+    (ro?'<div class="notice">這份調查已截止，只能查看。</div>':'')+
+    '<div class="toolbar">'+
+      '<span class="muted" style="margin-right:auto">以 <b style="color:var(--ink)">'+esc(nameOf(sv,myMember))+'</b> 身分填寫 <button class="linkbtn" data-act="changeName">更換</button></span>'+
+      (ro?'':(coarse?'<button class="btn sm" data-act="drag" aria-pressed="'+dragMode+'">'+(dragMode?"拖曳塗選：開":"拖曳塗選：關")+'</button>':'')+
+      '<button class="btn sm" data-act="clear">全部清除</button><button class="btn sm" data-act="none" aria-expanded="'+noneOpen+'">此時段皆無法參與</button>')+
+    '</div>'+
+    (!ro&&noneOpen?'<div class="nonebox"><div class="flabel">此時段皆無法參與</div><textarea id="noneNote" rows="2" maxlength="100" placeholder="原因（選填），例如：這週出差、家裡有事">'+esc(noneText)+'</textarea>'+
+      '<div class="hint">送出後會清除你已勾的時間。之後想改，照常勾時間再儲存就好。</div>'+
+      '<div class="acts"><button class="btn sm" data-act="noneCancel">取消</button><button class="btn sm primary" data-act="noneSend">確認送出</button></div></div>':'')+
+    (ro?'':'<p class="muted" style="font-size:13px;margin:0 0 8px">'+(coarse?"點格子勾選；打開拖曳塗選後可以一次劃一整段。":"按住拖曳可一次勾一整段。")+'點日期勾整天，點時間勾那半小時的每一天，點左側時段勾整個時段。</p>')+
+    '<div class="gridwrap fillmode'+(ro?' readonly':'')+(dragMode?' drag':'')+'" id="fillGrid">'+gridHTML(sv)+'</div>'+
+    (ro?'':'<div class="savebar"><span class="state" id="saveState"></span><button class="btn primary" data-act="save" id="saveBtn">儲存我的時間</button></div>');
+  document.querySelectorAll("#fillGrid td.cell").forEach(c=>{const s=draft[c.dataset.date];c.classList.toggle("on",!!(s&&s.has(+c.dataset.slot)));});
+  updateSave();
+}
+function updateSave(){
+  const st=$("#saveState");if(!st)return;
+  const has=surveyResps(curSid)[myMember];
+  let n=0;for(const d in draft)n+=draft[d].size;
+  if(dirty){st.className="state dirty";st.textContent=n?"有未儲存的變更（已勾 "+(n/2)+" 小時）":"有未儲存的變更（沒勾任何時間，儲存後會記為此時段皆無法參與）";}
+  else{st.className="state";st.textContent=has?(n?"已儲存，共 "+(n/2)+" 小時":"已回覆：此時段皆無法參與"+(has.note?"（"+has.note+"）":"")):"還沒送出";}
+  $("#saveBtn").disabled=saving;
+}
+function setCell(c,val){
+  if(c.classList.contains("ev"))return;
+  const d=c.dataset.date,i=+c.dataset.slot;const s=draft[d]||(draft[d]=new Set());
+  if(val===s.has(i))return;
+  val?s.add(i):s.delete(i);c.classList.toggle("on",val);dirty=true;updateSave();
+}
+function toggleCells(cells){cells=cells.filter(c=>!c.classList.contains("ev"));if(!cells.length)return;const all=cells.every(c=>c.classList.contains("on"));cells.forEach(c=>setCell(c,!all));}
+function editable(){const sv=cur();return sv&&!sv.closed&&myMember&&!changingName;}
+
+async function postStatus(){
+  if(!isOwner||!NOTIFY_URL||posting||!curSid||!authUser)return;
+  posting=true;renderResults();
+  try{
+    const idToken=await authUser.getIdToken();
+    const r=await fetch(NOTIFY_URL.replace(/\/+$/,"")+"/status",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sid:curSid,idToken,tag:postTag})});
+    const j=await r.json().catch(()=>({}));
+    if(j.ok)toast("已發布到 Discord"+(j.tagged?"，tag 了 "+j.tagged+" 人":""));
+    else toast("發布失敗："+(j.error||("HTTP "+r.status)));
+  }catch(err){console.error(err);toast("發布失敗：連不到提醒機器人");}
+  posting=false;renderResults();
+}
+function notifyWorker(sid){
+  if(!NOTIFY_URL||!sid)return;
+  fetch(NOTIFY_URL.replace(/\/+$/,"")+"/notify",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sid}),keepalive:true}).catch(()=>{});
+}
+async function save(note){
+  if(!editable()||saving)return;
+  saving=true;updateSave();
+  try{
+    const data={slots:serialize(),updatedAt:Date.now()};
+    if(note)data.note=String(note).slice(0,100);
+    await setDoc(doc(db,"surveys",curSid,"responses",myMember),data);
+    dirty=false;toast("已儲存");notifyWorker(curSid);
+  }catch(err){console.error(err);toast(err&&err.code==="permission-denied"?"無法儲存：調查可能已截止":"儲存失敗，請稍後再試");}
+  saving=false;updateSave();
+}
+
+/* ---------- 結果 ---------- */
+function tally(sv){
+  const who={};const r=surveyResps(sv.id);const keys=new Set(memOf(sv).map(m=>m.k));
+  const responders=Object.keys(r).filter(k=>keys.has(k));const ev=evMap(sv);
+  for(const m of responders){const sl=r[m].slots||{};for(const d of sv.dates)(sl[d]||[]).forEach(i=>{const k=d+"|"+i;if(ev[k])return;(who[k]||(who[k]=new Set())).add(m);});}
+  return{who,responders};
+}
+function renderResults(){
+  const v=$("#resultsView");const sv=cur();
+  if(!sv){v.innerHTML='';return;}
+  const MEM=memOf(sv),TOTAL=MEM.length;
+  const{who,responders}=tally(sv);const hol=new Set(sv.holidays||[]);
+  lastWho=who;lastResponders=responders;
+  let max=0;for(const k in who)max=Math.max(max,who[k].size);
+  const ranges=[];
+  if(max>0)for(const d of sv.dates){
+    let st=-1,key="";
+    for(let i=0;i<=48;i++){
+      const s=i<48&&who[d+"|"+i];const ok=s&&s.size===max;const k=ok?[...s].sort().join(","):"";
+      if(st>=0&&k!==key){ranges.push({d,a:st,b:i,people:key.split(",")});st=-1;}
+      if(ok&&st<0){st=i;key=k;}
+    }
+  }
+  ranges.sort((x,y)=>(y.b-y.a)-(x.b-x.a));
+  const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
+
+  let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2><div class="people">'+
+    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&isOwner?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>'+
+    (isOwner&&NOTIFY_URL?'<div class="postdc"><label><input type="checkbox" id="postTag"'+(postTag?' checked':'')+'> 順便 tag 還沒填的人</label><button class="btn sm primary" data-act="postdc"'+(posting?' disabled':'')+'>'+(posting?'發送中…':'發布目前狀況到 DC')+'</button></div>':'')+
+    '</div>';
+  const outs=MEM.filter(m=>{const r=surveyResps(sv.id)[m.k];return r&&responders.includes(m.k)&&!Object.values(r.slots||{}).some(x=>x&&x.length);});
+  if(outs.length)side+='<div class="panel"><h2>此時段皆無法參與（'+outs.length+'）</h2><ul class="reasons">'+outs.map(m=>{const n=(surveyResps(sv.id)[m.k]||{}).note;return'<li><b>'+esc(m.n)+'</b>'+(n?'：'+esc(n):'<span class="muted">（沒有填原因）</span>')+'</li>';}).join("")+'</ul></div>';
+  side+='<div class="panel"><h2>'+(max===TOTAL?'全員到齊的時段':max>0?'最多人有空（'+max+' 人）':'最佳時段')+'</h2>'+
+    (max===0?'<p class="muted">還沒有人勾選時間。</p>':'<ul class="ranges">'+top.map(r=>{
+      const miss=MEM.filter(m=>!r.people.includes(m.k)).map(m=>m.n);
+      return'<li><div class="when'+(hol.has(r.d)?' hol':'')+'">'+md(r.d)+' '+WD[wd(r.d)]+'　'+slotT(r.a)+'–'+(r.b===48?'24:00':slotT(r.b))+'</div><div class="muted" style="font-size:13px">'+((r.b-r.a)/2)+' 小時</div>'+(miss.length?'<div class="miss">缺：'+esc(miss.join("、"))+'</div>':'')+'</li>';
+    }).join("")+'</ul>'+(ranges.length>8?'<p class="muted" style="font-size:13px;margin:8px 0 0">只列出最長的 8 段。</p>':''))+'</div>';
+  let det='<div class="panel detail"><h2>這個時段誰有空</h2>';
+  if(picked&&sv.dates.includes(picked.d)){
+    const s=who[picked.d+"|"+picked.i]||new Set();
+    det+='<div class="slot">'+md(picked.d)+' '+WD[wd(picked.d)]+'　'+slotT(picked.i)+'–'+(picked.i===47?'24:00':slotT(picked.i+1))+'</div><div class="people">'+
+      MEM.map(m=>{const yes=s.has(m.k);return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(!yes&&!responders.includes(m.k)?'（未回覆）':'')+'</span>';}).join("")+'</div>';
+  }else det+='<p class="muted">點左邊表格的任一格查看。</p>';
+  det+='</div>';
+
+  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">滑鼠移到格子上就能看到誰有空。格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
+  document.querySelectorAll("#heatGrid td.cell").forEach(c=>{
+    if(c.classList.contains("ev"))return;
+    const s=who[c.dataset.date+"|"+c.dataset.slot];const n=s?s.size:0;
+    if(n){c.textContent=n;const pct=Math.round(n/TOTAL*88);c.style.setProperty("--pct",pct+"%");if(pct>50)c.classList.add("strong");if(n===TOTAL)c.classList.add("full");}
+    if(picked&&picked.d===c.dataset.date&&picked.i===+c.dataset.slot)c.classList.add("picked");
+  });
+}
+async function removeResp(k,btn){
+  if(!isOwner||!armedTwice("r"+k,btn,"確定？"))return;
+  try{await deleteDoc(doc(db,"surveys",curSid,"responses",k));toast("已清除");}catch(e){toast("清除失敗");}
+}
+
+/* ---------- 管理（團長） ---------- */
+function nextMonday(){const t=new Date();const d=new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()));d.setUTCDate(d.getUTCDate()+(((8-d.getUTCDay())%7)||7));return d;}
+function rangeDates(){
+  const a=$("#fStart").value,b=$("#fEnd").value;if(!a||!b)return[];
+  const out=[];let d=parseD(a);const e=parseD(b);
+  while(d<=e&&out.length<22){out.push(fmtD(d));d=new Date(d.getTime()+864e5);}
+  return out;
+}
+function renderHolPick(){
+  const ds=rangeDates();fHol=new Set([...fHol].filter(d=>ds.includes(d)));
+  $("#fHol").innerHTML=ds.length?ds.map(d=>'<button type="button" data-d="'+d+'" aria-pressed="'+fHol.has(d)+'">'+md(d)+'<br>'+WD[wd(d)]+'</button>').join(""):'<span class="muted">先選日期</span>';
+}
+function resetHol(){fHol=new Set(rangeDates().filter(d=>{const w=wd(d);return w===0||w===6;}));renderHolPick();renderEvDates();}
+function renderEvDates(){
+  const ds=rangeDates();const sel=$("#eDate");const keep=sel.value;
+  sel.innerHTML=ds.map(d=>'<option value="'+d+'">'+md(d)+' '+WD[wd(d)]+'</option>').join("");
+  if(ds.includes(keep))sel.value=keep;
+  const before=fEvents.length;fEvents=fEvents.filter(e=>ds.includes(e.d));
+  if(fEvents.length!==before)toast("超出日期範圍的既定活動已移除");
+  renderEvList();
+}
+function renderEvList(){
+  fEvents.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
+  $("#eList").innerHTML=fEvents.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-erm="'+i+'" aria-label="移除">×</button></span>').join("");
+}
+function setupEvEditor(){
+  let opts="";for(let i=0;i<48;i++)opts+='<option value="'+i+'">'+slotT(i)+'</option>';
+  $("#eFrom").innerHTML=opts;
+  let opts2="";for(let i=1;i<=48;i++)opts2+='<option value="'+i+'">'+(i===48?'24:00':slotT(i))+'</option>';
+  $("#eTo").innerHTML=opts2;
+  $("#eFrom").value="40";$("#eTo").value="44";
+  $("#eFrom").addEventListener("change",()=>{const a=+$("#eFrom").value;if(+$("#eTo").value<=a)$("#eTo").value=String(Math.min(48,a+2));});
+  $("#eAdd").addEventListener("click",()=>{
+    const d=$("#eDate").value,a=+$("#eFrom").value,b=+$("#eTo").value,label=$("#eLabel").value.trim();
+    if(!d){toast("先選日期範圍");return;}
+    if(!label){toast("請輸入活動名稱");$("#eLabel").focus();return;}
+    if(b<=a){toast("結束時間要晚於開始時間");return;}
+    if(fEvents.some(e=>e.d===d&&a<e.b&&b>e.a)){toast("和已加入的活動時間重疊了");return;}
+    fEvents.push({d,a,b,label});$("#eLabel").value="";renderEvList();
+  });
+  $("#eLabel").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("#eAdd").click();}});
+  $("#eList").addEventListener("click",e=>{const b=e.target.closest("[data-erm]");if(!b)return;fEvents.splice(+b.dataset.erm,1);renderEvList();});
+}
+const DID_RE=/^\d{15,21}$/;
+// 常用團員通訊錄：加入名單時自動帶入 Discord ID（alias 是同一人的其他寫法）
+// DIRECTORY 改由 config.js 提供
+const dirFind=name=>{const k=String(name||"").trim().toLowerCase();return DIRECTORY.find(x=>x.n.toLowerCase()===k||(x.alias||[]).some(a=>a.toLowerCase()===k))||null;};
+const dirLookup=name=>{const p=dirFind(name);return p?p.did:"";};
+function renderMemEdit(){
+  $("#fCount").textContent=fMembers.length;
+  const rest=DIRECTORY.filter(p=>!fMembers.some(m=>dirFind(m.n)===p));
+  $("#fDir").innerHTML=rest.length?'<span class="muted">常用團員：</span>'+rest.map(p=>'<button type="button" class="chip" data-dir="'+esc(p.n)+'">＋ '+esc(p.n)+'</button>').join(""):'';
+  $("#fMembers").innerHTML=fMembers.length?fMembers.map((m,i)=>'<div class="mrow"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-did="'+i+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(m.did||"")+'"'+(m.did&&!DID_RE.test(m.did)?' class="bad"':'')+'><button type="button" data-rm="'+i+'" aria-label="移除 '+esc(m.n)+'">×</button></div>').join(""):'<span class="muted">還沒有隊員</span>';
+}
+function addMember(){
+  const inp=$("#fNewMember");
+  const names=inp.value.split(/[,，、\n]/).map(s=>s.trim()).filter(Boolean);
+  let skipped=0;
+  for(const n of names){if(fMembers.some(m=>m.n===n)||fMembers.length>=30){skipped++;continue;}fMembers.push({n,did:dirLookup(n)});}
+  inp.value="";renderMemEdit();
+  if(skipped)toast("有重複的名字或超過 30 人，已略過");
+}
+function renderTeamChips(){
+  const el=$("#fTeams");
+  el.innerHTML=teams.length?teams.map(t=>'<button type="button" class="chip" data-team="'+esc(t.id)+'" aria-pressed="'+(t.name===$("#fTeam").value.trim())+'">'+esc(t.name)+'（'+(t.members||[]).length+'）</button>').join(""):'<span class="muted">還沒有常用團隊，發起調查時勾選「存為常用團隊」就會出現在這裡。</span>';
+  $("#tList").innerHTML=teams.length?teams.map(t=>'<li><div><div class="t">'+esc(t.name)+'</div><div class="muted" style="font-size:13px">'+esc((t.members||[]).join("、"))+'</div></div><div class="toolbar" style="margin:0"><button class="btn sm danger" data-tdel="'+esc(t.id)+'">刪除</button></div></li>').join(""):'<li class="muted">還沒有常用團隊。</li>';
+}
+function setupManage(){
+  const m=nextMonday();$("#fStart").value=fmtD(m);$("#fEnd").value=fmtD(new Date(m.getTime()+6*864e5));
+  setupEvEditor();resetHol();
+  fMembers=LEGACY.map(x=>({n:x.n,did:dirLookup(x.n)}));renderMemEdit();
+  $("#fDir").addEventListener("click",e=>{const b=e.target.closest("[data-dir]");if(!b)return;if(fMembers.length>=30){toast("最多 30 人");return;}const p=dirFind(b.dataset.dir);fMembers.push({n:p.n,did:p.did});renderMemEdit();});
+  $("#fMembers").addEventListener("input",e=>{const inp=e.target.closest("[data-did]");if(!inp)return;const v=inp.value.trim();fMembers[+inp.dataset.did].did=v;inp.classList.toggle("bad",!!v&&!DID_RE.test(v));});
+  $("#fStart").addEventListener("change",resetHol);$("#fEnd").addEventListener("change",resetHol);
+  $("#fHol").addEventListener("click",e=>{const b=e.target.closest("[data-d]");if(!b)return;const d=b.dataset.d;fHol.has(d)?fHol.delete(d):fHol.add(d);b.setAttribute("aria-pressed",fHol.has(d));});
+  $("#fAddMember").addEventListener("click",addMember);
+  $("#fNewMember").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();addMember();}});
+  $("#fMembers").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;fMembers.splice(+b.dataset.rm,1);renderMemEdit();});
+  $("#fTeam").addEventListener("input",renderTeamChips);
+  $("#fTeams").addEventListener("click",e=>{
+    const b=e.target.closest("[data-team]");if(!b)return;const t=teams.find(x=>x.id===b.dataset.team);if(!t)return;
+    $("#fTeam").value=t.name;const dids=t.dids||{};fMembers=(t.members||[]).map(n=>({n,did:dids[n]||dirLookup(n)}));renderMemEdit();renderTeamChips();
+  });
+  $("#tList").addEventListener("click",async e=>{
+    const b=e.target.closest("[data-tdel]");if(!b)return;
+    if(!armedTwice("t"+b.dataset.tdel,b,"再按一次刪除"))return;
+    try{await deleteDoc(doc(db,"teams",b.dataset.tdel));toast("已刪除常用團隊（已發起的調查不受影響）");}catch(err){toast("刪除失敗");}
+  });
+  $("#fCreate").addEventListener("click",async()=>{
+    const ds=rangeDates();const msg=$("#fMsg");const team=$("#fTeam").value.trim();
+    if(!team){msg.textContent="請輸入團名。";return;}
+    if(!fMembers.length){msg.textContent="至少要有一位隊員。";return;}
+    const badDid=fMembers.find(m=>m.did&&!DID_RE.test(m.did));
+    if(badDid){msg.textContent="「"+badDid.n+"」的 Discord ID 格式不對，應該是 15～21 位數字。";return;}
+    if(!ds.length){msg.textContent="結束日期要在開始日期之後。";return;}
+    if(ds.length>21){msg.textContent="一次最多 21 天。";return;}
+    const btn=$("#fCreate");btn.disabled=true;msg.textContent="";
+    const members=fMembers.map((m,i)=>m.did?{k:"m"+(i+1),n:m.n,did:m.did}:{k:"m"+(i+1),n:m.n});
+    const names=fMembers.map(m=>m.n),dids={};fMembers.forEach(m=>{if(m.did)dids[m.n]=m.did;});
+    try{
+      if($("#fSaveTeam").checked){
+        const ex=teams.find(t=>t.name===team);
+        if(ex)await updateDoc(doc(db,"teams",ex.id),{members:names,dids,updatedAt:Date.now()});
+        else await addDoc(collection(db,"teams"),{name:team,members:names,dids,updatedAt:Date.now()});
+      }
+      const ref=await addDoc(collection(db,"surveys"),{
+        team,title:$("#fTitle").value.trim()||"出席調查",dates:ds,holidays:[...fHol],note:$("#fNote").value.trim(),
+        members,memberKeys:members.map(m=>m.k),events:fEvents.map(e=>({d:e.d,a:e.a,b:e.b,label:e.label})),closed:false,createdAt:Date.now()
+      });
+      $("#fNote").value="";fEvents=[];renderEvList();tab="fill";selectSurvey(ref.id);toast("已發起，用「複製連結」把網址傳給團員吧");
+    }catch(e){console.error(e);msg.textContent=e&&e.code==="permission-denied"?"沒有權限：請確認登入的是團長帳號，且 Firestore 規則已更新為新版。":"發起失敗，請再試一次。";}
+    btn.disabled=false;
+  });
+  const evField=e=>{
+    const el=e.target.closest("[data-evf]");if(!el||!evBuf)return;
+    const k=el.dataset.evf;const f=evBuf.form;
+    if(k==="label")f.label=el.value;
+    else if(k==="d")f.d=el.value;
+    else{f[k]=+el.value;if(k==="a"&&f.b<=f.a){f.b=Math.min(48,f.a+2);const to=el.parentNode.querySelector('[data-evf="b"]');if(to)to.value=String(f.b);}}
+  };
+  $("#sList").addEventListener("input",evField);
+  $("#sList").addEventListener("change",evField);
+  $("#sList").addEventListener("keydown",e=>{
+    const el=e.target.closest('[data-evf="label"]');if(!el||e.key!=="Enter"||e.isComposing)return;
+    e.preventDefault();const btn=el.parentNode.querySelector('[data-op="evadd"]');if(btn)btn.click();
+  });
+  $("#sList").addEventListener("input",e=>{
+    const inp=e.target.closest("[data-sdid]");if(!inp||!didBuf)return;
+    const v=inp.value.trim();didBuf.vals[+inp.dataset.sdid]=v;inp.classList.toggle("bad",!!v&&!DID_RE.test(v));
+  });
+  $("#sList").addEventListener("click",async e=>{
+    const b=e.target.closest("[data-op]");if(!b)return;const id=b.dataset.id;const sv=surveys.find(s=>s.id===id);if(!sv)return;
+    try{
+      if(b.dataset.op==="events"){
+        if(evBuf&&evBuf.sid===id){evBuf=null;renderSList(true);return;}
+        didBuf=null;evBuf={sid:id,list:eventsOf(sv).map(e=>({...e})),form:{d:sv.dates[0],a:40,b:44,label:""}};renderSList(true);return;
+      }
+      if(b.dataset.op==="evcancel"){evBuf=null;renderSList(true);return;}
+      if(b.dataset.op==="evadd"){
+        const f=evBuf.form;const label=(f.label||"").trim();
+        if(!label){toast("請輸入活動名稱");return;}
+        if(f.b<=f.a){toast("結束時間要晚於開始時間");return;}
+        if(evBuf.list.some(e=>e.d===f.d&&f.a<e.b&&f.b>e.a)){toast("和已加入的活動時間重疊了");return;}
+        evBuf.list.push({d:f.d,a:f.a,b:f.b,label});f.label="";renderSList(true);return;
+      }
+      if(b.dataset.op==="evrm"){evBuf.list.splice(+b.dataset.i,1);renderSList(true);return;}
+      if(b.dataset.op==="evsave"){
+        b.disabled=true;
+        await updateDoc(doc(db,"surveys",id),{events:evBuf.list.map(e=>({d:e.d,a:e.a,b:e.b,label:e.label}))});
+        const n=evBuf.list.length;evBuf=null;renderSList(true);toast(n?"已更新既定活動（"+n+" 個）":"已清除所有既定活動");return;
+      }
+      if(b.dataset.op==="dids"){
+        evBuf=null;
+        if(didBuf&&didBuf.sid===id){didBuf=null;renderSList(true);return;}
+        didBuf={sid:id,vals:memOf(sv).map(m=>m.did||dirLookup(m.n))};renderSList(true);
+        const first=document.querySelector('#sList [data-sdid]');if(first)first.focus();return;
+      }
+      if(b.dataset.op==="didcancel"){didBuf=null;renderSList(true);return;}
+      if(b.dataset.op==="didsave"){
+        const mem=memOf(sv);const vals=didBuf.vals.map(v=>(v||"").trim());
+        const bad=mem.find((m,i)=>vals[i]&&!DID_RE.test(vals[i]));
+        if(bad){toast("「"+bad.n+"」的 Discord ID 格式不對，應該是 15～21 位數字");return;}
+        const members=mem.map((m,i)=>vals[i]?{k:m.k,n:m.n,did:vals[i]}:{k:m.k,n:m.n});
+        b.disabled=true;
+        await updateDoc(doc(db,"surveys",id),{members,memberKeys:members.map(m=>m.k)});
+        const sync=document.getElementById("didSync");const team=teams.find(t=>t.name===teamOf(sv));
+        if(team&&sync&&sync.checked){
+          const dids=Object.assign({},team.dids||{});mem.forEach((m,i)=>{if(vals[i])dids[m.n]=vals[i];else delete dids[m.n];});
+          await updateDoc(doc(db,"teams",team.id),{dids,updatedAt:Date.now()});
+        }
+        didBuf=null;renderSList(true);toast("已儲存 Discord ID，"+vals.filter(Boolean).length+" 人之後提醒時會被 tag");return;
+      }
+      if(b.dataset.op==="toggle"){await updateDoc(doc(db,"surveys",id),{closed:!sv.closed});toast(sv.closed?"已重新開放":"已截止填寫");}
+      else if(b.dataset.op==="open"){tab="results";selectSurvey(id);}
+      else if(b.dataset.op==="link"){
+        const url=location.origin+location.pathname+"?s="+encodeURIComponent(id);
+        try{await navigator.clipboard.writeText(url);toast("已複製「"+teamOf(sv)+"」這份調查的連結");}catch(_){prompt("複製這個連結：",url);}
+      }
+      else if(b.dataset.op==="del"){
+        if(!armedTwice("s"+id,b,"再按一次刪除"))return;
+        const rs=await getDocs(collection(db,"surveys",id,"responses"));
+        for(const d of rs.docs)await deleteDoc(d.ref);
+        await deleteDoc(doc(db,"surveys",id));
+        if(curSid===id)curSid=null;toast("已刪除");
+      }
+    }catch(err){console.error(err);toast("操作失敗");}
+  });
+}
+function didEditorHTML(s){
+  const mem=memOf(s);const team=teams.find(t=>t.name===teamOf(s));
+  return'<div class="didedit"><div class="flabel">補填「'+esc(teamOf(s))+'」的 Discord ID</div><div class="memedit">'+
+    mem.map((m,i)=>{const v=didBuf.vals[i]||"";return'<div class="mrow" style="grid-template-columns:minmax(80px,140px) 1fr"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-sdid="'+i+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(v)+'"'+(v&&!DID_RE.test(v)?' class="bad"':'')+'></div>';}).join("")+
+    '</div><div class="acts">'+(team?'<label><input type="checkbox" id="didSync" checked> 同時更新常用團隊「'+esc(team.name)+'」</label>':'<span style="margin-right:auto"></span>')+
+    '<button class="btn sm" data-op="didcancel" data-id="'+esc(s.id)+'">取消</button><button class="btn sm primary" data-op="didsave" data-id="'+esc(s.id)+'">儲存 Discord ID</button></div></div>';
+}
+function evEditorHTML(s){
+  const f=evBuf.form;
+  let fromOpts="",toOpts="";
+  for(let i=0;i<48;i++)fromOpts+='<option value="'+i+'"'+(i===f.a?' selected':'')+'>'+slotT(i)+'</option>';
+  for(let i=1;i<=48;i++)toOpts+='<option value="'+i+'"'+(i===f.b?' selected':'')+'>'+(i===48?'24:00':slotT(i))+'</option>';
+  const list=[...evBuf.list].sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);evBuf.list=list;
+  return'<div class="didedit"><div class="flabel">修改「'+esc(teamOf(s))+'｜'+esc(s.title||"出席調查")+'」的既定活動</div>'+
+    '<div class="evadd"><select data-evf="d" aria-label="活動日期">'+s.dates.map(d=>'<option value="'+d+'"'+(d===f.d?' selected':'')+'>'+md(d)+' '+WD[wd(d)]+'</option>').join("")+'</select>'+
+    '<select data-evf="a" aria-label="開始時間">'+fromOpts+'</select><span class="muted">到</span><select data-evf="b" aria-label="結束時間">'+toOpts+'</select>'+
+    '<input data-evf="label" maxlength="20" placeholder="活動名稱" value="'+esc(f.label)+'"><button class="btn" data-op="evadd" data-id="'+esc(s.id)+'">加入</button></div>'+
+    '<div class="evlist">'+(list.length?list.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-op="evrm" data-i="'+i+'" data-id="'+esc(s.id)+'" aria-label="移除">×</button></span>').join(""):'<span class="muted">目前沒有既定活動</span>')+'</div>'+
+    '<div class="hint">新增活動後，團員在那段時間已勾的時間會自動不計入；移除活動後，那段時間會重新開放勾選。</div>'+
+    '<div class="acts"><span style="margin-right:auto"></span><button class="btn sm" data-op="evcancel" data-id="'+esc(s.id)+'">取消</button><button class="btn sm primary" data-op="evsave" data-id="'+esc(s.id)+'">儲存既定活動</button></div></div>';
+}
+function renderSList(force){
+  if(!isOwner)return;
+  if((didBuf||evBuf)&&!force)return; // 編輯中不重畫，避免打字被打斷
+  const el=$("#sList");
+  if(!surveys.length){el.innerHTML='<li class="muted">還沒有調查。</li>';return;}
+  el.innerHTML=surveys.map(s=>{
+    const n=tally(s).responders.length;
+    const ed=didBuf&&didBuf.sid===s.id;const ee=evBuf&&evBuf.sid===s.id;
+    return'<li'+(ed||ee?' class="editing"':'')+'><div><div class="t"><span class="teamtag">'+esc(teamOf(s))+'</span>'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</div><div class="muted" style="font-size:13px">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'，'+n+' / '+memOf(s).length+' 人回覆</div></div>'+
+      '<div class="toolbar" style="margin:0"><button class="btn sm" data-op="open" data-id="'+esc(s.id)+'">看結果</button><button class="btn sm" data-op="link" data-id="'+esc(s.id)+'">複製連結</button><button class="btn sm" data-op="events" data-id="'+esc(s.id)+'">既定活動'+(eventsOf(s).length?'（'+eventsOf(s).length+'）':'')+'</button><button class="btn sm" data-op="dids" data-id="'+esc(s.id)+'">Discord ID</button><button class="btn sm" data-op="toggle" data-id="'+esc(s.id)+'">'+(s.closed?"重新開放":"截止填寫")+'</button><button class="btn sm danger" data-op="del" data-id="'+esc(s.id)+'">刪除</button></div>'+(ed?didEditorHTML(s):'')+(ee?evEditorHTML(s):'')+'</li>';
+  }).join("");
+}
+
+/* ---------- 事件 ---------- */
+function setupEvents(){
+  $("#tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;tab=t.dataset.tab;renderTabs();});
+  $("#hero").addEventListener("click",e=>{
+    const c=e.target.closest("[data-sid]");if(c){if(!confirmLeave())return;selectSurvey(c.dataset.sid);return;}
+    const sw=e.target.closest('[data-act="switch"]');if(sw){if(!confirmLeave())return;if(tab==="manage")tab="fill";selectSurvey(null);}
+  });
+  $("#foot").addEventListener("click",async e=>{
+    const a=e.target.closest("[data-act]");if(!a)return;
+    try{
+      if(a.dataset.act==="dclogin"){location.href=WORKER_URL.replace(/\/+$/,"")+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
+      if(a.dataset.act==="login")await signInWithPopup(auth,new GoogleAuthProvider());
+      else await signOut(auth);
+    }catch(err){console.error(err);toast(err&&err.code==="auth/unauthorized-domain"?"這個網址還沒加進 Firebase 的授權網域":"登入失敗");}
+  });
+  const fv=$("#fillView");let paint=null;
+  fv.addEventListener("pointerdown",e=>{
+    const c=e.target.closest("td.cell");if(!c||!editable())return;
+    if(e.pointerType==="mouse"&&e.button!==0)return;
+    if(e.pointerType!=="mouse"&&!dragMode){paint={tap:true,cell:c,x:e.clientX,y:e.clientY};return;}
+    e.preventDefault();paint={val:!c.classList.contains("on")};setCell(c,paint.val);
+  });
+  window.addEventListener("pointermove",e=>{
+    if(!paint||paint.tap)return;
+    const el=document.elementFromPoint(e.clientX,e.clientY);const c=el&&el.closest&&el.closest("#fillGrid td.cell");
+    if(c)setCell(c,paint.val);
+  });
+  window.addEventListener("pointerup",e=>{
+    if(paint&&paint.tap&&Math.hypot(e.clientX-paint.x,e.clientY-paint.y)<10)setCell(paint.cell,!paint.cell.classList.contains("on"));
+    paint=null;
+  });
+  window.addEventListener("pointercancel",()=>{paint=null;});
+  fv.addEventListener("input",e=>{if(e.target.id==="noneNote")noneText=e.target.value;});
+  fv.addEventListener("click",e=>{
+    const nb=e.target.closest("[data-member]");
+    if(nb){
+      const sv=cur();if(!sv)return;
+      if(nb.dataset.member!==myMember&&!confirmLeave())return;
+      rememberMe(sv,nb.dataset.member);changingName=false;dirty=false;syncDraft();renderAll();toast("你好，"+nameOf(sv,nb.dataset.member));return;
+    }
+    const act=e.target.closest("[data-act]");
+    if(act){
+      const a=act.dataset.act;
+      if(a==="save")save();
+      else if(a==="changeName"){changingName=true;renderFill();}
+      else if(a==="cancelName"){changingName=false;renderFill();}
+      else if(a==="drag"){dragMode=!dragMode;renderFill();}
+      else if(a==="clear")toggleCells([...document.querySelectorAll("#fillGrid td.cell.on")]);
+      else if(a==="none"){
+        if(!editable())return;
+        noneOpen=!noneOpen;
+        if(noneOpen){const r=surveyResps(curSid)[myMember];noneText=(r&&r.note)||"";}
+        renderFill();
+        const t=document.getElementById("noneNote");if(t)t.focus();
+      }
+      else if(a==="noneCancel"){noneOpen=false;renderFill();}
+      else if(a==="noneSend"){
+        if(!editable())return;
+        const note=noneText.trim();noneOpen=false;
+        document.querySelectorAll("#fillGrid td.cell.on").forEach(c=>c.classList.remove("on"));
+        draft={};dirty=true;renderFill();save(note);
+      }
+      return;
+    }
+    if(!editable())return;
+    const dh=e.target.closest("th.dh");if(dh){toggleCells([...document.querySelectorAll('#fillGrid td.cell[data-date="'+dh.dataset.date+'"]')]);return;}
+    const tc=e.target.closest("tbody th.tcol");if(tc){toggleCells([...document.querySelectorAll('#fillGrid td.cell[data-slot="'+tc.dataset.slot+'"]')]);return;}
+    const pc=e.target.closest("tbody th.pcol");if(pc){const p=PERIODS.find(x=>x.k===pc.dataset.period);toggleCells([...document.querySelectorAll("#fillGrid td.cell")].filter(c=>+c.dataset.slot>=p.from&&+c.dataset.slot<p.to));}
+  });
+  $("#resultsView").addEventListener("click",e=>{
+    const rm=e.target.closest("[data-remove]");if(rm){removeResp(rm.dataset.remove,rm);return;}
+    if(e.target.id==="postTag"){postTag=e.target.checked;return;}
+    if(e.target.closest('[data-act="postdc"]')){postStatus();return;}
+    const c=e.target.closest("td.cell");if(!c||c.classList.contains("ev"))return;
+    picked={d:c.dataset.date,i:+c.dataset.slot};renderResults();
+  });
+  setupTip();
+  window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+}
+
+/* ---------- 懸浮提示 ---------- */
+function rangeLabel(d,i){return md(d)+' '+WD[wd(d)]+'　'+slotT(i)+'–'+(i===47?'24:00':slotT(i+1));}
+function tipHTML(c){
+  const sv=cur();if(!sv)return"";
+  const d=c.dataset.date,i=+c.dataset.slot;
+  const e=evMap(sv)[d+"|"+i];
+  if(e)return'<div class="tt">'+md(d)+' '+WD[wd(d)]+'　'+evTime(e)+'</div><div class="tc">既定活動，這段時間不開放勾選</div><div class="tl"><b>'+esc(e.label)+'</b></div>';
+  const head='<div class="tt">'+rangeLabel(d,i)+'</div><div class="tc">'+periodOf(i).n+((sv.holidays||[]).includes(d)?'，假日':'')+'</div>';
+  if(!c.closest("#heatGrid"))return head;
+  const s=lastWho[d+"|"+i]||new Set();const MEM=memOf(sv);
+  const yes=MEM.filter(m=>s.has(m.k)).map(m=>esc(m.n));
+  const no=MEM.filter(m=>!s.has(m.k)&&lastResponders.includes(m.k)).map(m=>esc(m.n));
+  const na=MEM.filter(m=>!lastResponders.includes(m.k)).map(m=>esc(m.n));
+  return head+'<div class="tl"><b>有空 '+yes.length+'</b>'+(yes.join("、")||'<span class="tn">沒有人</span>')+'</div>'+
+    (no.length?'<div class="tl"><b>沒空</b><span class="tn">'+no.join("、")+'</span></div>':'')+
+    (na.length?'<div class="tl"><b>未回覆</b><span class="tn">'+na.join("、")+'</span></div>':'');
+}
+function setupTip(){
+  const tip=$("#tip");let curCell=null;
+  const hide=()=>{tip.hidden=true;curCell=null;};
+  const place=e=>{
+    const pad=14,w=tip.offsetWidth,h=tip.offsetHeight;
+    let x=e.clientX+pad,y=e.clientY+pad;
+    if(x+w>innerWidth-8)x=e.clientX-w-pad;
+    if(y+h>innerHeight-8)y=e.clientY-h-pad;
+    tip.style.left=Math.max(8,x)+"px";tip.style.top=Math.max(8,y)+"px";
+  };
+  document.addEventListener("pointermove",e=>{
+    if(e.pointerType!=="mouse"){if(!tip.hidden)hide();return;}
+    const el=e.target.closest&&e.target.closest("#heatGrid td.cell, #fillGrid td.cell");
+    if(!el){if(!tip.hidden)hide();return;}
+    if(el!==curCell){curCell=el;tip.innerHTML=tipHTML(el);tip.hidden=false;}
+    place(e);
+  });
+  document.addEventListener("scroll",hide,true);
+  document.addEventListener("pointerleave",hide);
+}
+
+/* ---------- 啟動（放最後，確保所有變數都已宣告） ---------- */
+if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
+  const g=$("#gate");g.hidden=false;
+  g.innerHTML='<h2>還沒設定 Firebase</h2><p>請打開 index.html，把最上面的 FIREBASE_CONFIG 和 OWNER_EMAIL 改成你的設定。步驟請看 README.md。</p>';
+}else{
+  const app=initializeApp(FIREBASE_CONFIG);
+  db=getFirestore(app);auth=getAuth(app);
+  {const m=location.hash.match(/dctoken=([^&]+)/),er=location.hash.match(/dcerror=([^&]+)/);
+   if(m||er)history.replaceState(null,"",location.pathname+location.search);
+   if(m)signInWithCustomToken(auth,decodeURIComponent(m[1])).catch(e=>{console.error(e);toast("Discord 登入失敗");});
+   if(er)toast("Discord 登入失敗："+decodeURIComponent(er[1]));}
+  const want=new URLSearchParams(location.search).get("s");
+  $("#app").hidden=false;
+  setupManage();setupEvents();renderTabs();renderFoot();
+  onAuthStateChanged(auth,async u=>{
+    authUser=u;authClaims={};
+    if(u){try{authClaims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
+    isOwner=!!(u&&((u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase())||authClaims.dc===OWNER_DISCORD_ID));
+    $("#manageTab").hidden=!isOwner;if(!isOwner&&tab==="manage")tab="fill";
+    if(teamsUnsub){teamsUnsub();teamsUnsub=null;teams=[];}
+    if(isOwner)teamsUnsub=onSnapshot(collection(db,"teams"),s=>{
+      teams=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));renderTeamChips();
+    },e=>showErr(e));
+    renderTeamChips();renderFoot();renderAll();
+  });
+  onSnapshot(collection(db,"surveys"),s=>{
+    surveys=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(curSid&&!cur())curSid=null;
+    if(firstLoad){
+      firstLoad=false;
+      const open=surveys.filter(x=>!x.closed);const last=store.get("ff14-last");
+      if(want&&surveys.some(x=>x.id===want))curSid=want;
+      else if(open.length===1)curSid=open[0].id;
+      else if(last&&open.some(x=>x.id===last))curSid=last;
+      else if(!open.length&&surveys.length===1)curSid=surveys[0].id;
+    }
+    syncDraft();renderAll();
+  },e=>showErr(e));
+  onSnapshot(collectionGroup(db,"responses"),s=>{
+    resps={};
+    s.docs.forEach(d=>{const sid=d.ref.parent.parent.id;(resps[sid]||(resps[sid]={}))[d.id]=d.data();});
+    syncDraft();renderAll();
+  },e=>showErr(e));
+}
+</script>
+</body>
+</html>
