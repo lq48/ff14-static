@@ -169,7 +169,14 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 
 .flabel{font-size:14px;font-weight:500;margin-bottom:4px}
 .teamchips{display:flex;flex-wrap:wrap;gap:6px}
-.memedit{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-height:44px;align-items:center}
+.memedit{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-height:44px}
+.mrow{display:grid;grid-template-columns:minmax(80px,140px) 1fr 30px;gap:8px;align-items:center}
+.mrow .mname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 8px;font-size:13px;width:100%;font-variant-numeric:tabular-nums}
+.mrow input.bad{border-color:var(--hol)}
+.mrow button{border:0;background:none;width:28px;height:28px;border-radius:50%;color:var(--muted);font-size:16px;line-height:1}
+.mrow button:hover{background:var(--hol-tint);color:var(--hol)}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
 .mchip{display:inline-flex;align-items:center;gap:2px;padding:3px 4px 3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:14px}
 .mchip button{border:0;background:none;width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:15px;line-height:1}
 .mchip button:hover{background:var(--hol-tint);color:var(--hol)}
@@ -251,6 +258,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
           <div>
             <div class="flabel">隊員（<span id="fCount">0</span> 人）</div>
             <div class="memedit" id="fMembers"></div>
+            <div class="hint">Discord ID 用來讓提醒機器人 tag 人，沒填的只會顯示名字。取得方式：Discord 設定開啟「開發者模式」，對名字按右鍵選「複製使用者 ID」。</div>
             <div class="addrow">
               <input id="fNewMember" maxlength="20" placeholder="輸入隊員名字，按 Enter 加入">
               <button class="btn" type="button" id="fAddMember">加入</button>
@@ -307,6 +315,7 @@ const FIREBASE_CONFIG = {
   appId: "1:480792441403:web:57ea91a8894f75bed9e21e"
 };
 const OWNER_EMAIL = "lq0408@gmail.com";   // 團長的 Google 帳號，要和 firestore.rules 裡的一致
+const NOTIFY_URL = "https://ff14-notify.lq0408.workers.dev/";   // Discord 提醒用的 Cloudflare Worker 網址（選填，例如 https://ff14-notify.xxx.workers.dev）
 /* ============================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -489,12 +498,16 @@ function setCell(c,val){
 function toggleCells(cells){cells=cells.filter(c=>!c.classList.contains("ev"));if(!cells.length)return;const all=cells.every(c=>c.classList.contains("on"));cells.forEach(c=>setCell(c,!all));}
 function editable(){const sv=cur();return sv&&!sv.closed&&myMember&&!changingName;}
 
+function notifyWorker(sid){
+  if(!NOTIFY_URL||!sid)return;
+  fetch(NOTIFY_URL.replace(/\/+$/,"")+"/notify",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sid}),keepalive:true}).catch(()=>{});
+}
 async function save(){
   if(!editable()||saving)return;
   saving=true;updateSave();
   try{
     await setDoc(doc(db,"surveys",curSid,"responses",myMember),{slots:serialize(),updatedAt:Date.now()});
-    dirty=false;toast("已儲存");
+    dirty=false;toast("已儲存");notifyWorker(curSid);
   }catch(err){console.error(err);toast(err&&err.code==="permission-denied"?"無法儲存：調查可能已截止":"儲存失敗，請稍後再試");}
   saving=false;updateSave();
 }
@@ -596,15 +609,16 @@ function setupEvEditor(){
   $("#eLabel").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("#eAdd").click();}});
   $("#eList").addEventListener("click",e=>{const b=e.target.closest("[data-erm]");if(!b)return;fEvents.splice(+b.dataset.erm,1);renderEvList();});
 }
+const DID_RE=/^\d{15,21}$/;
 function renderMemEdit(){
   $("#fCount").textContent=fMembers.length;
-  $("#fMembers").innerHTML=fMembers.length?fMembers.map((n,i)=>'<span class="mchip">'+esc(n)+'<button type="button" data-rm="'+i+'" aria-label="移除 '+esc(n)+'">×</button></span>').join(""):'<span class="muted">還沒有隊員</span>';
+  $("#fMembers").innerHTML=fMembers.length?fMembers.map((m,i)=>'<div class="mrow"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-did="'+i+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(m.did||"")+'"'+(m.did&&!DID_RE.test(m.did)?' class="bad"':'')+'><button type="button" data-rm="'+i+'" aria-label="移除 '+esc(m.n)+'">×</button></div>').join(""):'<span class="muted">還沒有隊員</span>';
 }
 function addMember(){
   const inp=$("#fNewMember");
   const names=inp.value.split(/[,，、\n]/).map(s=>s.trim()).filter(Boolean);
   let skipped=0;
-  for(const n of names){if(fMembers.includes(n)||fMembers.length>=30){skipped++;continue;}fMembers.push(n);}
+  for(const n of names){if(fMembers.some(m=>m.n===n)||fMembers.length>=30){skipped++;continue;}fMembers.push({n,did:""});}
   inp.value="";renderMemEdit();
   if(skipped)toast("有重複的名字或超過 30 人，已略過");
 }
@@ -616,7 +630,8 @@ function renderTeamChips(){
 function setupManage(){
   const m=nextMonday();$("#fStart").value=fmtD(m);$("#fEnd").value=fmtD(new Date(m.getTime()+6*864e5));
   setupEvEditor();resetHol();
-  fMembers=LEGACY.map(x=>x.n);renderMemEdit();
+  fMembers=LEGACY.map(x=>({n:x.n,did:""}));renderMemEdit();
+  $("#fMembers").addEventListener("input",e=>{const inp=e.target.closest("[data-did]");if(!inp)return;const v=inp.value.trim();fMembers[+inp.dataset.did].did=v;inp.classList.toggle("bad",!!v&&!DID_RE.test(v));});
   $("#fStart").addEventListener("change",resetHol);$("#fEnd").addEventListener("change",resetHol);
   $("#fHol").addEventListener("click",e=>{const b=e.target.closest("[data-d]");if(!b)return;const d=b.dataset.d;fHol.has(d)?fHol.delete(d):fHol.add(d);b.setAttribute("aria-pressed",fHol.has(d));});
   $("#fAddMember").addEventListener("click",addMember);
@@ -625,7 +640,7 @@ function setupManage(){
   $("#fTeam").addEventListener("input",renderTeamChips);
   $("#fTeams").addEventListener("click",e=>{
     const b=e.target.closest("[data-team]");if(!b)return;const t=teams.find(x=>x.id===b.dataset.team);if(!t)return;
-    $("#fTeam").value=t.name;fMembers=[...(t.members||[])];renderMemEdit();renderTeamChips();
+    $("#fTeam").value=t.name;const dids=t.dids||{};fMembers=(t.members||[]).map(n=>({n,did:dids[n]||""}));renderMemEdit();renderTeamChips();
   });
   $("#tList").addEventListener("click",async e=>{
     const b=e.target.closest("[data-tdel]");if(!b)return;
@@ -636,15 +651,18 @@ function setupManage(){
     const ds=rangeDates();const msg=$("#fMsg");const team=$("#fTeam").value.trim();
     if(!team){msg.textContent="請輸入團名。";return;}
     if(!fMembers.length){msg.textContent="至少要有一位隊員。";return;}
+    const badDid=fMembers.find(m=>m.did&&!DID_RE.test(m.did));
+    if(badDid){msg.textContent="「"+badDid.n+"」的 Discord ID 格式不對，應該是 15～21 位數字。";return;}
     if(!ds.length){msg.textContent="結束日期要在開始日期之後。";return;}
     if(ds.length>21){msg.textContent="一次最多 21 天。";return;}
     const btn=$("#fCreate");btn.disabled=true;msg.textContent="";
-    const members=fMembers.map((n,i)=>({k:"m"+(i+1),n}));
+    const members=fMembers.map((m,i)=>m.did?{k:"m"+(i+1),n:m.n,did:m.did}:{k:"m"+(i+1),n:m.n});
+    const names=fMembers.map(m=>m.n),dids={};fMembers.forEach(m=>{if(m.did)dids[m.n]=m.did;});
     try{
       if($("#fSaveTeam").checked){
         const ex=teams.find(t=>t.name===team);
-        if(ex)await updateDoc(doc(db,"teams",ex.id),{members:[...fMembers],updatedAt:Date.now()});
-        else await addDoc(collection(db,"teams"),{name:team,members:[...fMembers],updatedAt:Date.now()});
+        if(ex)await updateDoc(doc(db,"teams",ex.id),{members:names,dids,updatedAt:Date.now()});
+        else await addDoc(collection(db,"teams"),{name:team,members:names,dids,updatedAt:Date.now()});
       }
       const ref=await addDoc(collection(db,"surveys"),{
         team,title:$("#fTitle").value.trim()||"出席調查",dates:ds,holidays:[...fHol],note:$("#fNote").value.trim(),
