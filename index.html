@@ -47,7 +47,7 @@ a{color:var(--accent)}
 .page{max-width:1040px;margin:0 auto;padding:20px 16px 48px}
 
 .mast{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
-.brand{font-family:"Noto Serif TC",serif;font-weight:900;font-size:15px;letter-spacing:.2em;color:var(--muted);margin:0}
+.brand{text-decoration:none;font-family:"Noto Serif TC",serif;font-weight:900;font-size:15px;letter-spacing:.2em;color:var(--muted);margin:0}
 .me{display:flex;align-items:center;gap:8px;font-size:14px}
 .me img{width:28px;height:28px;border-radius:50%}
 .linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-size:14px}
@@ -144,6 +144,35 @@ a{color:var(--accent)}
 .center h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(28px,6vw,44px);margin:0 0 8px}
 .center p{max-width:46ch;margin:0 auto 22px;color:var(--muted)}
 .notice{padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--gold) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));margin:0 0 16px}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.phead h2{margin:0}
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.teamcard{display:grid;gap:6px;text-align:left;padding:16px;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;background:var(--surface);color:var(--ink)}
+.teamcard:hover{border-color:var(--accent);border-left-color:var(--gold)}
+.teamcard .tn{font-family:"Noto Serif TC",serif;font-weight:900;font-size:20px}
+.teamcard .avs{display:flex;flex-wrap:wrap;gap:2px}
+.teamcard .avs img{width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);margin-right:-6px;background:var(--bg)}
+.teamcard .rel{justify-self:start;font-size:12px;font-weight:700;padding:1px 8px;border-radius:4px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.crystals{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.crystal{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-left:4px solid var(--rc);border-radius:10px;background:var(--bg)}
+.crystal.r-tank{--rc:var(--tank)} .crystal.r-heal{--rc:var(--heal)} .crystal.r-dps{--rc:var(--dps)}
+.crystal img{width:44px;height:44px;border-radius:50%;flex:none;background:var(--surface)}
+.crystal .cbody{min-width:0}
+.crystal .nm{font-weight:700}
+.crystal .ch{font-size:12px;color:var(--muted);word-break:break-all}
+.crystal .jb{font-size:12px;font-weight:700;color:var(--rc)}
+.crystal .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.crystal .tags .target{font-size:11px;padding:0 6px}
+.you{margin-left:6px;font-size:11px;padding:0 6px;border-radius:4px;background:var(--ink);color:var(--surface);font-weight:700;vertical-align:middle}
+.lrow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.lrow:first-of-type{border-top:0}
+.lrow .who{display:flex;align-items:center;gap:8px;min-width:140px}
+.lrow .who img{width:30px;height:30px;border-radius:50%}
+.lrow .caps{display:flex;flex-wrap:wrap;gap:4px 14px;flex:1;font-size:14px}
+.lrow .caps label{display:flex;align-items:center;gap:4px;cursor:pointer}
+.addrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.addrow .sel{flex:1;min-width:180px}
+.danger-zone{border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -152,7 +181,7 @@ a{color:var(--accent)}
 <body>
 <div class="page">
   <header class="mast">
-    <p class="brand" id="brand">光之戰士飛地</p>
+    <a class="brand" id="brand" href="./" data-act="lobby">光之戰士飛地</a>
     <div class="me" id="me"></div>
   </header>
   <main id="view"><div class="center muted">載入中…</div></main>
@@ -162,7 +191,7 @@ a{color:var(--accent)}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- 常數 ---------- */
@@ -217,9 +246,10 @@ function jobOptions(sel,blank){
 
 /* ---------- 狀態 ---------- */
 let app,db,auth,me=null,claims={},isOwner=false;
-let users={},statics=[],members={},curTid=null,view="home",mgTab="members";
-let unsub=[],memUnsub=null,ready={users:false,statics:false};
-let profileDraft=null;
+let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
+let unsub=[],ready={users:false,statics:false,mem:false};
+let profileDraft=null,tgtDraft=null;
+const urlTeam=()=>new URLSearchParams(location.search).get("team");
 
 /* ---------- 啟動 ---------- */
 app=initializeApp(FIREBASE_CONFIG);db=getFirestore(app);auth=getAuth(app);
@@ -229,10 +259,11 @@ app=initializeApp(FIREBASE_CONFIG);db=getFirestore(app);auth=getAuth(app);
   if(m)signInWithCustomToken(auth,decodeURIComponent(m[1])).catch(e=>{console.error(e);toast("Discord 登入失敗，請再試一次");});
   if(er)toast("Discord 登入失敗："+decodeURIComponent(er[1]));
 }
+curTid=urlTeam();view=curTid?"team":"lobby";
 onAuthStateChanged(auth,async u=>{
   me=u;claims={};
-  unsub.forEach(f=>f());unsub=[];if(memUnsub){memUnsub();memUnsub=null;}
-  users={};statics=[];members={};ready={users:false,statics:false};
+  unsub.forEach(f=>f());unsub=[];
+  users={};statics=[];mem={};ready={users:false,statics:false,mem:false};
   if(u){try{claims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
   isOwner=!!(u&&((u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase())||claims.dc===OWNER_DISCORD_ID));
   if(u&&(claims.dc||isOwner))subscribe();
@@ -240,22 +271,16 @@ onAuthStateChanged(auth,async u=>{
 });
 function subscribe(){
   unsub.push(onSnapshot(collection(db,"users"),s=>{
-    users={};s.docs.forEach(d=>users[d.id]=d.data());ready.users=true;
-    syncDiscordInfo();render(true);
+    users={};s.docs.forEach(d=>users[d.id]=d.data());ready.users=true;syncDiscordInfo();render(true);
   },err));
   unsub.push(onSnapshot(collection(db,"statics"),s=>{
-    statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));ready.statics=true;
-    if(!statics.find(x=>x.id===curTid)){curTid=statics[0]?statics[0].id:null;watchMembers();}
-    render(true);
+    statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));ready.statics=true;render(true);
+  },err));
+  unsub.push(onSnapshot(collectionGroup(db,"members"),s=>{
+    mem={};s.docs.forEach(d=>{const p=d.ref.parent.parent;if(!p)return;(mem[p.id]||(mem[p.id]={}))[d.id]=d.data();});ready.mem=true;render(true);
   },err));
 }
-function watchMembers(){
-  if(memUnsub){memUnsub();memUnsub=null;}members={};
-  if(!curTid)return;
-  memUnsub=onSnapshot(collection(db,"statics",curTid,"members"),s=>{members={};s.docs.forEach(d=>members[d.id]=d.data());render(true);},err);
-}
 function err(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新":"讀取資料失敗");}
-// Discord 名稱、頭像有變時自動更新
 let synced=false;
 function syncDiscordInfo(){
   if(synced||!claims.dc||!me)return;const p=users[me.uid];if(!p)return;synced=true;
@@ -263,17 +288,34 @@ function syncDiscordInfo(){
     updateDoc(doc(db,"users",me.uid),{dcName:claims.dcn||"",avatar:claims.dca||"",updatedAt:Date.now()}).catch(console.error);
 }
 
+/* ---------- 導覽 ---------- */
+function go(v,tid){
+  view=v;if(tid!==undefined)curTid=tid;
+  const inTeam=(v==="team"||v==="manage")&&curTid;
+  const url=location.pathname+(inTeam?"?team="+encodeURIComponent(curTid):"");
+  if(url!==location.pathname+location.search)history.pushState(null,"",url);
+  if(v==="manage"){mgTab="";tgtDraft=null;}
+  window.scrollTo(0,0);render();
+}
+window.addEventListener("popstate",()=>{curTid=urlTeam();view=curTid?"team":"lobby";render();});
+
 /* ---------- 權限判斷 ---------- */
 const cur=()=>statics.find(s=>s.id===curTid)||null;
-const myMember=()=>me?members[me.uid]:null;
+const membersOf=tid=>mem[tid]||{};
+const myMember=()=>me?membersOf(curTid)[me.uid]:null;
+const leaderOf=st=>(me&&st&&(st.leaders||{})[me.uid])||null;
+function capsOf(st){if(isOwner)return{members:true,info:true,modules:true};const l=leaderOf(st);return l?{members:!!l.members,info:!!l.info,modules:!!l.modules}:{};}
+const canManage=st=>isOwner||Object.values(capsOf(st)).some(Boolean);
 function canSee(mod){
-  if(isOwner)return true;const st=cur(),m=myMember();
-  if(!st||!m||m.status!=="active")return false;
+  const st=cur();if(isOwner||capsOf(st).modules)return true;
+  const m=myMember();if(!st||!m||m.status!=="active")return false;
   const status=(st.modules||{})[mod]||"owner";const p=(m.perms||{})[mod]||"none";
   if(status==="all")return true;
   if(status==="selected")return p!=="none";
   return false;
 }
+const activeIds=tid=>Object.keys(membersOf(tid)).filter(id=>membersOf(tid)[id].status==="active");
+const leaderNames=st=>Object.keys(st.leaders||{}).map(id=>nameOf(users[id]));
 
 /* ---------- 畫面 ---------- */
 function render(fromSnapshot){
@@ -281,29 +323,38 @@ function render(fromSnapshot){
   const v=$("#view");
   if(!me)return v.innerHTML=signedOutHTML();
   if(!claims.dc&&!isOwner)return v.innerHTML='<div class="center"><h1>請改用 Discord 登入</h1><p>這個網站的團員身分是用 Discord 帳號確認的。</p><button class="btn" data-act="logout">登出</button></div>';
-  if(!ready.users||!ready.statics)return v.innerHTML='<div class="center muted">載入中…</div>';
-  if(fromSnapshot&&(view==="profile"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
+  if(!ready.users||!ready.statics||!ready.mem)return v.innerHTML='<div class="center muted">載入中…</div>';
+  if(fromSnapshot&&(view==="profile"||view==="create"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
   if(claims.dc&&!users[me.uid])view="profile";
   if(view==="profile")return v.innerHTML=profileHTML(),bindProfile();
-  if(!statics.length)return v.innerHTML=isOwner?createStaticHTML():'<div class="center"><h1>還沒有固定團</h1><p>團長建立固定團後，這裡就會出現。</p>'+scheduleLink()+'</div>';
-  if(view==="manage"&&isOwner)return v.innerHTML=manageHTML(),afterManage();
-  view="home";v.innerHTML=homeHTML();
+  if(view==="create"&&isOwner)return v.innerHTML=createStaticHTML();
+  if(view==="team"||view==="manage"){
+    const st=cur();
+    if(!st){view="lobby";curTid=null;history.replaceState(null,"",location.pathname);}
+    else if(view==="manage"&&canManage(st))return v.innerHTML=manageHTML(st),afterManage();
+    else{view="team";return v.innerHTML=teamHTML(st);}
+  }
+  view="lobby";v.innerHTML=lobbyHTML();
 }
 function renderMe(){
   const el=$("#me");
+  const st=(view==="team"||view==="manage")?cur():null;
+  document.title=st?st.name+"｜光之戰士飛地":"光之戰士飛地";
   if(!me){el.innerHTML="";return;}
   const p=users[me.uid];
   const nm=p?nameOf(p):(claims.dcn||me.email||"");
-  el.innerHTML=(claims.dc?'<img src="'+esc(avatarUrl(p||{dc:claims.dc,avatar:claims.dca}))+'" alt="">':'')+'<span>'+esc(nm)+(isOwner?'（團長）':'')+'</span>'+
+  el.innerHTML=(claims.dc?'<img src="'+esc(avatarUrl(p||{dc:claims.dc,avatar:claims.dca}))+'" alt="">':'')+'<span>'+esc(nm)+(isOwner?'（總團長）':'')+'</span>'+
     (claims.dc&&p?'<button class="linkbtn" data-act="profile">我的靈魂水晶</button>':'')+'<button class="linkbtn" data-act="logout">登出</button>';
-  const st=cur();document.title=st?st.name+"｜光之戰士飛地":"光之戰士飛地";
 }
-const scheduleLink=()=>'<p><a href="schedule.html">前往出席時間調查 →</a></p>';
+const toolCards=()=>
+  '<a class="mod" href="schedule.html"><span class="t">出席時間調查</span><span class="d">填寫可以出團的時段</span><span class="badge open">使用中</span></a>'+
+  '<a class="mod" href="moogle.html"><span class="t">莫古莫古大收集試算</span><span class="d">勾選想換的道具，計算所需稀少奇譚神點石</span><span class="badge open">使用中</span></a>';
 function signedOutHTML(){
   return'<div class="center"><h1>光之戰士飛地</h1><p>用 Discord 登入，查看固定團的陣容、攻略和配裝進度。</p>'+
     '<button class="btn discord" data-act="dclogin">用 Discord 登入</button>'+
     '<p class="small" style="margin-top:28px"><a href="schedule.html">只想填出席時間？不用登入，直接前往 →</a></p>'+
-    '<p class="small"><button class="linkbtn" data-act="glogin">團長備用登入（Google）</button></p></div>';
+    '<p class="small"><a href="moogle.html">莫古莫古大收集試算（不用登入）→</a></p>'+
+    '<p class="small"><button class="linkbtn" data-act="glogin">總團長備用登入（Google）</button></p></div>';
 }
 
 /* 靈魂水晶 */
@@ -312,7 +363,7 @@ function profileHTML(){
   if(!profileDraft)profileDraft=p?{...p,subJobs:[...(p.subJobs||[])]}:{nick:dirName(claims.dc)||claims.dcn||"",charName:"",server:"",job:"",subJobs:[],bio:""};
   const d=profileDraft;
   return'<div class="panel"><h2>'+(first?'歡迎'+(dirName(claims.dc)?'，'+esc(dirName(claims.dc)):'')+'！先建立你的靈魂水晶':'編輯我的靈魂水晶')+'</h2>'+
-    (first?'<p class="muted">這些資料會顯示在固定團的陣容上，之後隨時可以修改。</p>':'')+
+    (first?'<p class="muted">這些資料會顯示在飛地和固定團的陣容上，之後隨時可以修改。</p>':'')+
     '<div class="form">'+
     '<div class="row2"><label>暱稱<input id="pNick" maxlength="20" value="'+esc(d.nick)+'" placeholder="團裡大家怎麼叫你"></label>'+
     '<label>遊戲角色名稱<input id="pChar" maxlength="30" value="'+esc(d.charName)+'" placeholder="例如：Satoru Gojo"></label></div>'+
@@ -335,25 +386,55 @@ async function saveProfile(btn){
   const nick=d.nick.trim(),charName=d.charName.trim(),server=d.server.trim();
   if(!nick){toast("請填暱稱");return;}
   if(!d.job){toast("請選主職業");return;}
-  if(!d.server){toast("請選伺服器");return;}
+  if(!server){toast("請選伺服器");return;}
   btn.disabled=true;
   const p=users[me.uid];
   try{
-    const data={
-      dc:claims.dc,dcName:claims.dcn||"",avatar:claims.dca||"",
+    const data={dc:claims.dc,dcName:claims.dcn||"",avatar:claims.dca||"",
       nick,charName,server,job:d.job,subJobs:d.subJobs.filter(k=>k!==d.job).slice(0,10),bio:d.bio.trim(),
-      createdAt:p&&p.createdAt?p.createdAt:Date.now(),updatedAt:Date.now()
-    };
+      createdAt:p&&p.createdAt?p.createdAt:Date.now(),updatedAt:Date.now()};
     await setDoc(doc(db,"users",me.uid),data);
-    users[me.uid]=data; // 先更新畫面，不等資料庫回傳
-    profileDraft=null;view="home";toast(p?"已更新靈魂水晶":"靈魂水晶建立完成！");render();
+    users[me.uid]=data;profileDraft=null;view=curTid?"team":"lobby";
+    toast(p?"已更新靈魂水晶":"靈魂水晶建立完成！");render();
   }catch(e){console.error(e);toast("儲存失敗，請再試一次");btn.disabled=false;}
 }
 
-/* 建立固定團（團長） */
+/* 飛地大廳 */
+function lobbyHTML(){
+  const p=users[me.uid];
+  const ids=Object.keys(users).sort((a,b)=>(a===me.uid?-1:b===me.uid?1:nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")));
+  return'<section class="hero"><h1>光之戰士飛地</h1><p class="slogan">'+(p?'歡迎回來，'+esc(nameOf(p))+'。':'歡迎來到光之戰士飛地。')+'</p></section>'+
+    '<div class="panel"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
+      (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
+    '<div class="panel"><h2>飛地成員（'+ids.length+'）</h2>'+
+      (ids.length?'<div class="crystals">'+ids.map(crystalHTML).join("")+'</div>':'<p class="muted">還沒有人建立靈魂水晶。</p>')+'</div>'+
+    '<div class="panel"><h2>共用工具</h2><div class="mods">'+toolCards()+'</div></div>';
+}
+function teamCardHTML(st){
+  const ms=membersOf(st.id),act=activeIds(st.id),mine=me&&ms[me.uid];
+  const ln=leaderNames(st),t=(st.targets||[])[0];
+  const rel=[leaderOf(st)?'你是團長':'',mine&&mine.status==="active"?'你是成員':mine&&mine.status==="pending"?'申請中':''].filter(Boolean).join("・")||(isOwner?'':'可申請加入');
+  return'<button class="teamcard" data-team="'+esc(st.id)+'"><span class="tn">'+esc(st.name)+'</span>'+
+    (t?'<span><span class="target main">'+esc(t.n)+'</span></span>':'')+
+    '<span class="small muted">'+act.length+' 位成員'+(ln.length?'・團長：'+esc(ln.join("、")):'')+'</span>'+
+    '<span class="avs">'+act.slice(0,10).map(id=>'<img src="'+esc(avatarUrl(users[id]))+'" alt="" loading="lazy">').join("")+'</span>'+
+    (rel?'<span class="rel">'+rel+'</span>':'')+'</button>';
+}
+function crystalHTML(id){
+  const u=users[id],j=JOB[u.job];
+  const teams=statics.filter(s=>(membersOf(s.id)[id]||{}).status==="active").map(s=>s.name);
+  return'<div class="crystal r-'+(j?j.r:"dps")+'"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><div class="cbody">'+
+    '<div class="nm">'+esc(nameOf(u))+(id===me.uid?'<span class="you">你</span>':'')+'</div>'+
+    '<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
+    (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+
+    (teams.length?'<div class="tags">'+teams.map(n=>'<span class="target">'+esc(n)+'</span>').join("")+'</div>':'')+'</div></div>';
+}
+
+/* 建立固定團（總團長） */
 function createStaticHTML(){
-  return'<div class="panel"><h2>建立固定團</h2><div class="form">'+
-    '<label>固定團名稱<input id="cName" maxlength="30" value="絕伊甸固定團"></label>'+
+  return'<div style="margin-bottom:12px"><button class="linkbtn" data-act="lobby">← 回飛地大廳</button></div>'+
+    '<div class="panel"><h2>建立固定團</h2><div class="form">'+
+    '<label>固定團名稱<input id="cName" maxlength="30" value="'+(statics.length?'':'絕伊甸固定團')+'" placeholder="例如：絕伊甸固定團"></label>'+
     '<div class="hint">目標副本預設會放入絕伊甸，以及打 BiS 用的輕量級零式 1～4 層，之後可以在「管理」裡修改。</div>'+
     '<div><button class="btn primary" data-act="createStatic">建立</button></div></div></div>'+
     (claims.dc?'':'<div class="notice">你目前是用 Google 備用登入。建議改用 Discord 登入，才能建立自己的靈魂水晶並出現在陣容裡。</div>');
@@ -362,30 +443,30 @@ async function createStatic(btn){
   const name=$("#cName").value.trim();if(!name){toast("請輸入名稱");return;}
   btn.disabled=true;
   try{
-    const ref=await addDoc(collection(db,"statics"),{name,slogan:"",intro:"",targets:DEFAULT_TARGETS,roles:{},
+    const ref=await addDoc(collection(db,"statics"),{name,slogan:"",intro:"",targets:DEFAULT_TARGETS,roles:{},leaders:{},
       modules:{guide:"owner",bis:"owner",mit:"owner",review:"owner"},createdAt:Date.now()});
-    curTid=ref.id;watchMembers();toast("已建立「"+name+"」");
+    toast("已建立「"+name+"」");go("team",ref.id);
   }catch(e){console.error(e);toast("建立失敗：請確認 Firestore 規則已更新");btn.disabled=false;}
 }
 
-/* 團隊首頁 */
-function homeHTML(){
-  const st=cur();const m=myMember();
-  const picker=statics.length>1?'<div class="chips" style="margin-bottom:14px">'+statics.map(s=>'<button class="chip" data-tid="'+esc(s.id)+'" aria-pressed="'+(s.id===curTid)+'">'+esc(s.name)+'</button>').join("")+'</div>':"";
-  let h=picker+heroHTML(st);
-  if(isOwner)h+='<div style="margin:-8px 0 18px"><button class="btn sm" data-act="manage">管理固定團</button></div>';
-  if(!isOwner&&(!m||m.status!=="active"))return h+joinHTML(m)+scheduleLink();
+/* 固定團頁 */
+function teamHTML(st){
+  const m=myMember();
+  let h='<div style="margin-bottom:12px"><button class="linkbtn" data-act="lobby">← 回飛地大廳</button></div>'+heroHTML(st);
+  if(canManage(st))h+='<div style="margin:-8px 0 18px"><button class="btn sm" data-act="manage">管理固定團</button></div>';
+  if(!isOwner&&!leaderOf(st)&&(!m||m.status!=="active"))return h+joinHTML(m);
   return h+rosterHTML(st)+modulesHTML(st);
 }
 function heroHTML(st){
-  const t=st.targets||[];
+  const t=st.targets||[],ln=leaderNames(st);
   return'<section class="hero"><h1>'+esc(st.name)+'</h1>'+(st.slogan?'<p class="slogan">'+esc(st.slogan)+'</p>':'')+
+    (ln.length?'<p class="small muted" style="margin:6px 0 0">團長：'+esc(ln.join("、"))+'</p>':'')+
     (st.intro?'<p class="intro">'+esc(st.intro)+'</p>':'')+
     (t.length?'<div class="targets">'+t.map((x,i)=>'<span class="target'+(i===0?' main':'')+'">'+esc(x.n)+'</span>').join("")+'</div>':'')+'</section>';
 }
 function joinHTML(m){
-  if(m&&m.status==="pending")return'<div class="panel"><h2>已送出加入申請</h2><p class="muted">等待團長核准。核准後重新整理這個頁面就能看到完整內容。</p><button class="btn sm" data-act="withdraw">取消申請</button></div>';
-  return'<div class="panel"><h2>加入這個固定團</h2><p class="muted">送出申請後，由團長核准。</p><div class="form"><label>想對團長說的話（選填）<input id="jNote" maxlength="100" placeholder="例如：我是 D3 的鐮刀"></label><div><button class="btn primary" data-act="join">申請加入</button></div></div></div>';
+  if(m&&m.status==="pending")return'<div class="panel"><h2>已送出加入申請</h2><p class="muted">等待團長核准，核准後這裡會自動顯示完整內容。</p><button class="btn sm" data-act="withdraw">取消申請</button></div>';
+  return'<div class="panel"><h2>加入這個固定團</h2><p class="muted">送出申請後，由團長核准。</p><div class="form"><label>想對團長說的話（選填）<input id="jNote" maxlength="100" placeholder="例如：我是 D3 的奪魂者"></label><div><button class="btn primary" data-act="join">申請加入</button></div></div></div>';
 }
 function cardHTML(slot,uid){
   const u=uid&&users[uid];
@@ -393,57 +474,62 @@ function cardHTML(slot,uid){
   const j=JOB[u.job];
   return'<div class="slot r-'+slot.r+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
     '<div class="nm">'+esc(nameOf(u))+'</div><div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
-    (j?'<div class="jb">'+esc(jobLabel(u.job))+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
+    (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
 function rosterHTML(st){
-  const roles=st.roles||{};const active=Object.keys(members).filter(id=>members[id].status==="active");
-  const assigned=new Set(Object.values(roles));
-  const rest=active.filter(id=>!assigned.has(id));
+  const roles=st.roles||{};const assigned=new Set(Object.values(roles));
+  const rest=activeIds(st.id).filter(id=>!assigned.has(id));
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+
-    (rest.length?'<h3>其他成員</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=u&&JOB[u.job];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+j.n+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=u&&JOB[u.job];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
-  const mods=(st.modules||{});
-  const vis=MODULES.filter(x=>canSee(x.k));
+  const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;
   return'<div class="panel"><h2>功能</h2><div class="mods">'+
     '<a class="mod" href="schedule.html"><span class="t">出席時間調查</span><span class="d">填寫可以出團的時段</span><span class="badge open">使用中</span></a>'+
     vis.map(x=>{const s=mods[x.k]||"owner";return'<button class="mod" data-mod="'+x.k+'"><span class="t">'+x.n+'</span><span class="d">'+x.d+'</span>'+
-      (isOwner?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見・建置中</span>':'<span class="badge">建置中</span>')+'</button>';}).join("")+
-    '</div>'+(!isOwner&&!vis.length?'<p class="muted small" style="margin:12px 0 0">更多功能準備中，敬請期待。</p>':'')+'</div>';
+      (mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見・建置中</span>':'<span class="badge">建置中</span>')+'</button>';}).join("")+
+    '</div>'+(!mgr&&!vis.length?'<p class="muted small" style="margin:12px 0 0">更多功能準備中，敬請期待。</p>':'')+'</div>';
 }
 
-/* 管理（團長） */
-function manageHTML(){
-  const st=cur();
-  const pending=Object.keys(members).filter(id=>members[id].status==="pending");
-  return'<div style="margin-bottom:12px"><button class="linkbtn" data-act="home">← 回固定團首頁</button></div>'+
+/* 管理 */
+function mgTabs(st){
+  const c=capsOf(st),t=[];
+  if(c.members)t.push(["members","成員"]);
+  if(c.modules)t.push(["modules","功能開放"]);
+  if(c.info)t.push(["team","團隊資料"]);
+  if(isOwner)t.push(["leaders","團長與權限"]);
+  return t;
+}
+function manageHTML(st){
+  const tabs=mgTabs(st);if(!tabs.some(([k])=>k===mgTab))mgTab=tabs[0][0];
+  const pending=Object.keys(membersOf(st.id)).filter(id=>membersOf(st.id)[id].status==="pending");
+  return'<div style="margin-bottom:12px"><button class="linkbtn" data-act="team">← 回 '+esc(st.name)+'</button></div>'+
     '<h1 style="font-family:Noto Serif TC,serif;margin:0 0 12px">管理「'+esc(st.name)+'」</h1>'+
-    '<nav class="tabs">'+[["members","成員"+(pending.length?"（"+pending.length+" 個申請）":"")],["modules","功能開放"],["team","團隊資料"]].map(([k,n])=>'<button class="tab" data-mg="'+k+'" aria-selected="'+(mgTab===k)+'">'+n+'</button>').join("")+'</nav>'+
-    (mgTab==="members"?membersMgHTML(st,pending):mgTab==="modules"?modulesMgHTML(st):teamMgHTML(st));
+    '<nav class="tabs">'+tabs.map(([k,n])=>'<button class="tab" data-mg="'+k+'" aria-selected="'+(mgTab===k)+'">'+n+(k==="members"&&pending.length?'（'+pending.length+' 個申請）':'')+'</button>').join("")+'</nav>'+
+    (mgTab==="members"?membersMgHTML(st,pending):mgTab==="modules"?modulesMgHTML(st):mgTab==="team"?teamMgHTML(st):leadersMgHTML(st));
 }
 function membersMgHTML(st,pending){
-  const roles=st.roles||{};const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
-  const active=Object.keys(members).filter(id=>members[id].status==="active").sort((a,b)=>{
-    const ia=SLOTS.findIndex(s=>s.k===slotOf(a)),ib=SLOTS.findIndex(s=>s.k===slotOf(b));return(ia<0?99:ia)-(ib<0?99:ib);});
-  const outsiders=Object.keys(users).filter(id=>!members[id]);
+  const ms=membersOf(st.id),roles=st.roles||{};const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
+  const active=activeIds(st.id).sort((a,b)=>{const ia=SLOTS.findIndex(s=>s.k===slotOf(a)),ib=SLOTS.findIndex(s=>s.k===slotOf(b));return(ia<0?99:ia)-(ib<0?99:ib);});
+  const outsiders=Object.keys(users).filter(id=>!ms[id]);
   let h='';
-  if(pending.length)h+='<div class="panel"><h2>加入申請</h2>'+pending.map(id=>{const u=users[id],m=members[id];
-    return'<div class="req"><img src="'+esc(avatarUrl(u))+'" alt=""><div class="info"><b>'+esc(nameOf(u))+'</b> <span class="muted small">'+esc(u?(u.charName||"")+" "+jobLabel(u.job):"")+'</span>'+
+  if(pending.length)h+='<div class="panel"><h2>加入申請</h2>'+pending.map(id=>{const u=users[id],m=ms[id];
+    return'<div class="req"><img src="'+esc(avatarUrl(u))+'" alt=""><div class="info"><b>'+esc(nameOf(u))+'</b> <span class="muted small">'+esc(u?[u.charName,jobLabel(u.job)].filter(Boolean).join(" "):"")+'</span>'+
       (m.note?'<div class="small">「'+esc(m.note)+'」</div>':'')+'</div><button class="btn sm primary" data-approve="'+id+'">核准</button><button class="btn sm danger" data-reject="'+id+'">拒絕</button></div>';}).join("")+
     '<label class="small" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="welcomeOn" checked> 核准時在 Discord 發歡迎公告</label></div>';
   h+='<div class="panel"><h2>成員（'+active.length+'）</h2>';
-  if(!active.length)h+='<p class="muted">還沒有成員。可以從下方把已登入過的人直接加入，或等他們申請。</p>';
+  if(!active.length)h+='<p class="muted">還沒有成員。可以從下方把飛地成員直接加入，或等他們申請。</p>';
   else h+='<div class="mtable"><div class="inner"><div class="mrow mhead"><span>成員</span><span>職責</span>'+MODULES.map(x=>'<span>'+x.n+'</span>').join("")+'<span></span></div>'+
-    active.map(id=>{const u=users[id],m=members[id],sl=slotOf(id);
+    active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id);
       return'<div class="mrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b><div class="small muted">'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
-        '<select data-slot="'+id+'" aria-label="職責"><option value="">無</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
-        MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+id+'" data-mod="'+x.k+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+
+        '<select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
+        MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+id+'" data-pmod="'+x.k+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+
         (id===me.uid?'<span></span>':'<button class="btn sm danger" data-remove="'+id+'">移出</button>')+'</div>';}).join("")+'</div></div>'+
-    '<p class="hint" style="margin:8px 0 0">權限只在功能設為「指定成員」或「全團開放」時才有作用；「不可見」在「指定成員」模式下會看不到該功能。</p>';
+    '<p class="hint" style="margin:8px 0 0">職責沒有分配的人會顯示在「替補成員」。權限只在功能設為「指定成員」或「全團開放」時才有作用。</p>';
   h+='</div>';
-  h+='<div class="panel"><h2>直接加入成員</h2>'+(outsiders.length?'<p class="muted small">這些人已經用 Discord 登入、建立過靈魂水晶，但還不是成員。</p><div class="others">'+
+  h+='<div class="panel"><h2>從飛地成員直接加入</h2>'+(outsiders.length?'<p class="muted small">這些人已經建立過靈魂水晶，但還不是這個團的成員。</p><div class="others">'+
     outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+id+'">加入</button></div>';}).join("")+'</div>':
-    '<p class="muted">目前沒有其他登入過的人。請團員先用 Discord 登入並建立靈魂水晶。</p>')+'</div>';
+    '<p class="muted">飛地成員都已經在這個團裡了。</p>')+'</div>';
   return h;
 }
 function modulesMgHTML(st){
@@ -451,9 +537,8 @@ function modulesMgHTML(st){
   return'<div class="panel"><h2>功能開放狀態</h2><p class="muted small">建置期間維持「只有團長」，確認好用後再開放。各功能的資料也會由資料庫規則依這個設定把關。</p>'+
     MODULES.map(x=>'<div class="modrow"><div><b>'+x.n+'</b><div class="small muted">'+x.d+'</div></div><select class="sel" data-modstatus="'+x.k+'">'+
       Object.entries(MOD_STATUS).map(([k,n])=>'<option value="'+k+'"'+((mods[x.k]||"owner")===k?' selected':'')+'>'+n+'</option>').join("")+'</select></div>').join("")+
-    '<p class="hint" style="margin:10px 0 0">「指定成員」＝權限不是「不可見」的成員；「全團開放」＝所有成員都看得到，能不能編輯依各自權限。</p></div>';
+    '<p class="hint" style="margin:10px 0 0">「只有團長」包含總團長與有功能開放權限的團長；「指定成員」＝權限不是「不可見」的成員；「全團開放」＝所有成員都看得到。</p></div>';
 }
-let tgtDraft=null;
 function teamMgHTML(st){
   if(!tgtDraft)tgtDraft=(st.targets||[]).map(x=>({...x}));
   return'<div class="panel"><h2>團隊資料</h2><div class="form">'+
@@ -467,6 +552,19 @@ function teamMgHTML(st){
 function tgtListHTML(){
   return tgtDraft.map((x,i)=>'<div class="tgtrow"><input data-tgtn="'+i+'" maxlength="30" value="'+esc(x.n)+'" aria-label="副本名稱"><select data-tgtt="'+i+'" aria-label="類型">'+
     Object.entries(TARGET_TYPES).map(([k,n])=>'<option value="'+k+'"'+(x.t===k?' selected':'')+'>'+n+'</option>').join("")+'</select><button class="x" data-tgtrm="'+i+'" aria-label="移除">×</button></div>').join("");
+}
+const CAPS=[["members","成員管理","核准申請、加入或移出成員、分配職責與權限"],["info","團隊資料","修改團名、口號、簡介與目標副本"],["modules","功能開放","切換各功能的開放狀態"]];
+function leadersMgHTML(st){
+  const L=st.leaders||{};const ids=Object.keys(L);
+  const cand=Object.keys(users).filter(id=>!L[id]);
+  return'<div class="panel"><h2>團長與權限</h2><p class="muted small">只有總團長可以指派團長，並決定每位團長可以做哪些事。團長不能建立或刪除固定團，也不能指派其他團長。</p>'+
+    (ids.length?ids.map(id=>{const u=users[id],c=L[id];
+      return'<div class="lrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><b>'+esc(nameOf(u))+'</b></div><div class="caps">'+
+        CAPS.map(([k,n,d])=>'<label title="'+d+'"><input type="checkbox" data-lcap="'+id+'" data-cap="'+k+'"'+(c[k]?' checked':'')+'> '+n+'</label>').join("")+
+        '</div><button class="btn sm danger" data-lrm="'+id+'">取消團長</button></div>';}).join(""):'<p class="muted">這個團還沒有指派團長，目前由總團長管理。</p>')+
+    (cand.length?'<div class="addrow"><select class="sel" id="leaderAdd"><option value="">選擇飛地成員…</option>'+cand.map(id=>'<option value="'+id+'">'+esc(nameOf(users[id]))+'</option>').join("")+'</select><button class="btn" data-act="leaderAdd">指派為團長</button></div>':'')+
+    '<p class="hint" style="margin:10px 0 0">'+CAPS.map(([,n,d])=>n+'：'+d).join("；")+'。</p></div>'+
+    '<div class="panel danger-zone"><h2>刪除固定團</h2><p class="muted small">會一併移除所有成員資料，無法復原。成員的靈魂水晶不受影響。</p><button class="btn danger" data-act="delStatic">刪除「'+esc(st.name)+'」</button></div>';
 }
 function afterManage(){
   if(mgTab!=="team")return;
@@ -483,7 +581,7 @@ async function workerPost(path,body){
 }
 async function welcome(uid){
   const u=users[uid],st=cur();if(!u||!u.dc||!st)return;
-  try{const j=await workerPost("/welcome",{dc:u.dc,name:nameOf(u),job:jobLabel(u.job),charName:u.charName||"",static:st.name});
+  try{const j=await workerPost("/welcome",{tid:st.id,dc:u.dc,name:nameOf(u),job:jobLabel(u.job),charName:u.charName||"",static:st.name});
     if(!j.ok)toast("歡迎公告沒發出去："+(j.error||""));}catch(e){console.error(e);}
 }
 async function setSlot(uid,slot){
@@ -499,15 +597,17 @@ document.addEventListener("click",async e=>{
   try{
     if(act){
       const a=act.dataset.act;
-      if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname);return;}
+      if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
       if(a==="glogin"){await signInWithPopup(auth,new GoogleAuthProvider());return;}
-      if(a==="logout"){await signOut(auth);view="home";return;}
+      if(a==="logout"){await signOut(auth);go("lobby",null);return;}
+      if(a==="lobby"){e.preventDefault();go("lobby",null);return;}
       if(a==="profile"){profileDraft=null;view="profile";render();return;}
-      if(a==="cancelProfile"){profileDraft=null;view="home";render();return;}
+      if(a==="cancelProfile"){profileDraft=null;view=curTid?"team":"lobby";render();return;}
       if(a==="saveProfile")return saveProfile(act);
+      if(a==="create"){go("create",null);return;}
       if(a==="createStatic")return createStatic(act);
-      if(a==="manage"){view="manage";tgtDraft=null;render();return;}
-      if(a==="home"){view="home";render();return;}
+      if(a==="manage"){go("manage");return;}
+      if(a==="team"){go("team");return;}
       if(a==="join"){
         await setDoc(doc(db,"statics",curTid,"members",me.uid),{status:"pending",requestedAt:Date.now(),note:($("#jNote").value||"").trim().slice(0,100)});
         toast("已送出申請");return;
@@ -521,10 +621,21 @@ document.addEventListener("click",async e=>{
         await updateDoc(doc(db,"statics",curTid),{name,slogan:$("#tSlogan").value.trim(),intro:$("#tIntro").value.trim(),targets});
         tgtDraft=null;toast("已儲存");act.disabled=false;return;
       }
+      if(a==="leaderAdd"){
+        const id=$("#leaderAdd").value;if(!id){toast("請先選擇成員");return;}
+        const L={...(cur().leaders||{})};L[id]={members:true,info:true,modules:false};
+        await updateDoc(doc(db,"statics",curTid),{leaders:L});toast("已指派 "+nameOf(users[id])+" 為團長");return;
+      }
+      if(a==="delStatic"){
+        if(!armedTwice("del"+curTid,act,"再按一次，確定刪除"))return;
+        const tid=curTid;
+        for(const id of Object.keys(membersOf(tid)))await deleteDoc(doc(db,"statics",tid,"members",id));
+        await deleteDoc(doc(db,"statics",tid));toast("已刪除固定團");go("lobby",null);return;
+      }
     }
-    const tid=t.closest("[data-tid]");if(tid){curTid=tid.dataset.tid;watchMembers();render();return;}
+    const tc=t.closest("[data-team]");if(tc){go("team",tc.dataset.team);return;}
     const mg=t.closest("[data-mg]");if(mg){mgTab=mg.dataset.mg;tgtDraft=null;render();return;}
-    const md=t.closest("button[data-mod]");if(md&&!t.closest("select")){toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
+    const md=t.closest("button[data-mod]");if(md){toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
     const rm=t.closest("[data-tgtrm]");if(rm){tgtDraft.splice(+rm.dataset.tgtrm,1);$("#tgtList").innerHTML=tgtListHTML();return;}
     const sub=t.closest("[data-sub]");if(sub){const k=sub.dataset.sub,s=profileDraft.subJobs;const i=s.indexOf(k);i<0?s.push(k):s.splice(i,1);sub.setAttribute("aria-pressed",i<0);return;}
     const ap=t.closest("[data-approve]");if(ap){
@@ -542,15 +653,23 @@ document.addEventListener("click",async e=>{
       const id=rmv.dataset.remove;if(!armedTwice("rm"+id,rmv,"確定移出？"))return;
       await setSlot(id,"");await deleteDoc(doc(db,"statics",curTid,"members",id));toast("已移出");return;
     }
+    const lrm=t.closest("[data-lrm]");if(lrm){
+      const id=lrm.dataset.lrm;if(!armedTwice("lrm"+id,lrm,"確定？"))return;
+      const L={...(cur().leaders||{})};delete L[id];await updateDoc(doc(db,"statics",curTid),{leaders:L});toast("已取消團長");return;
+    }
   }catch(e2){console.error(e2);toast(e2&&e2.code==="permission-denied"?"沒有權限執行這個動作":"操作失敗，請再試一次");}
 });
 document.addEventListener("change",async e=>{
   const t=e.target;
   try{
-    if(t.dataset.slot!==undefined){await setSlot(t.dataset.slot,t.value);toast(t.value?"已設為 "+t.value:"已取消職責");return;}
-    if(t.dataset.perm){await updateDoc(doc(db,"statics",curTid,"members",t.dataset.perm),{["perms."+t.dataset.mod]:t.value});toast("已更新權限");return;}
+    if(t.dataset.slot!==undefined){await setSlot(t.dataset.slot,t.value);toast(t.value?"已設為 "+t.value:"已改為替補");return;}
+    if(t.dataset.perm){await updateDoc(doc(db,"statics",curTid,"members",t.dataset.perm),{["perms."+t.dataset.pmod]:t.value});toast("已更新權限");return;}
     if(t.dataset.modstatus){await updateDoc(doc(db,"statics",curTid),{["modules."+t.dataset.modstatus]:t.value});toast("已更新為「"+MOD_STATUS[t.value]+"」");return;}
-  }catch(e2){console.error(e2);toast("更新失敗");}
+    if(t.dataset.lcap){
+      const L={...(cur().leaders||{})};const id=t.dataset.lcap;L[id]={...(L[id]||{}),[t.dataset.cap]:t.checked};
+      await updateDoc(doc(db,"statics",curTid),{leaders:L});toast("已更新團長權限");return;
+    }
+  }catch(e2){console.error(e2);toast(e2&&e2.code==="permission-denied"?"沒有權限執行這個動作":"更新失敗");}
 });
 </script>
 </body>
