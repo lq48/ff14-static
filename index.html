@@ -173,6 +173,29 @@ a{color:var(--accent)}
 .addrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .addrow .sel{flex:1;min-width:180px}
 .danger-zone{border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.slot .alts{font-size:11px;color:var(--muted)}
+.warn{font-size:12px;color:var(--danger);margin-top:2px}
+.mrow.jrow{grid-template-columns:minmax(170px,1.3fr) 90px minmax(150px,1.2fr) minmax(120px,1fr) minmax(120px,1fr) auto}
+.mrow.prow{grid-template-columns:minmax(150px,1.3fr) repeat(4,minmax(96px,1fr))}
+.mtable .inner{min-width:820px}
+.lfilter{margin:4px 0 12px}
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.lcard{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--bg);overflow:hidden}
+.lcard:hover{border-color:var(--accent)}
+.lcard.self{border-left:4px solid var(--gold)}
+.lcard.pinned{border-color:color-mix(in srgb,var(--gold) 60%,var(--line))}
+.lmain{display:grid;gap:4px;padding:12px 14px;color:var(--ink);text-decoration:none;flex:1}
+.lmain .lt{font-weight:700;font-size:15px}
+.lmain .ldom{font-weight:400;font-size:12px;color:var(--muted)}
+.lmain .ld{font-size:13px;color:var(--muted)}
+.ltags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:4px}
+.tag{font-size:11px;padding:0 7px;border-radius:4px;border:1px solid var(--line);background:var(--surface)}
+.tag.selftag{border-color:var(--gold);color:var(--gold);font-weight:700}
+.tag.wait{border-color:var(--gold);color:var(--gold)}
+.tag.bad{border-color:var(--danger);color:var(--danger)}
+.ltags .by{font-size:11px;color:var(--muted);margin-left:auto}
+.lops{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;border-top:1px solid var(--line);background:var(--surface)}
+.review{padding:12px;border:1px dashed var(--line);border-radius:10px;margin-bottom:14px;display:grid;gap:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -191,7 +214,7 @@ a{color:var(--accent)}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- 常數 ---------- */
@@ -203,6 +226,26 @@ const JOBS=[
   {k:"BLM",n:"黑魔道士",c:"magic"},{k:"SMN",n:"召喚士",c:"magic"},{k:"RDM",n:"赤魔道士",c:"magic"},{k:"PCT",n:"繪靈法師",c:"magic"}
 ].map(j=>({...j,r:j.c==="tank"||j.c==="heal"?j.c:"dps"}));
 const JOB_CATS=[{k:"tank",n:"防護職業"},{k:"heal",n:"治療職業"},{k:"melee",n:"近戰職業"},{k:"phys",n:"遠程物理職業"},{k:"magic",n:"遠程魔法職業"}];
+const LINK_CATS=["資料查詢","配裝","戰鬥與排行","減傷與攻略","生活職業","幻化與收藏","小工具","官方","其他"];
+const LINK_LANGS=["繁中","簡中","英文","日文","其他"];
+const SELF_TOOLS=[
+  {title:"出席時間調查",url:"schedule.html",desc:"填寫可以出團的時段，自動統計最多人有空的時間"},
+  {title:"莫古莫古大收集試算",url:"moogle.html",desc:"勾選想換的道具，計算所需稀少奇譚神點石"}
+];
+const SEED_LINKS=[
+  {title:"灰機 wiki",url:"https://ff14.huijiwiki.com/wiki/%E9%A6%96%E9%A1%B5",cat:"資料查詢",desc:"最完整的中文 FF14 百科",lang:"簡中"},
+  {title:"繁中工具箱",url:"https://xivtc.com/",cat:"資料查詢",desc:"繁中服玩家的綜合工具網站，超級豐富！",lang:"繁中"},
+  {title:"FF14 全戰職配裝",url:"https://www.kdocs.cn/l/ceEcTzlFQBUy",cat:"配裝",desc:"各戰鬥職業的推薦配裝與魔晶石整理",lang:"簡中"},
+  {title:"FFLogs",url:"https://www.fflogs.com/",cat:"戰鬥與排行",desc:"上傳戰鬥紀錄，看傷害、死因和排名，復盤必備",lang:"英文"},
+  {title:"xivanalysis",url:"https://xivanalysis.com/",cat:"戰鬥與排行",desc:"貼上 FFLogs 紀錄，自動檢查技能循環和失誤，俗稱警察網",lang:"英文"},
+  {title:"繁中服排行榜",url:"https://ranking.init.engineer/",cat:"戰鬥與排行",desc:"繁中服的玩家排行榜",lang:"繁中"},
+  {title:"xivhealer",url:"https://xivhealer.com/",cat:"減傷與攻略",desc:"規劃減傷與治療分配的輔助工具",lang:"英文"},
+  {title:"魚糕",url:"https://fish.ffmomola.com/#/",cat:"生活職業",desc:"釣魚好幫手：魚的出現時間、天氣條件與釣法一目瞭然",lang:"簡中"},
+  {title:"7.0HQhelp",url:"https://hqhelper.nbb.fan/#/",cat:"生活職業",desc:"生產職的製作輔助工具",lang:"簡中"},
+  {title:"Eorzea Collection",url:"https://ffxiv.eorzeacollection.com/",cat:"幻化與收藏",desc:"玩家分享的幻化搭配，找靈感、查裝備來源",lang:"英文"},
+  {title:"幻巧拼圖工具",url:"https://ff14.tw/tools/faux-hollows-foxes/index.html",cat:"小工具",desc:"幻巧拼圖小遊戲的解題輔助",lang:"繁中"},
+  {title:"FF14 繁中商城",url:"https://www.ffxiv.com.tw/web/store/index.aspx",cat:"官方",desc:"繁中版官方商城，坐騎、時裝都在這……錢包請保重",lang:"繁中"}
+];
 const SERVERS=["伊弗利特","迦樓羅","利維坦","鳳凰","奧汀","巴哈姆特","泰坦"];
 const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
 const ROLE_NAME={tank:"坦克",heal:"補師",dps:"輸出"};
@@ -249,6 +292,7 @@ let app,db,auth,me=null,claims={},isOwner=false;
 let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null;
+let links={},linkFilter="全部",linkDraft=null,linkSrc={};
 const urlTeam=()=>new URLSearchParams(location.search).get("team");
 
 /* ---------- 啟動 ---------- */
@@ -263,7 +307,7 @@ curTid=urlTeam();view=curTid?"team":"lobby";
 onAuthStateChanged(auth,async u=>{
   me=u;claims={};
   unsub.forEach(f=>f());unsub=[];
-  users={};statics=[];mem={};ready={users:false,statics:false,mem:false};
+  users={};statics=[];mem={};links={};linkSrc={};ready={users:false,statics:false,mem:false};
   if(u){try{claims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
   isOwner=!!(u&&((u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase())||claims.dc===OWNER_DISCORD_ID));
   if(u&&(claims.dc||isOwner))subscribe();
@@ -276,6 +320,14 @@ function subscribe(){
   unsub.push(onSnapshot(collection(db,"statics"),s=>{
     statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));ready.statics=true;render(true);
   },err));
+  // 推薦網站：總團長讀全部；其他人讀「已通過」＋「自己投稿的」
+  const onLinks=key=>s=>{linkSrc[key]={};s.docs.forEach(d=>linkSrc[key][d.id]={id:d.id,...d.data()});links=Object.assign({},...Object.values(linkSrc));render(true);};
+  linkSrc={};
+  if(isOwner)unsub.push(onSnapshot(collection(db,"links"),onLinks("all"),err));
+  else{
+    unsub.push(onSnapshot(query(collection(db,"links"),where("status","==","approved")),onLinks("ok"),err));
+    if(me)unsub.push(onSnapshot(query(collection(db,"links"),where("by","==",me.uid)),onLinks("mine"),err));
+  }
   unsub.push(onSnapshot(collectionGroup(db,"members"),s=>{
     mem={};s.docs.forEach(d=>{const p=d.ref.parent.parent;if(!p)return;(mem[p.id]||(mem[p.id]={}))[d.id]=d.data();});ready.mem=true;render(true);
   },err));
@@ -314,6 +366,10 @@ function canSee(mod){
   if(status==="selected")return p!=="none";
   return false;
 }
+const teamJob=(tid,uid)=>((membersOf(tid)[uid]||{}).job)||((users[uid]||{}).job)||"";
+const teamAlts=(tid,uid)=>((membersOf(tid)[uid]||{}).alts)||[];
+const slotRole=k=>(SLOTS.find(s=>s.k===k)||{}).r;
+function mismatch(slot,job){const r=slotRole(slot),j=JOB[job];if(!r||!j||j.r===r)return"";return slot+" 通常是"+{tank:"防護",heal:"治療",dps:"輸出"}[r]+"職業，目前是"+j.n;}
 const activeIds=tid=>Object.keys(membersOf(tid)).filter(id=>membersOf(tid)[id].status==="active");
 const leaderNames=st=>Object.keys(st.leaders||{}).map(id=>nameOf(users[id]));
 
@@ -324,10 +380,11 @@ function render(fromSnapshot){
   if(!me)return v.innerHTML=signedOutHTML();
   if(!claims.dc&&!isOwner)return v.innerHTML='<div class="center"><h1>請改用 Discord 登入</h1><p>這個網站的團員身分是用 Discord 帳號確認的。</p><button class="btn" data-act="logout">登出</button></div>';
   if(!ready.users||!ready.statics||!ready.mem)return v.innerHTML='<div class="center muted">載入中…</div>';
-  if(fromSnapshot&&(view==="profile"||view==="create"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
+  if(fromSnapshot&&(view==="profile"||view==="create"||view==="linkform"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
   if(claims.dc&&!users[me.uid])view="profile";
   if(view==="profile")return v.innerHTML=profileHTML(),bindProfile();
   if(view==="create"&&isOwner)return v.innerHTML=createStaticHTML();
+  if(view==="linkform"&&linkDraft)return v.innerHTML=linkFormHTML(),bindLinkForm();
   if(view==="team"||view==="manage"){
     const st=cur();
     if(!st){view="lobby";curTid=null;history.replaceState(null,"",location.pathname);}
@@ -408,7 +465,7 @@ function lobbyHTML(){
       (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
     '<div class="panel"><h2>飛地成員（'+ids.length+'）</h2>'+
       (ids.length?'<div class="crystals">'+ids.map(crystalHTML).join("")+'</div>':'<p class="muted">還沒有人建立靈魂水晶。</p>')+'</div>'+
-    '<div class="panel"><h2>共用工具</h2><div class="mods">'+toolCards()+'</div></div>';
+    linksPanelHTML();
 }
 function teamCardHTML(st){
   const ms=membersOf(st.id),act=activeIds(st.id),mine=me&&ms[me.uid];
@@ -422,12 +479,94 @@ function teamCardHTML(st){
 }
 function crystalHTML(id){
   const u=users[id],j=JOB[u.job];
-  const teams=statics.filter(s=>(membersOf(s.id)[id]||{}).status==="active").map(s=>s.name);
+  const teams=statics.filter(s=>(membersOf(s.id)[id]||{}).status==="active").map(s=>s.name+"・"+jobLabel(teamJob(s.id,id)));
   return'<div class="crystal r-'+(j?j.r:"dps")+'"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><div class="cbody">'+
     '<div class="nm">'+esc(nameOf(u))+(id===me.uid?'<span class="you">你</span>':'')+'</div>'+
     '<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
     (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+
     (teams.length?'<div class="tags">'+teams.map(n=>'<span class="target">'+esc(n)+'</span>').join("")+'</div>':'')+'</div></div>';
+}
+/* 工具與推薦網站 */
+const domainOf=u=>{try{return new URL(u,location.href).hostname.replace(/^www\./,"");}catch(_){return"";}};
+const normUrl=u=>{try{const x=new URL(u);return(x.hostname.replace(/^www\./,"")+x.pathname.replace(/\/+$/,"")+x.search+x.hash).toLowerCase();}catch(_){return String(u).toLowerCase();}};
+function linksPanelHTML(){
+  const all=Object.values(links);
+  const ok=all.filter(l=>l.status==="approved").sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||LINK_CATS.indexOf(a.cat)-LINK_CATS.indexOf(b.cat)||(a.createdAt||0)-(b.createdAt||0));
+  const cats=["全部","飛地自製",...LINK_CATS.filter(c=>ok.some(l=>l.cat===c))];
+  if(!cats.includes(linkFilter))linkFilter="全部";
+  const pend=isOwner?all.filter(l=>l.status==="pending").sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)):[];
+  const mine=all.filter(l=>l.by===me.uid&&l.status!=="approved"&&!isOwner);
+  let h='<div class="panel"><div class="phead"><h2>工具與推薦網站</h2><button class="btn sm" data-act="linkNew">＋ 分享連結</button></div>';
+  if(isOwner&&!ok.length&&!pend.length)h+='<div class="notice">推薦網站還是空的。<button class="btn sm primary" data-act="seedLinks">匯入預設推薦網站（12 個）</button></div>';
+  if(pend.length)h+='<div class="review"><h3 style="margin-top:0">待審核（'+pend.length+'）</h3>'+pend.map(l=>linkCardHTML(l,"review")).join("")+'</div>';
+  if(mine.length)h+='<div class="review"><h3 style="margin-top:0">我的投稿</h3>'+mine.map(l=>linkCardHTML(l,"mine")).join("")+'</div>';
+  h+='<div class="chips lfilter">'+cats.map(c=>'<button class="chip" data-lf="'+esc(c)+'" aria-pressed="'+(c===linkFilter)+'">'+esc(c)+'</button>').join("")+'</div>';
+  const showSelf=linkFilter==="全部"||linkFilter==="飛地自製";
+  const list=linkFilter==="全部"?ok:linkFilter==="飛地自製"?[]:ok.filter(l=>l.cat===linkFilter);
+  h+='<div class="links">'+(showSelf?SELF_TOOLS.map(selfCardHTML).join(""):'')+list.map(l=>linkCardHTML(l,"show")).join("")+'</div>';
+  return h+'</div>';
+}
+function selfCardHTML(t){
+  return'<div class="lcard self"><a class="lmain" href="'+esc(t.url)+'"><span class="lt">'+esc(t.title)+'</span><span class="ld">'+esc(t.desc)+'</span><span class="ltags"><span class="tag selftag">飛地自製</span></span></a></div>';
+}
+function linkCardHTML(l,mode){
+  const by=l.byName||nameOf(users[l.by]);
+  const st=mode==="mine"?'<span class="tag '+(l.status==="rejected"?'bad':'wait')+'">'+(l.status==="rejected"?'未通過':'審核中')+'</span>':'';
+  let ops="";
+  if(mode==="review")ops='<button class="btn sm primary" data-lok="'+l.id+'">通過</button><button class="btn sm" data-ledit="'+l.id+'">修改</button><button class="btn sm danger" data-lrej="'+l.id+'">退回</button>';
+  else if(mode==="mine")ops='<button class="btn sm" data-ledit="'+l.id+'">'+(l.status==="rejected"?'修改後重新投稿':'修改')+'</button><button class="btn sm danger" data-ldel="'+l.id+'">撤回</button>';
+  else if(isOwner)ops='<button class="linkbtn" data-lpin="'+l.id+'">'+(l.pinned?'取消置頂':'置頂')+'</button><button class="linkbtn" data-ledit="'+l.id+'">編輯</button><button class="linkbtn" data-ldel="'+l.id+'">下架</button>';
+  return'<div class="lcard'+(l.pinned&&mode==="show"?' pinned':'')+'"><a class="lmain" href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'+
+    '<span class="lt">'+(l.pinned&&mode==="show"?'📌 ':'')+esc(l.title)+' <span class="ldom">'+esc(domainOf(l.url))+' ↗</span></span>'+
+    '<span class="ld">'+esc(l.desc||"")+'</span>'+
+    '<span class="ltags"><span class="tag">'+esc(l.cat)+'</span><span class="tag">'+esc(l.lang)+'</span>'+st+'<span class="by">由 '+esc(by)+' 分享</span></span></a>'+
+    (ops?'<div class="lops">'+ops+'</div>':'')+'</div>';
+}
+function linkFormHTML(){
+  const d=linkDraft,editing=!!d.id;
+  return'<div style="margin-bottom:12px"><button class="linkbtn" data-act="linkCancel">← 回飛地大廳</button></div>'+
+    '<div class="panel"><h2>'+(editing?'修改連結':'分享連結')+'</h2>'+(isOwner?'':'<p class="muted small">送出後由總團長審核，通過後就會顯示在大廳。</p>')+
+    '<div class="form">'+
+    '<label>網址<input id="lUrl" maxlength="500" inputmode="url" value="'+esc(d.url)+'" placeholder="https://"></label><div class="warn" id="lDup" hidden></div>'+
+    '<div class="row2"><label>名稱<input id="lTitle" maxlength="40" value="'+esc(d.title)+'" placeholder="例如：FFLogs"></label>'+
+    '<label>分類<select id="lCat">'+LINK_CATS.map(c=>'<option'+(c===d.cat?' selected':'')+'>'+c+'</option>').join("")+'</select></label></div>'+
+    '<label>一句話介紹<input id="lDesc" maxlength="60" value="'+esc(d.desc)+'" placeholder="這個網站可以做什麼？（60 字以內）"></label>'+
+    '<label>語言<select id="lLang">'+LINK_LANGS.map(c=>'<option'+(c===d.lang?' selected':'')+'>'+c+'</option>').join("")+'</select></label>'+
+    '<div><button class="btn primary" data-act="linkSave">'+(isOwner?(d.approveOnSave?'儲存並通過':'儲存'):(editing?'重新送出審核':'送出審核'))+'</button> <button class="btn" data-act="linkCancel">取消</button></div>'+
+    '</div></div>';
+}
+function bindLinkForm(){
+  const sync=()=>{const d=linkDraft;d.url=$("#lUrl").value.trim();d.title=$("#lTitle").value;d.desc=$("#lDesc").value;d.cat=$("#lCat").value;d.lang=$("#lLang").value;
+    const dup=d.url&&Object.values(links).find(l=>l.id!==d.id&&normUrl(l.url)===normUrl(d.url));
+    const el=$("#lDup");el.hidden=!dup;if(dup)el.textContent="⚠ 這個網站已經有人分享過了："+dup.title+(dup.status==="approved"?"":"（審核中）");};
+  ["#lUrl","#lTitle","#lDesc"].forEach(x=>$(x).addEventListener("input",sync));
+  ["#lCat","#lLang"].forEach(x=>$(x).addEventListener("change",sync));
+  sync();
+}
+async function saveLink(btn){
+  const d=linkDraft;
+  if(!/^https:\/\/\S{3,}$/.test(d.url)){toast("網址要以 https:// 開頭");return;}
+  if(!d.title.trim()){toast("請填名稱");return;}
+  btn.disabled=true;
+  const data={title:d.title.trim().slice(0,40),url:d.url.slice(0,500),desc:d.desc.trim().slice(0,60),cat:d.cat,lang:d.lang,updatedAt:Date.now()};
+  try{
+    if(d.id){
+      const old=links[d.id]||{};
+      if(isOwner)await updateDoc(doc(db,"links",d.id),{...data,...(d.approveOnSave?{status:"approved"}:{})});
+      else await setDoc(doc(db,"links",d.id),{...data,by:me.uid,byName:old.byName||nameOf(users[me.uid]),status:"pending",pinned:false,createdAt:old.createdAt||Date.now()});
+    }else{
+      await addDoc(collection(db,"links"),{...data,by:me.uid,byName:nameOf(users[me.uid])||"總團長",status:isOwner?"approved":"pending",pinned:false,createdAt:Date.now()});
+    }
+    toast(isOwner?"已儲存":"已送出，等待總團長審核");linkDraft=null;go("lobby",null);
+  }catch(e){console.error(e);toast(e&&e.code==="permission-denied"?"沒有權限或格式不符":"儲存失敗，請再試一次");btn.disabled=false;}
+}
+async function seedLinks(btn){
+  btn.disabled=true;
+  try{
+    const b=writeBatch(db);const t=Date.now();const byName=nameOf(users[me.uid])||"Satoru";
+    SEED_LINKS.forEach((l,i)=>b.set(doc(collection(db,"links")),{...l,by:me.uid,byName,status:"approved",pinned:false,createdAt:t+i,updatedAt:t+i}));
+    await b.commit();toast("已匯入 12 個推薦網站");
+  }catch(e){console.error(e);toast("匯入失敗：請確認 Firestore 規則已更新");btn.disabled=false;}
 }
 
 /* 建立固定團（總團長） */
@@ -471,16 +610,17 @@ function joinHTML(m){
 function cardHTML(slot,uid){
   const u=uid&&users[uid];
   if(!u)return'<div class="slot r-'+slot.r+' empty"><span class="lab">'+slot.k+'</span>尚未分配</div>';
-  const j=JOB[u.job];
+  const tj=teamJob(curTid,uid),j=JOB[tj],alts=teamAlts(curTid,uid).filter(k=>JOB[k]);
   return'<div class="slot r-'+slot.r+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
     '<div class="nm">'+esc(nameOf(u))+'</div><div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
-    (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
+    (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(alts.length?'<div class="alts">備用：'+esc(alts.map(jobLabel).join("、"))+'</div>':'')+
+    (u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
 function rosterHTML(st){
   const roles=st.roles||{};const assigned=new Set(Object.values(roles));
   const rest=activeIds(st.id).filter(id=>!assigned.has(id));
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+
-    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=u&&JOB[u.job];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
   const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;
@@ -517,16 +657,25 @@ function membersMgHTML(st,pending){
     return'<div class="req"><img src="'+esc(avatarUrl(u))+'" alt=""><div class="info"><b>'+esc(nameOf(u))+'</b> <span class="muted small">'+esc(u?[u.charName,jobLabel(u.job)].filter(Boolean).join(" "):"")+'</span>'+
       (m.note?'<div class="small">「'+esc(m.note)+'」</div>':'')+'</div><button class="btn sm primary" data-approve="'+id+'">核准</button><button class="btn sm danger" data-reject="'+id+'">拒絕</button></div>';}).join("")+
     '<label class="small" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="welcomeOn" checked> 核准時在 Discord 發歡迎公告</label></div>';
-  h+='<div class="panel"><h2>成員（'+active.length+'）</h2>';
+  h+='<div class="panel"><h2>成員與職業（'+active.length+'）</h2>';
   if(!active.length)h+='<p class="muted">還沒有成員。可以從下方把飛地成員直接加入，或等他們申請。</p>';
-  else h+='<div class="mtable"><div class="inner"><div class="mrow mhead"><span>成員</span><span>職責</span>'+MODULES.map(x=>'<span>'+x.n+'</span>').join("")+'<span></span></div>'+
-    active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id);
-      return'<div class="mrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b><div class="small muted">'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
+  else{
+    const jobSel=(attr,val,blank)=>'<select '+attr+'>'+jobOptions(val,blank)+'</select>';
+    h+='<div class="mtable"><div class="inner"><div class="mrow jrow mhead"><span>成員</span><span>職責</span><span>固定團職業</span><span>備用職業 1</span><span>備用職業 2</span><span></span></div>'+
+    active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id),alts=m.alts||[];const warn=mismatch(sl,teamJob(st.id,id));
+      return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b><div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
         '<select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
-        MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+id+'" data-pmod="'+x.k+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+
+        '<div>'+jobSel('data-tjob="'+id+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
+        jobSel('data-talt="'+id+'" data-i="0" aria-label="備用職業 1"',alts[0]||"","無")+
+        jobSel('data-talt="'+id+'" data-i="1" aria-label="備用職業 2"',alts[1]||"","無")+
         (id===me.uid?'<span></span>':'<button class="btn sm danger" data-remove="'+id+'">移出</button>')+'</div>';}).join("")+'</div></div>'+
-    '<p class="hint" style="margin:8px 0 0">職責沒有分配的人會顯示在「替補成員」。權限只在功能設為「指定成員」或「全團開放」時才有作用。</p>';
+    '<p class="hint" style="margin:8px 0 0">職責沒有分配的人會顯示在「替補成員」。固定團職業沒設定時，沿用靈魂水晶的主職業。</p>';
+  }
   h+='</div>';
+  if(active.length)h+='<div class="panel"><h2>功能權限</h2><div class="mtable"><div class="inner" style="min-width:640px"><div class="mrow prow mhead"><span>成員</span>'+MODULES.map(x=>'<span>'+x.n+'</span>').join("")+'</div>'+
+    active.map(id=>{const u=users[id],m=ms[id];return'<div class="mrow prow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b></div></div>'+
+      MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+id+'" data-pmod="'+x.k+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+'</div>';}).join("")+
+    '</div></div><p class="hint" style="margin:8px 0 0">權限只在功能設為「指定成員」或「全團開放」時才有作用。</p></div>';
   h+='<div class="panel"><h2>從飛地成員直接加入</h2>'+(outsiders.length?'<p class="muted small">這些人已經建立過靈魂水晶，但還不是這個團的成員。</p><div class="others">'+
     outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+id+'">加入</button></div>';}).join("")+'</div>':
     '<p class="muted">飛地成員都已經在這個團裡了。</p>')+'</div>';
@@ -581,7 +730,7 @@ async function workerPost(path,body){
 }
 async function welcome(uid){
   const u=users[uid],st=cur();if(!u||!u.dc||!st)return;
-  try{const j=await workerPost("/welcome",{tid:st.id,dc:u.dc,name:nameOf(u),job:jobLabel(u.job),charName:u.charName||"",static:st.name});
+  try{const j=await workerPost("/welcome",{tid:st.id,dc:u.dc,name:nameOf(u),job:jobLabel(teamJob(st.id,uid)),charName:u.charName||"",static:st.name});
     if(!j.ok)toast("歡迎公告沒發出去："+(j.error||""));}catch(e){console.error(e);}
 }
 async function setSlot(uid,slot){
@@ -605,6 +754,10 @@ document.addEventListener("click",async e=>{
       if(a==="cancelProfile"){profileDraft=null;view=curTid?"team":"lobby";render();return;}
       if(a==="saveProfile")return saveProfile(act);
       if(a==="create"){go("create",null);return;}
+      if(a==="linkNew"){linkDraft={url:"",title:"",desc:"",cat:LINK_CATS[0],lang:"繁中"};view="linkform";window.scrollTo(0,0);render();return;}
+      if(a==="linkCancel"){linkDraft=null;go("lobby",null);return;}
+      if(a==="linkSave")return saveLink(act);
+      if(a==="seedLinks")return seedLinks(act);
       if(a==="createStatic")return createStatic(act);
       if(a==="manage"){go("manage");return;}
       if(a==="team"){go("team");return;}
@@ -634,6 +787,13 @@ document.addEventListener("click",async e=>{
       }
     }
     const tc=t.closest("[data-team]");if(tc){go("team",tc.dataset.team);return;}
+    const lf=t.closest("[data-lf]");if(lf){linkFilter=lf.dataset.lf;render();return;}
+    const le=t.closest("[data-ledit]");if(le){const l=links[le.dataset.ledit];if(!l)return;
+      linkDraft={id:l.id,url:l.url,title:l.title,desc:l.desc||"",cat:l.cat,lang:l.lang,approveOnSave:isOwner&&l.status==="pending"};view="linkform";window.scrollTo(0,0);render();return;}
+    const lok=t.closest("[data-lok]");if(lok){await updateDoc(doc(db,"links",lok.dataset.lok),{status:"approved",updatedAt:Date.now()});toast("已通過");return;}
+    const lrej=t.closest("[data-lrej]");if(lrej){if(!armedTwice("lrej"+lrej.dataset.lrej,lrej,"確定退回？"))return;await updateDoc(doc(db,"links",lrej.dataset.lrej),{status:"rejected",updatedAt:Date.now()});toast("已退回");return;}
+    const ldel=t.closest("[data-ldel]");if(ldel){if(!armedTwice("ldel"+ldel.dataset.ldel,ldel,"確定？"))return;await deleteDoc(doc(db,"links",ldel.dataset.ldel));toast(isOwner?"已下架":"已撤回");return;}
+    const lpin=t.closest("[data-lpin]");if(lpin){const l=links[lpin.dataset.lpin];await updateDoc(doc(db,"links",l.id),{pinned:!l.pinned});toast(l.pinned?"已取消置頂":"已置頂");return;}
     const mg=t.closest("[data-mg]");if(mg){mgTab=mg.dataset.mg;tgtDraft=null;render();return;}
     const md=t.closest("button[data-mod]");if(md){toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
     const rm=t.closest("[data-tgtrm]");if(rm){tgtDraft.splice(+rm.dataset.tgtrm,1);$("#tgtList").innerHTML=tgtListHTML();return;}
@@ -662,7 +822,16 @@ document.addEventListener("click",async e=>{
 document.addEventListener("change",async e=>{
   const t=e.target;
   try{
-    if(t.dataset.slot!==undefined){await setSlot(t.dataset.slot,t.value);toast(t.value?"已設為 "+t.value:"已改為替補");return;}
+    if(t.dataset.slot!==undefined){const id=t.dataset.slot;await setSlot(id,t.value);const w=mismatch(t.value,teamJob(curTid,id));toast(w?"提醒："+w:(t.value?"已設為 "+t.value:"已改為替補"));return;}
+    if(t.dataset.tjob!==undefined){const id=t.dataset.tjob,v=t.value;const m=membersOf(curTid)[id]||{};
+      const alts=(m.alts||[]).filter(k=>k&&k!==v);
+      await updateDoc(doc(db,"statics",curTid,"members",id),{job:v,alts});
+      const sl=Object.keys(cur().roles||{}).find(k=>cur().roles[k]===id)||"";const w=mismatch(sl,v||((users[id]||{}).job));
+      toast(w?"提醒："+w:"已更新固定團職業");return;}
+    if(t.dataset.talt!==undefined){const id=t.dataset.talt,i=+t.dataset.i;const m=membersOf(curTid)[id]||{};
+      const a=[...(m.alts||[])];a[i]=t.value;const job=teamJob(curTid,id);
+      const alts=[...new Set(a.filter(k=>k&&k!==job))].slice(0,2);
+      await updateDoc(doc(db,"statics",curTid,"members",id),{alts});toast("已更新備用職業");return;}
     if(t.dataset.perm){await updateDoc(doc(db,"statics",curTid,"members",t.dataset.perm),{["perms."+t.dataset.pmod]:t.value});toast("已更新權限");return;}
     if(t.dataset.modstatus){await updateDoc(doc(db,"statics",curTid),{["modules."+t.dataset.modstatus]:t.value});toast("已更新為「"+MOD_STATUS[t.value]+"」");return;}
     if(t.dataset.lcap){
