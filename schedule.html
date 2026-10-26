@@ -159,6 +159,11 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .slist li:first-child{border-top:0}
 .slist .t{font-weight:700}
 .empty{padding:32px 16px;text-align:center;color:var(--muted)}
+.loadhelp{max-width:560px;margin:24px auto;padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-align:left}
+.loadhelp h2{font-family:"Noto Serif TC",serif;font-size:20px;margin:0 0 8px}
+.loadhelp ul{margin:0 0 16px;padding-left:20px}
+.loadhelp li{margin:6px 0}
+.center-load{text-align:center;color:var(--muted);padding:32px 16px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -240,6 +245,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
   </header>
 
   <div id="gate" class="panel" hidden></div>
+  <div id="loadingBox" class="panel center-load" data-loading>載入中…</div>
 
   <div id="app" hidden>
     <section id="hero"></section>
@@ -265,7 +271,9 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
       <div class="panel">
         <h2>發起新的調查</h2>
         <div class="form">
-          <div>
+          <label>為哪個固定團發起<select id="fStatic"></select></label>
+          <div class="hint" id="fStaticHint" hidden>隊員名單已從飛地的固定團帶入，發起前仍可以增減。</div>
+          <div id="fTeamsBox">
             <div class="flabel">常用團隊（點一下帶入名單）</div>
             <div class="teamchips" id="fTeams"></div>
           </div>
@@ -280,7 +288,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
               <button class="btn" type="button" id="fAddMember">加入</button>
             </div>
           </div>
-          <label class="check"><input type="checkbox" id="fSaveTeam" checked> 把這個團名和名單存為常用團隊（同名會更新）</label>
+          <label class="check" id="fSaveTeamBox"><input type="checkbox" id="fSaveTeam" checked> 把這個團名和名單存為常用團隊（同名會更新）</label>
           <label>調查名稱<input id="fTitle" maxlength="40" value="下週出團時間"></label>
           <div class="row2">
             <label>開始日期<input type="date" id="fStart"></label>
@@ -320,12 +328,29 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="tip" id="tip" hidden></div>
 
+<script>
+/* 載入逾時提示：放在一般 script，即使 config.js 缺少、主程式無法執行也會運作 */
+(function(){
+  var C='<li><b>網路比較慢</b>：稍等一下，或按下方的重新整理。</li>'+
+    '<li><b>網站檔案不完整</b>：例如 GitHub 上少了 config.js。請通知團長。</li>'+
+    '<li><b>資料庫規則還沒更新</b>：Firebase 拒絕讀取資料。請通知團長。</li>'+
+    '<li><b>瀏覽器擋住了 Google 的服務</b>：廣告阻擋或隱私類擴充功能可能造成，試著暫時關閉，或換一個瀏覽器。</li>';
+  var R='<li><b>資料庫規則還沒更新或設定有誤</b>：Firebase 拒絕讀取資料。請通知團長到 Firebase 主控台檢查並發布最新的 firestore.rules。</li>';
+  window.__loadHelp=function(kind,target){
+    var el=target||document.querySelector('[data-loading]');if(!el)return;
+    el.innerHTML='<div class="loadhelp"><h2>'+(kind==='rules'?'資料庫拒絕讀取':'載入得比平常久')+'</h2><p>可能的原因：</p><ul>'+(kind==='rules'?R:C)+'</ul>'+
+      '<button type="button" class="btn primary" onclick="location.reload()">重新整理</button></div>';
+    el.removeAttribute('data-loading');
+  };
+  setTimeout(function(){var el=document.querySelector('[data-loading]');if(el&&!el.hidden&&el.offsetParent!==null)window.__loadHelp('slow',el);},10000);
+})();
+</script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 const NOTIFY_URL = WORKER_URL;   // 設定都在 config.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // 舊版調查（沒有自己名單的）使用這份名單
@@ -351,6 +376,9 @@ const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
 /* ---------- 狀態 ---------- */
 let authClaims={};
 let db,auth,authUser=null,isOwner=false,teamsUnsub=null;
+let statics=[],staticsUnsub=null,leadTids=[];
+const canCreate=()=>isOwner||leadTids.length>0;
+const canManageSurvey=sv=>!!sv&&(isOwner||(!!sv.tid&&leadTids.includes(sv.tid)));
 let surveys=[],resps={},teams=[],curSid=null,tab="fill",firstLoad=true;
 let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
 let noneOpen=false,noneText="";
@@ -373,11 +401,11 @@ const eventsOf=sv=>Array.isArray(sv.events)?sv.events:[];
 function evMap(sv){const m={};for(const e of eventsOf(sv))for(let i=e.a;i<e.b;i++)m[e.d+"|"+i]=e;return m;}
 const evTime=e=>slotT(e.a)+"–"+(e.b===48?"24:00":slotT(e.b));
 function meMap(){try{return JSON.parse(store.get("ff14-me")||"{}")||{};}catch(e){return{};}}
-function myKeyFor(sv){if(!sv)return null;const n=meMap()[teamOf(sv)];const m=memOf(sv).find(x=>x.n===n);return m?m.k:null;}
+function myKeyFor(sv){if(!sv)return null;const n=meMap()[teamOf(sv)];let m=memOf(sv).find(x=>x.n===n);if(!m&&authClaims.dc)m=memOf(sv).find(x=>x.did===authClaims.dc);return m?m.k:null;}
 function rememberMe(sv,k){const map=meMap();map[teamOf(sv)]=nameOf(sv,k);store.set("ff14-me",JSON.stringify(map));}
 function armedTwice(key,btn,label){if(armed[key]&&Date.now()-armed[key]<4000)return true;armed[key]=Date.now();btn.textContent=label;return false;}
 function confirmLeave(){if(!dirty)return true;if(Date.now()-leaveArmed<4000)return true;leaveArmed=Date.now();toast("還有未儲存的變更，再按一次放棄");return false;}
-function showErr(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新並發布":"讀取資料失敗");}
+function showErr(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新並發布":"讀取資料失敗");if(e&&e.code==="permission-denied"&&window.__loadHelp&&!$("#loadingBox").hidden)window.__loadHelp("rules");}
 function selectSurvey(id){curSid=id;if(id)store.set("ff14-last",id);dirty=false;picked=null;changingName=false;syncDraft();renderAll();window.scrollTo({top:0});}
 
 /* ---------- 草稿 ---------- */
@@ -396,15 +424,15 @@ function renderAll(){renderWho();renderHero();renderTabs();renderFill();renderRe
 function renderWho(){
   const el=$("#who");el.textContent="";const sv=cur();
   if(sv&&myMember){const s=document.createElement("span");s.innerHTML="你是 <b></b>";s.querySelector("b").textContent=nameOf(sv,myMember);el.appendChild(s);}
-  if(isOwner){const s=document.createElement("span");s.textContent=(el.textContent?"，":"")+"團長模式";el.appendChild(s);}
+  if(canCreate()){const s=document.createElement("span");s.textContent=(el.textContent?"，":"")+(isOwner?"總團長模式":"團長模式");el.appendChild(s);}
 }
 function renderFoot(){
   const f=$("#foot");
-  const home='<a class="linkbtn" href="./">回固定團首頁</a>';
+  const home='<a class="linkbtn" href="./">回光之戰士飛地</a>';
   if(authUser){
     f.innerHTML=home+'<span></span><button class="linkbtn" data-act="logout">登出</button>';
-    f.querySelector("span").textContent="已登入："+(authClaims.dcn||authUser.email||"")+(isOwner?"（團長）":"");
-  }else f.innerHTML=home+'<span>團長要發起調查？</span><button class="linkbtn" data-act="dclogin">用 Discord 登入</button><button class="linkbtn" data-act="login">Google 備用登入</button>';
+    f.querySelector("span").textContent="已登入："+(authClaims.dcn||authUser.email||"")+(isOwner?"（總團長）":leadTids.length?"（團長）":"");
+  }else f.innerHTML=home+'<span>團長要發起或管理調查？</span><button class="linkbtn" data-act="dclogin">用 Discord 登入</button><button class="linkbtn" data-act="login">Google 備用登入</button>';
 }
 function surveyCard(s){
   const n=Object.keys(surveyResps(s.id)).filter(k=>memOf(s).some(m=>m.k===k)).length;
@@ -426,7 +454,7 @@ function pickerHTML(){
 }
 function renderHero(){
   const sv=cur();const h=$("#hero");
-  if(!surveys.length){h.innerHTML='<div class="hero"><h1>還沒有調查</h1><div class="range">'+(isOwner?"到「發起與管理調查」建立第一份。":"團長發起調查後，這裡就能填寫。")+'</div></div>';return;}
+  if(!surveys.length){h.innerHTML='<div class="hero"><h1>還沒有調查</h1><div class="range">'+(canCreate()?"到「發起與管理調查」建立第一份。":"團長發起調查後，這裡就能填寫。")+'</div></div>';return;}
   if(!sv){h.innerHTML='<div class="hero"><h1>你要填哪個團？</h1><div class="range">選擇團和調查後就能開始勾時間。</div></div>'+pickerHTML();return;}
   const a=sv.dates[0],b=sv.dates[sv.dates.length-1];
   h.innerHTML='<div class="hero"><div class="eyebrow">'+esc(teamOf(sv))+(surveys.length>1?' <button class="linkbtn" data-act="switch">切換團或調查</button>':'')+'</div>'+
@@ -437,9 +465,9 @@ function renderHero(){
 }
 function renderTabs(){
   const has=!!cur();
-  if(!has&&tab!=="manage")tab=isOwner&&!surveys.length?"manage":tab;
+  if(!has&&tab!=="manage")tab=canCreate()&&!surveys.length?"manage":tab;
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===tab));
-  $("#tabs").hidden=!has&&!isOwner;
+  $("#tabs").hidden=!has&&!canCreate();
   $("#fillView").hidden=tab!=="fill";$("#resultsView").hidden=tab!=="results";$("#manageView").hidden=tab!=="manage";
   $("#legend").hidden=tab==="manage"||!has;$("#hero").hidden=tab==="manage";
 }
@@ -514,7 +542,7 @@ function toggleCells(cells){cells=cells.filter(c=>!c.classList.contains("ev"));i
 function editable(){const sv=cur();return sv&&!sv.closed&&myMember&&!changingName;}
 
 async function postStatus(){
-  if(!isOwner||!NOTIFY_URL||posting||!curSid||!authUser)return;
+  if(!canManageSurvey(cur())||!NOTIFY_URL||posting||!curSid||!authUser)return;
   posting=true;renderResults();
   try{
     const idToken=await authUser.getIdToken();
@@ -568,8 +596,8 @@ function renderResults(){
   const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
 
   let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2><div class="people">'+
-    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&isOwner?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>'+
-    (isOwner&&NOTIFY_URL?'<div class="postdc"><label><input type="checkbox" id="postTag"'+(postTag?' checked':'')+'> 順便 tag 還沒填的人</label><button class="btn sm primary" data-act="postdc"'+(posting?' disabled':'')+'>'+(posting?'發送中…':'發布目前狀況到 DC')+'</button></div>':'')+
+    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&canManageSurvey(sv)?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>'+
+    (canManageSurvey(sv)&&NOTIFY_URL?'<div class="postdc"><label><input type="checkbox" id="postTag"'+(postTag?' checked':'')+'> 順便 tag 還沒填的人</label><button class="btn sm primary" data-act="postdc"'+(posting?' disabled':'')+'>'+(posting?'發送中…':'發布目前狀況到 DC')+'</button></div>':'')+
     '</div>';
   const outs=MEM.filter(m=>{const r=surveyResps(sv.id)[m.k];return r&&responders.includes(m.k)&&!Object.values(r.slots||{}).some(x=>x&&x.length);});
   if(outs.length)side+='<div class="panel"><h2>此時段皆無法參與（'+outs.length+'）</h2><ul class="reasons">'+outs.map(m=>{const n=(surveyResps(sv.id)[m.k]||{}).note;return'<li><b>'+esc(m.n)+'</b>'+(n?'：'+esc(n):'<span class="muted">（沒有填原因）</span>')+'</li>';}).join("")+'</ul></div>';
@@ -595,7 +623,7 @@ function renderResults(){
   });
 }
 async function removeResp(k,btn){
-  if(!isOwner||!armedTwice("r"+k,btn,"確定？"))return;
+  if(!canManageSurvey(cur())||!armedTwice("r"+k,btn,"確定？"))return;
   try{await deleteDoc(doc(db,"surveys",curSid,"responses",k));toast("已清除");}catch(e){toast("清除失敗");}
 }
 
@@ -666,6 +694,30 @@ function renderTeamChips(){
   el.innerHTML=teams.length?teams.map(t=>'<button type="button" class="chip" data-team="'+esc(t.id)+'" aria-pressed="'+(t.name===$("#fTeam").value.trim())+'">'+esc(t.name)+'（'+(t.members||[]).length+'）</button>').join(""):'<span class="muted">還沒有常用團隊，發起調查時勾選「存為常用團隊」就會出現在這裡。</span>';
   $("#tList").innerHTML=teams.length?teams.map(t=>'<li><div><div class="t">'+esc(t.name)+'</div><div class="muted" style="font-size:13px">'+esc((t.members||[]).join("、"))+'</div></div><div class="toolbar" style="margin:0"><button class="btn sm danger" data-tdel="'+esc(t.id)+'">刪除</button></div></li>').join(""):'<li class="muted">還沒有常用團隊。</li>';
 }
+let fStaticTid="";
+function renderStaticSel(){
+  const sel=$("#fStatic");if(!sel)return;
+  const avail=isOwner?statics:statics.filter(s=>leadTids.includes(s.id));
+  if(fStaticTid&&!avail.some(s=>s.id===fStaticTid))fStaticTid="";
+  if(!isOwner&&!fStaticTid&&avail.length)fStaticTid=avail[0].id;
+  sel.innerHTML=(isOwner?'<option value="">不指定（自行輸入團名與名單）</option>':'')+avail.map(s=>'<option value="'+esc(s.id)+'"'+(s.id===fStaticTid?' selected':'')+'>'+esc(s.name)+'</option>').join("");
+  const linked=!!fStaticTid;
+  $("#fTeamsBox").hidden=linked||!isOwner;$("#fSaveTeamBox").hidden=linked||!isOwner;$("#fStaticHint").hidden=!linked;
+  $("#fTeam").readOnly=linked;
+}
+async function loadStaticMembers(tid){
+  const st=statics.find(s=>s.id===tid);if(!st)return;
+  $("#fTeam").value=st.name;
+  try{
+    const ms=await getDocs(collection(db,"statics",tid,"members"));
+    const ids=ms.docs.filter(d=>d.data().status==="active").map(d=>d.id);
+    const us=await Promise.all(ids.map(id=>getDoc(doc(db,"users",id))));
+    const order=["MT","ST","H1","H2","D1","D2","D3","D4"],roles=st.roles||{};
+    const rank=id=>{const k=Object.keys(roles).find(r=>roles[r]===id);const i=order.indexOf(k);return i<0?99:i;};
+    fMembers=us.filter(u=>u.exists()).sort((a,b)=>rank(a.id)-rank(b.id)).map(u=>{const d=u.data();return{n:d.nick||d.dcName||"未命名",did:d.dc||"",uid:u.id};});
+    renderMemEdit();toast("已帶入「"+st.name+"」的 "+fMembers.length+" 位成員");
+  }catch(e){console.error(e);toast("讀取固定團成員失敗");}
+}
 function setupManage(){
   const m=nextMonday();$("#fStart").value=fmtD(m);$("#fEnd").value=fmtD(new Date(m.getTime()+6*864e5));
   setupEvEditor();resetHol();
@@ -678,6 +730,7 @@ function setupManage(){
   $("#fNewMember").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();addMember();}});
   $("#fMembers").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;fMembers.splice(+b.dataset.rm,1);renderMemEdit();});
   $("#fTeam").addEventListener("input",renderTeamChips);
+  $("#fStatic").addEventListener("change",e=>{fStaticTid=e.target.value;renderStaticSel();if(fStaticTid)loadStaticMembers(fStaticTid);});
   $("#fTeams").addEventListener("click",e=>{
     const b=e.target.closest("[data-team]");if(!b)return;const t=teams.find(x=>x.id===b.dataset.team);if(!t)return;
     $("#fTeam").value=t.name;const dids=t.dids||{};fMembers=(t.members||[]).map(n=>({n,did:dids[n]||dirLookup(n)}));renderMemEdit();renderTeamChips();
@@ -696,17 +749,18 @@ function setupManage(){
     if(!ds.length){msg.textContent="結束日期要在開始日期之後。";return;}
     if(ds.length>21){msg.textContent="一次最多 21 天。";return;}
     const btn=$("#fCreate");btn.disabled=true;msg.textContent="";
-    const members=fMembers.map((m,i)=>m.did?{k:"m"+(i+1),n:m.n,did:m.did}:{k:"m"+(i+1),n:m.n});
+    if(!isOwner&&!fStaticTid){msg.textContent="請選擇要為哪個固定團發起。";btn.disabled=false;return;}
+    const members=fMembers.map((m,i)=>{const o={k:"m"+(i+1),n:m.n};if(m.did)o.did=m.did;if(m.uid)o.uid=m.uid;return o;});
     const names=fMembers.map(m=>m.n),dids={};fMembers.forEach(m=>{if(m.did)dids[m.n]=m.did;});
     try{
-      if($("#fSaveTeam").checked){
+      if(isOwner&&!fStaticTid&&$("#fSaveTeam").checked){
         const ex=teams.find(t=>t.name===team);
         if(ex)await updateDoc(doc(db,"teams",ex.id),{members:names,dids,updatedAt:Date.now()});
         else await addDoc(collection(db,"teams"),{name:team,members:names,dids,updatedAt:Date.now()});
       }
       const ref=await addDoc(collection(db,"surveys"),{
         team,title:$("#fTitle").value.trim()||"出席調查",dates:ds,holidays:[...fHol],note:$("#fNote").value.trim(),
-        members,memberKeys:members.map(m=>m.k),events:fEvents.map(e=>({d:e.d,a:e.a,b:e.b,label:e.label})),closed:false,createdAt:Date.now()
+        ...(fStaticTid?{tid:fStaticTid}:{}),members,memberKeys:members.map(m=>m.k),events:fEvents.map(e=>({d:e.d,a:e.a,b:e.b,label:e.label})),closed:false,createdAt:Date.now()
       });
       $("#fNote").value="";fEvents=[];renderEvList();tab="fill";selectSurvey(ref.id);toast("已發起，用「複製連結」把網址傳給團員吧");
     }catch(e){console.error(e);msg.textContent=e&&e.code==="permission-denied"?"沒有權限：請確認登入的是團長帳號，且 Firestore 規則已更新為新版。":"發起失敗，請再試一次。";}
@@ -761,7 +815,7 @@ function setupManage(){
         const mem=memOf(sv);const vals=didBuf.vals.map(v=>(v||"").trim());
         const bad=mem.find((m,i)=>vals[i]&&!DID_RE.test(vals[i]));
         if(bad){toast("「"+bad.n+"」的 Discord ID 格式不對，應該是 15～21 位數字");return;}
-        const members=mem.map((m,i)=>vals[i]?{k:m.k,n:m.n,did:vals[i]}:{k:m.k,n:m.n});
+        const members=mem.map((m,i)=>{const o={k:m.k,n:m.n};if(vals[i])o.did=vals[i];if(m.uid)o.uid=m.uid;return o;});
         b.disabled=true;
         await updateDoc(doc(db,"surveys",id),{members,memberKeys:members.map(m=>m.k)});
         const sync=document.getElementById("didSync");const team=teams.find(t=>t.name===teamOf(sv));
@@ -809,11 +863,12 @@ function evEditorHTML(s){
     '<div class="acts"><span style="margin-right:auto"></span><button class="btn sm" data-op="evcancel" data-id="'+esc(s.id)+'">取消</button><button class="btn sm primary" data-op="evsave" data-id="'+esc(s.id)+'">儲存既定活動</button></div></div>';
 }
 function renderSList(force){
-  if(!isOwner)return;
+  if(!canCreate())return;
   if((didBuf||evBuf)&&!force)return; // 編輯中不重畫，避免打字被打斷
   const el=$("#sList");
-  if(!surveys.length){el.innerHTML='<li class="muted">還沒有調查。</li>';return;}
-  el.innerHTML=surveys.map(s=>{
+  const mine=surveys.filter(canManageSurvey);
+  if(!mine.length){el.innerHTML='<li class="muted">還沒有調查。</li>';return;}
+  el.innerHTML=mine.map(s=>{
     const n=tally(s).responders.length;
     const ed=didBuf&&didBuf.sid===s.id;const ee=evBuf&&evBuf.sid===s.id;
     return'<li'+(ed||ee?' class="editing"':'')+'><div><div class="t"><span class="teamtag">'+esc(teamOf(s))+'</span>'+esc(s.title||"出席調查")+(s.closed?'<span class="closedtag">已截止</span>':'')+'</div><div class="muted" style="font-size:13px">'+md(s.dates[0])+' 到 '+md(s.dates[s.dates.length-1])+'，'+n+' / '+memOf(s).length+' 人回覆</div></div>'+
@@ -941,7 +996,7 @@ function setupTip(){
 
 /* ---------- 啟動（放最後，確保所有變數都已宣告） ---------- */
 if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
-  const g=$("#gate");g.hidden=false;
+  const g=$("#gate");g.hidden=false;$("#loadingBox").hidden=true;
   g.innerHTML='<h2>還沒設定 Firebase</h2><p>請打開 index.html，把最上面的 FIREBASE_CONFIG 和 OWNER_EMAIL 改成你的設定。步驟請看 README.md。</p>';
 }else{
   const app=initializeApp(FIREBASE_CONFIG);
@@ -957,7 +1012,15 @@ if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
     authUser=u;authClaims={};
     if(u){try{authClaims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
     isOwner=!!(u&&((u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase())||authClaims.dc===OWNER_DISCORD_ID));
-    $("#manageTab").hidden=!isOwner;if(!isOwner&&tab==="manage")tab="fill";
+    if(staticsUnsub){staticsUnsub();staticsUnsub=null;}statics=[];leadTids=[];
+    if(u)staticsUnsub=onSnapshot(collection(db,"statics"),s=>{
+      statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+      leadTids=statics.filter(x=>((x.leaders||{})[u.uid]||{}).survey===true).map(x=>x.id);
+      $("#manageTab").hidden=!canCreate();if(!canCreate()&&tab==="manage")tab="fill";
+      renderStaticSel();renderFoot();renderAll();
+    },e=>console.error(e));
+    $("#manageTab").hidden=!canCreate();if(!canCreate()&&tab==="manage")tab="fill";
+    syncDraft();
     if(teamsUnsub){teamsUnsub();teamsUnsub=null;teams=[];}
     if(isOwner)teamsUnsub=onSnapshot(collection(db,"teams"),s=>{
       teams=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));renderTeamChips();
@@ -966,6 +1029,7 @@ if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
   });
   onSnapshot(collection(db,"surveys"),s=>{
     surveys=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    $("#loadingBox").hidden=true;
     if(curSid&&!cur())curSid=null;
     if(firstLoad){
       firstLoad=false;

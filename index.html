@@ -196,6 +196,10 @@ a{color:var(--accent)}
 .ltags .by{font-size:11px;color:var(--muted);margin-left:auto}
 .lops{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;border-top:1px solid var(--line);background:var(--surface)}
 .review{padding:12px;border:1px dashed var(--line);border-radius:10px;margin-bottom:14px;display:grid;gap:8px}
+.loadhelp{max-width:560px;margin:24px auto;padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-align:left}
+.loadhelp h2{font-family:"Noto Serif TC",serif;font-size:20px;margin:0 0 8px}
+.loadhelp ul{margin:0 0 16px;padding-left:20px}
+.loadhelp li{margin:6px 0}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -207,10 +211,27 @@ a{color:var(--accent)}
     <a class="brand" id="brand" href="./" data-act="lobby">光之戰士飛地</a>
     <div class="me" id="me"></div>
   </header>
-  <main id="view"><div class="center muted">載入中…</div></main>
+  <main id="view"><div class="center muted" data-loading>載入中…</div></main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script>
+/* 載入逾時提示：放在一般 script，即使 config.js 缺少、主程式無法執行也會運作 */
+(function(){
+  var C='<li><b>網路比較慢</b>：稍等一下，或按下方的重新整理。</li>'+
+    '<li><b>網站檔案不完整</b>：例如 GitHub 上少了 config.js。請通知團長。</li>'+
+    '<li><b>資料庫規則還沒更新</b>：Firebase 拒絕讀取資料。請通知團長。</li>'+
+    '<li><b>瀏覽器擋住了 Google 的服務</b>：廣告阻擋或隱私類擴充功能可能造成，試著暫時關閉，或換一個瀏覽器。</li>';
+  var R='<li><b>資料庫規則還沒更新或設定有誤</b>：Firebase 拒絕讀取資料。請通知團長到 Firebase 主控台檢查並發布最新的 firestore.rules。</li>';
+  window.__loadHelp=function(kind,target){
+    var el=target||document.querySelector('[data-loading]');if(!el)return;
+    el.innerHTML='<div class="loadhelp"><h2>'+(kind==='rules'?'資料庫拒絕讀取':'載入得比平常久')+'</h2><p>可能的原因：</p><ul>'+(kind==='rules'?R:C)+'</ul>'+
+      '<button type="button" class="btn primary" onclick="location.reload()">重新整理</button></div>';
+    el.removeAttribute('data-loading');
+  };
+  setTimeout(function(){var el=document.querySelector('[data-loading]');if(el&&!el.hidden&&el.offsetParent!==null)window.__loadHelp('slow',el);},10000);
+})();
+</script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -332,7 +353,7 @@ function subscribe(){
     mem={};s.docs.forEach(d=>{const p=d.ref.parent.parent;if(!p)return;(mem[p.id]||(mem[p.id]={}))[d.id]=d.data();});ready.mem=true;render(true);
   },err));
 }
-function err(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新":"讀取資料失敗");}
+function err(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新":"讀取資料失敗");if(e&&e.code==="permission-denied"&&window.__loadHelp)window.__loadHelp("rules");}
 let synced=false;
 function syncDiscordInfo(){
   if(synced||!claims.dc||!me)return;const p=users[me.uid];if(!p)return;synced=true;
@@ -356,8 +377,8 @@ const cur=()=>statics.find(s=>s.id===curTid)||null;
 const membersOf=tid=>mem[tid]||{};
 const myMember=()=>me?membersOf(curTid)[me.uid]:null;
 const leaderOf=st=>(me&&st&&(st.leaders||{})[me.uid])||null;
-function capsOf(st){if(isOwner)return{members:true,info:true,modules:true};const l=leaderOf(st);return l?{members:!!l.members,info:!!l.info,modules:!!l.modules}:{};}
-const canManage=st=>isOwner||Object.values(capsOf(st)).some(Boolean);
+function capsOf(st){if(isOwner)return{members:true,info:true,modules:true,survey:true};const l=leaderOf(st);return l?{members:!!l.members,info:!!l.info,modules:!!l.modules,survey:!!l.survey}:{};}
+const canManage=st=>isOwner||["members","info","modules"].some(k=>capsOf(st)[k]);
 function canSee(mod){
   const st=cur();if(isOwner||capsOf(st).modules)return true;
   const m=myMember();if(!st||!m||m.status!=="active")return false;
@@ -379,7 +400,7 @@ function render(fromSnapshot){
   const v=$("#view");
   if(!me)return v.innerHTML=signedOutHTML();
   if(!claims.dc&&!isOwner)return v.innerHTML='<div class="center"><h1>請改用 Discord 登入</h1><p>這個網站的團員身分是用 Discord 帳號確認的。</p><button class="btn" data-act="logout">登出</button></div>';
-  if(!ready.users||!ready.statics||!ready.mem)return v.innerHTML='<div class="center muted">載入中…</div>';
+  if(!ready.users||!ready.statics||!ready.mem)return v.innerHTML='<div class="center muted" data-loading>載入中…</div>';
   if(fromSnapshot&&(view==="profile"||view==="create"||view==="linkform"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
   if(claims.dc&&!users[me.uid])view="profile";
   if(view==="profile")return v.innerHTML=profileHTML(),bindProfile();
@@ -702,7 +723,7 @@ function tgtListHTML(){
   return tgtDraft.map((x,i)=>'<div class="tgtrow"><input data-tgtn="'+i+'" maxlength="30" value="'+esc(x.n)+'" aria-label="副本名稱"><select data-tgtt="'+i+'" aria-label="類型">'+
     Object.entries(TARGET_TYPES).map(([k,n])=>'<option value="'+k+'"'+(x.t===k?' selected':'')+'>'+n+'</option>').join("")+'</select><button class="x" data-tgtrm="'+i+'" aria-label="移除">×</button></div>').join("");
 }
-const CAPS=[["members","成員管理","核准申請、加入或移出成員、分配職責與權限"],["info","團隊資料","修改團名、口號、簡介與目標副本"],["modules","功能開放","切換各功能的開放狀態"]];
+const CAPS=[["members","成員管理","核准申請、加入或移出成員、分配職責與權限"],["info","團隊資料","修改團名、口號、簡介與目標副本"],["modules","功能開放","切換各功能的開放狀態"],["survey","出席調查","為這個團發起、截止與管理出席時間調查"]];
 function leadersMgHTML(st){
   const L=st.leaders||{};const ids=Object.keys(L);
   const cand=Object.keys(users).filter(id=>!L[id]);
@@ -776,7 +797,7 @@ document.addEventListener("click",async e=>{
       }
       if(a==="leaderAdd"){
         const id=$("#leaderAdd").value;if(!id){toast("請先選擇成員");return;}
-        const L={...(cur().leaders||{})};L[id]={members:true,info:true,modules:false};
+        const L={...(cur().leaders||{})};L[id]={members:true,info:true,modules:false,survey:false};
         await updateDoc(doc(db,"statics",curTid),{leaders:L});toast("已指派 "+nameOf(users[id])+" 為團長");return;
       }
       if(a==="delStatic"){
