@@ -248,6 +248,11 @@ a{color:var(--accent)}
 .lootlist li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}
 .lootlist li:first-child{border-top:0}
 .flabel{font-size:14px;font-weight:500;margin-bottom:4px}
+.phtag{display:inline-block;margin-left:6px;font-size:11px;padding:0 6px;border-radius:4px;border:1px dashed var(--muted);color:var(--muted);font-weight:400;vertical-align:middle}
+.phform{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+.phform label{display:grid;gap:4px;font-size:13px;font-weight:500}
+.phform input,.phform select{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:7px 9px;width:100%}
+.phbtns{display:flex;flex-wrap:wrap;gap:10px;align-items:center;grid-column:1/-1}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -348,6 +353,7 @@ function avatarUrl(u){
   let i=0;try{i=Number((BigInt(u.dc)>>22n)%6n);}catch(_){}
   return "https://cdn.discordapp.com/embed/avatars/"+i+".png";
 }
+const phTag=u=>u&&u.placeholder?'<span class="phtag">尚未登入</span>':"";
 const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"未知成員";
 const jobLabel=k=>JOB[k]?JOB[k].n:"";
 function jobOptions(sel,blank){
@@ -360,7 +366,7 @@ function jobOptions(sel,blank){
 let app,db,auth,me=null,claims={},isOwner=false;
 let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};
-let profileDraft=null,tgtDraft=null;
+let profileDraft=null,tgtDraft=null,phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
 let links={},linkFilter="全部",linkDraft=null,linkSrc={};
 const urlTeam=()=>new URLSearchParams(location.search).get("team");
 const urlMod=()=>new URLSearchParams(location.search).get("mod");
@@ -452,8 +458,8 @@ function render(fromSnapshot){
   if(!claims.dc&&!isOwner)return v.innerHTML='<div class="center"><h1>請改用 Discord 登入</h1><p>這個網站的團員身分是用 Discord 帳號確認的。</p><button class="btn" data-act="logout">登出</button></div>';
   if(!ready.users||!ready.statics||!ready.mem)return v.innerHTML='<div class="center muted" data-loading>載入中…</div>';
   if(fromSnapshot&&(view==="profile"||view==="create"||view==="linkform"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
-  if(fromSnapshot&&view==="mod"&&(bisTab==="settings"||isTyping())){bisPending=true;return;}
-  if(claims.dc&&!users[me.uid])view="profile";
+  if(fromSnapshot&&((view==="mod"&&bisTab==="settings")||isTyping())){bisPending=true;return;}
+  if(claims.dc&&(!users[me.uid]||users[me.uid].placeholder))view="profile";
   if(view==="profile")return v.innerHTML=profileHTML(),bindProfile();
   if(view==="create"&&isOwner)return v.innerHTML=createStaticHTML();
   if(view==="linkform"&&linkDraft)return v.innerHTML=linkFormHTML(),bindLinkForm();
@@ -471,7 +477,8 @@ function render(fromSnapshot){
   view="lobby";v.innerHTML=lobbyHTML();
 }
 function isTyping(){const a=document.activeElement;return!!a&&$("#view").contains(a)&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&!/checkbox|radio/.test(a.type)));}
-document.addEventListener("focusout",()=>{if(!bisPending)return;setTimeout(()=>{if(bisPending&&!isTyping()&&bisTab!=="settings"){bisPending=false;render();}},80);});
+document.addEventListener("focusout",()=>{if(!bisPending)return;setTimeout(()=>{if(bisPending&&!isTyping()&&!(view==="mod"&&bisTab==="settings")){bisPending=false;render();}},80);});
+document.addEventListener("input",e=>{const t=e.target;if(t.dataset&&t.dataset.ph&&t.type!=="checkbox")phDraft[t.dataset.ph]=t.value;});
 function renderMe(){
   const el=$("#me");
   const st=(view==="team"||view==="manage"||view==="mod")?cur():null;
@@ -495,10 +502,10 @@ function signedOutHTML(){
 
 /* 靈魂水晶 */
 function profileHTML(){
-  const p=users[me.uid];const first=!p;
-  if(!profileDraft)profileDraft=p?{...p,subJobs:[...(p.subJobs||[])]}:{nick:dirName(claims.dc)||claims.dcn||"",charName:"",server:"",job:"",subJobs:[],bio:""};
+  const p=users[me.uid];const ph=!!(p&&p.placeholder);const first=!p||ph;
+  if(!profileDraft)profileDraft=p?{nick:p.nick||"",charName:p.charName||"",server:p.server||"",job:p.job||"",subJobs:[...(p.subJobs||[])],bio:p.bio||""}:{nick:dirName(claims.dc)||claims.dcn||"",charName:"",server:"",job:"",subJobs:[],bio:""};
   const d=profileDraft;
-  return'<div class="panel"><h2>'+(first?'歡迎'+(dirName(claims.dc)?'，'+esc(dirName(claims.dc)):'')+'！先建立你的靈魂水晶':'編輯我的靈魂水晶')+'</h2>'+
+  return'<div class="panel"><h2>'+(ph?'歡迎，'+esc(p.nick||claims.dcn||"")+'！團長已經幫你建立了靈魂水晶，請確認資料':first?'歡迎'+(dirName(claims.dc)?'，'+esc(dirName(claims.dc)):'')+'！先建立你的靈魂水晶':'編輯我的靈魂水晶')+'</h2>'+
     (first?'<p class="muted">這些資料會顯示在飛地和固定團的陣容上，之後隨時可以修改。</p>':'')+
     '<div class="form">'+
     '<div class="row2"><label>暱稱<input id="pNick" maxlength="20" value="'+esc(d.nick)+'" placeholder="團裡大家怎麼叫你"></label>'+
@@ -509,7 +516,7 @@ function profileHTML(){
     '<div><div style="font-size:14px;font-weight:500;margin-bottom:4px">副職業（可複選）</div><div id="pSubs">'+
       JOB_CATS.map(c=>'<div class="jobcat"><span class="catn">'+c.n+'</span><div class="chips">'+JOBS.filter(j=>j.c===c.k).map(j=>'<button type="button" class="chip jc-'+j.r+'" data-sub="'+j.k+'" aria-pressed="'+d.subJobs.includes(j.k)+'">'+j.n+'</button>').join("")+'</div></div>').join("")+'</div></div>'+
     '<label>開荒宣言（選填）<input id="pBio" maxlength="60" value="'+esc(d.bio)+'" placeholder="例如：這次一定要過 P5！"></label>'+
-    '<div><button class="btn primary" data-act="saveProfile">'+(first?'建立靈魂水晶':'儲存')+'</button>'+(first?'':' <button class="btn" data-act="cancelProfile">取消</button>')+'</div>'+
+    '<div><button class="btn primary" data-act="saveProfile">'+(ph?'確認並完成':first?'建立靈魂水晶':'儲存')+'</button>'+(first?'':' <button class="btn" data-act="cancelProfile">取消</button>')+'</div>'+
     '</div></div>';
 }
 function bindProfile(){
@@ -531,7 +538,7 @@ async function saveProfile(btn){
       createdAt:p&&p.createdAt?p.createdAt:Date.now(),updatedAt:Date.now()};
     await setDoc(doc(db,"users",me.uid),data);
     users[me.uid]=data;profileDraft=null;view=curTid?"team":"lobby";
-    toast(p?"已更新靈魂水晶":"靈魂水晶建立完成！");render();
+    toast(p&&!p.placeholder?"已更新靈魂水晶":"靈魂水晶建立完成！");render();
   }catch(e){console.error(e);toast("儲存失敗，請再試一次");btn.disabled=false;}
 }
 
@@ -560,7 +567,7 @@ function crystalHTML(id){
   const u=users[id],j=JOB[u.job];
   const teams=statics.filter(s=>(membersOf(s.id)[id]||{}).status==="active").map(s=>s.name+"・"+jobLabel(teamJob(s.id,id)));
   return'<div class="crystal r-'+(j?j.r:"dps")+'"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><div class="cbody">'+
-    '<div class="nm">'+esc(nameOf(u))+(id===me.uid?'<span class="you">你</span>':'')+'</div>'+
+    '<div class="nm">'+esc(nameOf(u))+(id===me.uid?'<span class="you">你</span>':'')+phTag(u)+'</div>'+
     '<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
     (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+
     (teams.length?'<div class="tags">'+teams.map(n=>'<span class="target">'+esc(n)+'</span>').join("")+'</div>':'')+'</div></div>';
@@ -1048,7 +1055,7 @@ function cardHTML(slot,uid){
   if(!u)return'<div class="slot r-'+slot.r+' empty"><span class="lab">'+slot.k+'</span>尚未分配</div>';
   const tj=teamJob(curTid,uid),j=JOB[tj],alts=teamAlts(curTid,uid).filter(k=>JOB[k]);
   return'<div class="slot r-'+slot.r+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
-    '<div class="nm">'+esc(nameOf(u))+'</div><div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
+    '<div class="nm">'+esc(nameOf(u))+'</div>'+phTag(u)+'<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
     (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(alts.length?'<div class="alts">備用：'+esc(alts.map(jobLabel).join("、"))+'</div>':'')+
     (u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
@@ -1056,7 +1063,7 @@ function rosterHTML(st){
   const roles=st.roles||{};const assigned=new Set(Object.values(roles));
   const rest=activeIds(st.id).filter(id=>!assigned.has(id));
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+
-    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=(membersOf(st.id)[id]||{}).cover;return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">可代 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=(membersOf(st.id)[id]||{}).cover;return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">可代 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
   const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;
@@ -1100,7 +1107,7 @@ function membersMgHTML(st,pending){
     const jobSel=(attr,val,blank)=>'<select '+attr+'>'+jobOptions(val,blank)+'</select>';
     h+='<div class="mtable"><div class="inner"><div class="mrow jrow mhead"><span>成員</span><span>職責</span><span>固定團職業</span><span>備用職業 1</span><span>備用職業 2</span><span></span></div>'+
     active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id),alts=m.alts||[];const warn=mismatch(sl,teamJob(st.id,id));
-      return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b><div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
+      return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b>'+phTag(u)+'<div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
         '<div><select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
           (sl?'':'<select data-cover="'+id+'" aria-label="可代位置" style="margin-top:4px"><option value="">可代：無</option>'+SLOTS.map(s=>'<option value="'+s.k+'"'+(s.k===(m.cover||"")?' selected':'')+'>可代 '+s.k+'</option>').join("")+'</select>')+'</div>'+
         '<div>'+jobSel('data-tjob="'+id+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
@@ -1114,6 +1121,19 @@ function membersMgHTML(st,pending){
     active.map(id=>{const u=users[id],m=ms[id];return'<div class="mrow prow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b></div></div>'+
       MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+id+'" data-pmod="'+x.k+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+'</div>';}).join("")+
     '</div></div><p class="hint" style="margin:8px 0 0">權限只在功能設為「指定成員」或「全團開放」時才有作用。</p></div>';
+  {const DID=/^\d{15,21}$/;
+   const dirLeft=DIRECTORY.filter(p=>!users["dc_"+p.did]);
+   const d=phDraft;
+   h+='<div class="panel"><h2>用 Discord ID 新增成員</h2><p class="muted small">還沒建立靈魂水晶的人，可以先由你代建並加入這個團。他之後用 Discord 登入時，會請他確認資料。</p>'+
+    (dirLeft.length?'<div class="others" style="margin-bottom:10px"><span class="small muted">通訊錄：</span>'+dirLeft.map(p=>'<button class="chip" data-phdir="'+esc(p.did)+'">＋ '+esc(p.n)+'</button>').join("")+'</div>':'')+
+    '<div class="phform">'+
+    '<label>Discord ID<input data-ph="did" inputmode="numeric" maxlength="21" value="'+esc(d.did)+'" placeholder="17～19 位數字"></label>'+
+    '<label>暱稱<input data-ph="nick" maxlength="20" value="'+esc(d.nick)+'"></label>'+
+    '<label>主職業<select data-ph="job">'+jobOptions(d.job,"請選擇")+'</select></label>'+
+    '<label>遊戲角色名稱（選填）<input data-ph="charName" maxlength="30" value="'+esc(d.charName)+'"></label>'+
+    '<label>伺服器（選填）<select data-ph="server"><option value="">未填</option>'+SERVERS.map(x=>'<option'+(x===d.server?' selected':'')+'>'+esc(x)+'</option>').join("")+'</select></label>'+
+    '<div class="phbtns"><label class="small" style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-ph="welcome"'+(d.welcome?' checked':'')+' style="width:auto"> 在 Discord 發歡迎公告</label><button class="btn primary" data-act="phAdd">新增並加入這個團</button></div>'+
+    '</div><p class="hint" style="margin:8px 0 0">取得 Discord ID：Discord 設定開啟「開發者模式」，對名字按右鍵 →「複製使用者 ID」。</p></div>';}
   h+='<div class="panel"><h2>從飛地成員直接加入</h2>'+(outsiders.length?'<p class="muted small">這些人已經建立過靈魂水晶，但還不是這個團的成員。</p><div class="others">'+
     outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+id+'">加入</button></div>';}).join("")+'</div>':
     '<p class="muted">飛地成員都已經在這個團裡了。</p>')+'</div>';
@@ -1205,6 +1225,23 @@ document.addEventListener("click",async e=>{
         toast("已送出申請");return;
       }
       if(a==="withdraw"){await deleteDoc(doc(db,"statics",curTid,"members",me.uid));toast("已取消申請");return;}
+      if(a==="phAdd"){
+        const d=phDraft;const did=String(d.did||"").trim();
+        if(!/^\d{15,21}$/.test(did)){toast("Discord ID 應該是 15～21 位數字");return;}
+        if(!d.nick.trim()){toast("請填暱稱");return;}
+        if(!d.job){toast("請選主職業");return;}
+        const uid="dc_"+did;act.disabled=true;
+        if(membersOf(curTid)[uid]){toast("他已經在這個團裡了");act.disabled=false;return;}
+        if(!users[uid]){
+          await setDoc(doc(db,"users",uid),{dc:did,dcName:"",avatar:"",nick:d.nick.trim(),charName:(d.charName||"").trim(),server:d.server||"",job:d.job,subJobs:[],bio:"",
+            placeholder:true,placeholderTid:curTid,createdBy:me.uid,createdAt:Date.now(),updatedAt:Date.now()});
+        }
+        await setDoc(doc(db,"statics",curTid,"members",uid),{status:"active",joinedAt:Date.now(),perms:DEFAULT_PERMS});
+        const send=d.welcome;phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
+        toast((users[uid]&&!users[uid].placeholder?"他已經有靈魂水晶，已直接加入：":"已代建並加入：")+d.nick.trim());
+        if(send){users[uid]=users[uid]||{dc:did,nick:d.nick.trim(),job:d.job};welcome(uid);}
+        return;
+      }
       if(a==="tgtAdd"){tgtDraft.push({n:"",t:"savage"});$("#tgtList").innerHTML=tgtListHTML();return;}
       if(a==="saveTeam"){
         const name=$("#tName").value.trim();if(!name){toast("請輸入名稱");return;}
@@ -1226,6 +1263,7 @@ document.addEventListener("click",async e=>{
       }
     }
     const tc=t.closest("[data-team]");if(tc){go("team",tc.dataset.team);return;}
+    const pd=t.closest("[data-phdir]");if(pd){const p=DIRECTORY.find(x=>x.did===pd.dataset.phdir);if(p){phDraft={...phDraft,did:p.did,nick:p.n};render();}return;}
     const lf=t.closest("[data-lf]");if(lf){linkFilter=lf.dataset.lf;render();return;}
     const le=t.closest("[data-ledit]");if(le){const l=links[le.dataset.ledit];if(!l)return;
       linkDraft={id:l.id,url:l.url,title:l.title,desc:l.desc||"",cat:l.cat,lang:l.lang,approveOnSave:isOwner&&l.status==="pending"};view="linkform";window.scrollTo(0,0);render();return;}
@@ -1262,6 +1300,7 @@ document.addEventListener("change",async e=>{
   const t=e.target;
   try{
     if(view==="mod"&&await bisChange(t))return;
+    if(t.dataset.ph){const k=t.dataset.ph;phDraft[k]=t.type==="checkbox"?t.checked:t.value;return;}
     if(t.dataset.cover!==undefined){await updateDoc(doc(db,"statics",curTid,"members",t.dataset.cover),{cover:t.value});toast(t.value?"已設為可代 "+t.value:"已取消可代位置");return;}
     if(t.dataset.slot!==undefined){const id=t.dataset.slot;await setSlot(id,t.value);const w=mismatch(t.value,teamJob(curTid,id));toast(w?"提醒："+w:(t.value?"已設為 "+t.value:"已改為替補"));return;}
     if(t.dataset.tjob!==undefined){const id=t.dataset.tjob,v=t.value;const m=membersOf(curTid)[id]||{};
