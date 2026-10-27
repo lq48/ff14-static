@@ -200,6 +200,54 @@ a{color:var(--accent)}
 .loadhelp h2{font-family:"Noto Serif TC",serif;font-size:20px;margin:0 0 8px}
 .loadhelp ul{margin:0 0 16px;padding-left:20px}
 .loadhelp li{margin:6px 0}
+.bishead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.bishead h1{font-family:"Noto Serif TC",serif;margin:0;font-size:26px}
+.bisuser{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bisuser img{width:40px;height:40px;border-radius:50%}
+.bisuser .nm{font-weight:700;font-size:17px}
+.bisstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:8px}
+.bisstats .box{background:var(--bg);border-radius:8px;padding:10px 12px;display:grid;gap:2px}
+.bisstats .lab{font-size:12px;color:var(--muted)}
+.bisstats .num{font-size:22px;font-weight:700}
+.bisstats .coll{cursor:pointer;font-size:14px}
+.bislink{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.bislink input{flex:1;min-width:220px}
+.bistable,.bisgrid{border-collapse:collapse;width:100%;font-size:14px}
+.bistable th,.bisgrid th{text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.bistable td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.bistable tr.done td:first-child{box-shadow:inset 3px 0 0 var(--heal)}
+.bistable tr.part td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
+.bistable .nm-in{width:100%;min-width:160px;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:4px 8px;font-size:13px}
+.src{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;background:var(--bg);white-space:nowrap}
+.src.s-raid{background:color-mix(in srgb,var(--dps) 14%,var(--surface));color:var(--dps);border-color:color-mix(in srgb,var(--dps) 40%,var(--line))}
+.src.s-tome{background:color-mix(in srgb,var(--tank) 14%,var(--surface));color:var(--tank);border-color:color-mix(in srgb,var(--tank) 40%,var(--line))}
+.src.s-craft{background:color-mix(in srgb,var(--heal) 14%,var(--surface));color:var(--heal);border-color:color-mix(in srgb,var(--heal) 40%,var(--line))}
+.src.s-none{color:var(--muted);border-style:dashed}
+.augck{display:inline-flex;align-items:center;gap:3px;font-size:12px;margin-left:6px;white-space:nowrap}
+.stbtn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 10px;font-size:13px;white-space:nowrap}
+.stbtn:disabled,.src:disabled{cursor:default;opacity:.85}
+.bistools{margin-top:14px;display:grid;gap:8px}
+.bistools summary{cursor:pointer;font-weight:500}
+.bistools textarea{width:100%;margin-top:6px;font-family:inherit}
+.bisgrid td{padding:6px;border-bottom:1px solid var(--line);text-align:center}
+.bisgrid td.who,.bisgrid th.who{text-align:left;position:sticky;left:0;background:var(--surface);min-width:120px}
+.bisgrid td.c{font-size:12px;font-weight:700;min-width:34px}
+.bisgrid td.done{background:color-mix(in srgb,var(--heal) 22%,transparent);color:var(--heal)}
+.bisgrid td.part{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold)}
+.bisgrid td.need{background:color-mix(in srgb,var(--dps) 16%,transparent);color:var(--dps)}
+.bisgrid td.empty{color:var(--muted)}
+.bisgrid td.prog{font-weight:700;white-space:nowrap}
+.droptbl td{text-align:center}
+.drops{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.dropcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.dropcard .dt{font-weight:700}
+.dropcard ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.lootform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.lootform label{display:grid;gap:4px;font-size:13px;font-weight:500}
+.lootlist{list-style:none;margin:0;padding:0}
+.lootlist li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.lootlist li:first-child{border-top:0}
+.flabel{font-size:14px;font-weight:500;margin-bottom:4px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -315,6 +363,7 @@ let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null;
 let links={},linkFilter="全部",linkDraft=null,linkSrc={};
 const urlTeam=()=>new URLSearchParams(location.search).get("team");
+const urlMod=()=>new URLSearchParams(location.search).get("mod");
 
 /* ---------- 啟動 ---------- */
 app=initializeApp(FIREBASE_CONFIG);db=getFirestore(app);auth=getAuth(app);
@@ -324,7 +373,7 @@ app=initializeApp(FIREBASE_CONFIG);db=getFirestore(app);auth=getAuth(app);
   if(m)signInWithCustomToken(auth,decodeURIComponent(m[1])).catch(e=>{console.error(e);toast("Discord 登入失敗，請再試一次");});
   if(er)toast("Discord 登入失敗："+decodeURIComponent(er[1]));
 }
-curTid=urlTeam();view=curTid?"team":"lobby";
+curTid=urlTeam();view=curTid?(urlMod()==="bis"?"mod":"team"):"lobby";
 onAuthStateChanged(auth,async u=>{
   me=u;claims={};
   unsub.forEach(f=>f());unsub=[];
@@ -364,13 +413,14 @@ function syncDiscordInfo(){
 /* ---------- 導覽 ---------- */
 function go(v,tid){
   view=v;if(tid!==undefined)curTid=tid;
-  const inTeam=(v==="team"||v==="manage")&&curTid;
-  const url=location.pathname+(inTeam?"?team="+encodeURIComponent(curTid):"");
+  if(v!=="mod")bisStop();
+  const inTeam=(v==="team"||v==="manage"||v==="mod")&&curTid;
+  const url=location.pathname+(inTeam?"?team="+encodeURIComponent(curTid)+(v==="mod"?"&mod=bis":""):"");
   if(url!==location.pathname+location.search)history.pushState(null,"",url);
   if(v==="manage"){mgTab="";tgtDraft=null;}
   window.scrollTo(0,0);render();
 }
-window.addEventListener("popstate",()=>{curTid=urlTeam();view=curTid?"team":"lobby";render();});
+window.addEventListener("popstate",()=>{curTid=urlTeam();view=curTid?(urlMod()?"mod":"team"):"lobby";if(view!=="mod")bisStop();render();});
 
 /* ---------- 權限判斷 ---------- */
 const cur=()=>statics.find(s=>s.id===curTid)||null;
@@ -402,10 +452,16 @@ function render(fromSnapshot){
   if(!claims.dc&&!isOwner)return v.innerHTML='<div class="center"><h1>請改用 Discord 登入</h1><p>這個網站的團員身分是用 Discord 帳號確認的。</p><button class="btn" data-act="logout">登出</button></div>';
   if(!ready.users||!ready.statics||!ready.mem)return v.innerHTML='<div class="center muted" data-loading>載入中…</div>';
   if(fromSnapshot&&(view==="profile"||view==="create"||view==="linkform"||(view==="manage"&&mgTab==="team")))return; // 填表中不重畫
+  if(fromSnapshot&&view==="mod"&&(bisTab==="settings"||isTyping())){bisPending=true;return;}
   if(claims.dc&&!users[me.uid])view="profile";
   if(view==="profile")return v.innerHTML=profileHTML(),bindProfile();
   if(view==="create"&&isOwner)return v.innerHTML=createStaticHTML();
   if(view==="linkform"&&linkDraft)return v.innerHTML=linkFormHTML(),bindLinkForm();
+  if(view==="mod"){
+    const st=cur();
+    if(st&&canSee("bis")){bisSubscribe(st.id);return v.innerHTML=bisHTML(st);}
+    view=st?"team":"lobby";bisStop();
+  }
   if(view==="team"||view==="manage"){
     const st=cur();
     if(!st){view="lobby";curTid=null;history.replaceState(null,"",location.pathname);}
@@ -414,9 +470,11 @@ function render(fromSnapshot){
   }
   view="lobby";v.innerHTML=lobbyHTML();
 }
+function isTyping(){const a=document.activeElement;return!!a&&$("#view").contains(a)&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&!/checkbox|radio/.test(a.type)));}
+document.addEventListener("focusout",()=>{if(!bisPending)return;setTimeout(()=>{if(bisPending&&!isTyping()&&bisTab!=="settings"){bisPending=false;render();}},80);});
 function renderMe(){
   const el=$("#me");
-  const st=(view==="team"||view==="manage")?cur():null;
+  const st=(view==="team"||view==="manage"||view==="mod")?cur():null;
   document.title=st?st.name+"｜光之戰士飛地":"光之戰士飛地";
   if(!me){el.innerHTML="";return;}
   const p=users[me.uid];
@@ -590,6 +648,363 @@ async function seedLinks(btn){
   }catch(e){console.error(e);toast("匯入失敗：請確認 Firestore 規則已更新");btn.disabled=false;}
 }
 
+/* ==================== BiS 裝備獲取表 ==================== */
+const BIS_SLOTS=[
+  {k:"weapon",n:"武器",g:"weapon",d:"weapon"},{k:"head",n:"頭",g:"armor",d:"head"},{k:"body",n:"身",g:"armor",d:"body"},
+  {k:"hands",n:"手",g:"armor",d:"hands"},{k:"legs",n:"腿",g:"armor",d:"legs"},{k:"feet",n:"腳",g:"armor",d:"feet"},
+  {k:"ears",n:"耳環",g:"acc",d:"ears"},{k:"neck",n:"項鍊",g:"acc",d:"neck"},{k:"wrists",n:"手鐲",g:"acc",d:"wrists"},
+  {k:"ring1",n:"戒指",g:"acc",d:"ring"},{k:"ring2",n:"戒指",g:"acc",d:"ring"}
+];
+const BIS_SRC={raid:"零式",tome:"點數",craft:"製作",other:"其他"};
+const BIS_SRC_SHORT={raid:"零",tome:"點",craft:"製",other:"他"};
+const DROP_GEAR=[["weapon","武器"],["head","頭"],["body","身"],["hands","手"],["legs","腿"],["feet","腳"],["ears","耳環"],["neck","項鍊"],["wrists","手鐲"],["ring","戒指"]];
+const MAT_KEYS=[["matWeapon","武器"],["matArmor","防具"],["matAcc","飾品"]];
+const MAT_OF={weapon:"matWeapon",armor:"matArmor",acc:"matAcc"};
+function defaultTier(){
+  return{name:"次重量級",floors:["M5S","M6S","M7S","M8S"],
+    drops:{f0:["ears","neck","wrists","ring"],f1:["head","hands","feet","matAcc"],f2:["head","hands","feet","legs","matArmor","matWeapon"],f3:["body","weapon","c:mount1"]},
+    mats:{matWeapon:"武器強化素材",matArmor:"防具強化素材",matAcc:"飾品強化素材"},
+    colls:[{id:"mount1",n:"飛梭C9"}],
+    kw:{raid:"天選冠軍,正派冠軍,正派冠军",aug:"改良型",tome:"王國傳奇,王国传奇"},
+    confirmed:false,createdAt:Date.now()};
+}
+const FINAL_TEMPLATE={weapon:["raid"],head:["raid"],body:["raid"],hands:["tome",1],legs:["tome",1],feet:["raid"],ears:["tome",1],neck:["raid"],wrists:["raid"],ring1:["raid"],ring2:["tome",1]};
+
+let bisTiers=[],bisRecs={},bisLoot=[],bisTierId=null,bisTab="mine",bisSet="final",bisWho=null,bisFloor=0,bisUnsub=[],bisFor=null,bisDraft=null,bisPending=false;
+
+function bisSubscribe(tid){
+  if(bisFor===tid)return;bisStop();bisFor=tid;
+  const err2=e=>{console.error(e);toast(e&&e.code==="permission-denied"?"沒有權限讀取 BiS（請確認規則已更新、功能開放狀態）":"讀取 BiS 失敗");};
+  bisUnsub.push(onSnapshot(collection(db,"statics",tid,"bisTiers"),s=>{
+    bisTiers=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!bisTiers.some(t=>t.id===bisTierId))bisTierId=bisTiers[0]?bisTiers[0].id:null;
+    bisReady.tiers=true;render(true);
+  },err2));
+  bisUnsub.push(onSnapshot(collection(db,"statics",tid,"bis"),s=>{bisRecs={};s.docs.forEach(d=>bisRecs[d.id]=d.data());bisReady.recs=true;render(true);},err2));
+  bisUnsub.push(onSnapshot(collection(db,"statics",tid,"loot"),s=>{bisLoot=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));render(true);},err2));
+}
+let bisReady={tiers:false,recs:false};
+function bisStop(){bisUnsub.forEach(f=>f());bisUnsub=[];bisFor=null;bisTiers=[];bisRecs={};bisLoot=[];bisReady={tiers:false,recs:false};}
+
+/* ---- 判斷 ---- */
+const bisTier=()=>bisTiers.find(t=>t.id===bisTierId)||null;
+const recId=uid=>bisTierId+"__"+uid;
+const recOf=uid=>bisRecs[recId(uid)]||{};
+function bisMyPerm(){const st=cur(),m=myMember();if(isOwner)return"all";if(!m||m.status!=="active")return"none";return((m.perms||{}).bis)||"none";}
+const bisCanEditAll=()=>isOwner||bisMyPerm()==="all";
+const bisCanEdit=uid=>bisCanEditAll()||(me&&uid===me.uid&&bisMyPerm()==="own");
+function slotDone(sl){if(!sl||!sl.src)return false;if(sl.src==="tome"&&sl.aug)return sl.st==="aug";return sl.st==="got"||sl.st==="aug";}
+function slotPartial(sl){return!!sl&&sl.src==="tome"&&sl.aug&&sl.st==="got";}
+function bslot(rec,set,k){return((rec[set]||{})[k])||{};}
+function finalHas(rec,k){const f=bslot(rec,"final",k);return!!f.src&&(f.st==="got"||f.st==="aug");}
+function progDone(rec,k){const p=bslot(rec,"prog",k);if(finalHas(rec,k))return true;return p.same?false:slotDone(p);}
+function doneOf(rec,set,k){return set==="prog"?progDone(rec,k):slotDone(bslot(rec,"final",k));}
+function countDone(rec,set){return BIS_SLOTS.filter(s=>doneOf(rec,set,s.k)).length;}
+function bisMembers(){
+  const st=cur();const roles=st.roles||{};const order=SLOTS.map(s=>s.k);
+  const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
+  return activeIds(st.id).map(id=>({id,slot:slotOf(id)})).sort((a,b)=>{const ia=order.indexOf(a.slot),ib=order.indexOf(b.slot);return(ia<0?99:ia)-(ib<0?99:ib);});
+}
+const coverOf=id=>((membersOf(curTid)[id]||{}).cover)||"";
+function whoLabel(m){return m.slot||("替補"+(coverOf(m.id)?"・可代 "+coverOf(m.id):""));}
+function weekKey(t){ // 每週二 08:00 UTC（台灣 16:00）重置
+  const d=new Date(t||Date.now());const x=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),8));
+  while(x.getUTCDay()!==2||x>d)x.setUTCDate(x.getUTCDate()-1);
+  return x.toISOString().slice(0,10);
+}
+function dropLabel(t,key){
+  if(key.startsWith("c:")){const c=(t.colls||[]).find(x=>"c:"+x.id===key);return c?c.n:"收藏品";}
+  if(key.startsWith("mat"))return(t.mats||{})[key]||key;
+  const g=DROP_GEAR.find(x=>x[0]===key);return g?g[1]:key;
+}
+function needers(t,key){ // 回傳 [{id,count}] 需要這個掉落的人
+  const out=[];
+  for(const m of bisMembers()){
+    const r=recOf(m.id);let n=0;
+    if(key.startsWith("c:")){if(!(r.coll||{})[key.slice(2)])n=1;}
+    else if(key.startsWith("mat")){n=BIS_SLOTS.filter(s=>MAT_OF[s.g]===key&&(()=>{const f=bslot(r,"final",s.k);return f.src==="tome"&&f.aug&&f.st!=="aug";})()).length;}
+    else{n=BIS_SLOTS.filter(s=>s.d===key&&(()=>{const f=bslot(r,"final",s.k);return f.src==="raid"&&f.st!=="got"&&f.st!=="aug";})()).length;}
+    if(n)out.push({id:m.id,count:n});
+  }
+  return out;
+}
+const lootCount=uid=>bisLoot.filter(l=>l.tier===bisTierId&&l.to===uid).length;
+
+/* ---- 貼上配裝表 ---- */
+const SLOT_LABELS=[["weapon",/^(武器|主手)/],["ears",/^(耳飾|耳饰|耳部|耳環|耳环)/],["neck",/^(項鍊|项链|頸部|颈部)/],["wrists",/^(手鐲|手镯|腕部)/],["ring",/^(戒指|指環|指环)/],
+  ["head",/^(頭部|头部)/],["body",/^(身體|身体)/],["hands",/^(手部|手臂)/],["legs",/^(腿部)/],["feet",/^(腳部|脚部)/]];
+function bisParse(text,t){
+  const kw=k=>String(((t.kw||{})[k])||"").split(/[,，、\s]+/).filter(Boolean);
+  const isGearName=s=>/[\u4e00-\u9fff]/.test(s)&&!/^(食品|食物|魔晶石|種族|种族)/.test(s)&&!/\d{2,}/.test(s.replace(/C9/g,""))&&s.length>=3&&s.length<=40;
+  const clean=s=>s.replace(/[⋮︙…]/g,"").split(/\t| {2,}|\s+il\d+|\s+i\d{3}/i)[0].trim();
+  const lines=String(text).split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const labeled=[],plain=[];let pending=null;
+  for(const raw of lines){
+    const lab=SLOT_LABELS.find(([,re])=>re.test(raw));
+    if(lab){const rest=clean(raw.replace(lab[1],"").trim());if(rest&&isGearName(rest))labeled.push([lab[0],rest]);else pending=lab[0];continue;}
+    const nm=clean(raw);
+    if(pending&&isGearName(nm)){labeled.push([pending,nm]);pending=null;continue;}
+    pending=null;
+    if(isGearName(nm))plain.push(nm);
+  }
+  let pairs=[];
+  if(labeled.length>=6){let ring=0;pairs=labeled.map(([k,n])=>[k==="ring"?(++ring===1?"ring1":"ring2"):k,n]);}
+  else if(plain.length===11)pairs=BIS_SLOTS.map((s,i)=>[s.k,plain[i]]);
+  else return{error:"辨識到 "+(labeled.length||plain.length)+" 件裝備，需要 11 件（或附部位名稱的表格）。"};
+  const has=(n,list)=>list.some(w=>n.includes(w));
+  return{items:pairs.filter(([k])=>BIS_SLOTS.some(s=>s.k===k)).map(([k,n])=>{
+    let src="craft",aug=false;
+    if(has(n,kw("aug"))){src="tome";aug=true;}else if(has(n,kw("tome")))src="tome";else if(has(n,kw("raid")))src="raid";
+    return{k,name:n.slice(0,40),src,aug};
+  })};
+}
+
+/* ---- 寫入 ---- */
+async function ensureRec(uid){
+  const id=recId(uid);if(bisRecs[id])return;
+  const base={tier:bisTierId,uid,prog:{},final:{},links:{},coll:{},createdAt:Date.now(),updatedAt:Date.now(),updatedBy:me.uid};
+  await setDoc(doc(db,"statics",curTid,"bis",id),base);bisRecs[id]=base;
+}
+async function bisPatch(uid,patch){
+  await ensureRec(uid);
+  const p={...patch,updatedAt:Date.now(),updatedBy:me.uid};
+  await updateDoc(doc(db,"statics",curTid,"bis",recId(uid)),p);
+}
+
+/* ---- 畫面 ---- */
+function bisHTML(st){
+  const back='<div style="margin-bottom:12px"><button class="linkbtn" data-act="team">← 回 '+esc(st.name)+'</button></div>';
+  if(!bisReady.tiers||!bisReady.recs)return back+'<div class="center muted">載入 BiS 資料中…</div>';
+  const t=bisTier();
+  let h=back+'<div class="bishead"><h1>BiS 裝備獲取表</h1>';
+  if(bisTiers.length>1)h+='<select class="sel" data-bistier style="max-width:200px">'+bisTiers.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===bisTierId?' selected':'')+'>'+esc(x.name)+'</option>').join("")+'</select>';
+  else if(t)h+='<span class="target main">'+esc(t.name)+'</span>';
+  h+='</div>';
+  if(!t){
+    return h+(bisCanEditAll()?'<div class="panel"><h2>建立第一期零式</h2><p class="muted">會預填「次重量級」：M5S～M8S、預設掉落表、坐騎「飛梭C9」與名稱關鍵字，建立後可以在「設定」修改。</p><button class="btn primary" data-act="bisCreateTier">建立「次重量級」</button></div>'
+      :'<div class="panel"><p class="muted">團長還沒有設定要追蹤的零式。</p></div>');
+  }
+  const tabs=[["mine","我的 BiS"],["all","全團總表"],["drops","掉落查詢"],["loot","分裝紀錄"]];if(bisCanEditAll())tabs.push(["settings","設定"]);
+  h+='<nav class="tabs">'+tabs.map(([k,n])=>'<button class="tab" data-bistab="'+k+'" aria-selected="'+(bisTab===k)+'">'+n+'</button>').join("")+'</nav>';
+  if(!t.confirmed&&(bisTab==="drops"||bisTab==="loot"))h+='<div class="notice small">掉落表為預填內容，尚待確認。'+(bisCanEditAll()?'請到「設定」核對後勾選「掉落表已確認」。':'')+'</div>';
+  if(bisTab==="all")h+=bisAllHTML(t);
+  else if(bisTab==="drops")h+=bisDropsHTML(t);
+  else if(bisTab==="loot")h+=bisLootHTML(t);
+  else if(bisTab==="settings"&&bisCanEditAll())h+=bisSettingsHTML(t);
+  else h+=bisMineHTML(t);
+  return h;
+}
+function bisMineHTML(t){
+  const ms=bisMembers();
+  if(!bisWho||!ms.some(m=>m.id===bisWho))bisWho=(me&&ms.some(m=>m.id===me.uid))?me.uid:(ms[0]||{}).id;
+  if(!bisWho)return'<div class="panel"><p class="muted">這個固定團還沒有成員。</p></div>';
+  const u=users[bisWho]||{},r=recOf(bisWho),edit=bisCanEdit(bisWho),m=ms.find(x=>x.id===bisWho);
+  const job=JOB[teamJob(curTid,bisWho)];
+  let h='<div class="panel">';
+  h+='<div class="bisuser"><img src="'+esc(avatarUrl(u))+'" alt=""><div><div class="nm">'+esc(nameOf(u))+'</div><div class="small muted">'+esc(whoLabel(m))+(job?'・'+esc(job.n):'')+'</div></div>';
+  if(bisCanEditAll()||ms.length>1)h+='<select class="sel" data-biswho style="margin-left:auto;max-width:220px">'+ms.map(x=>'<option value="'+x.id+'"'+(x.id===bisWho?' selected':'')+'>'+esc(nameOf(users[x.id]))+'（'+esc(whoLabel(x))+'）</option>').join("")+'</select>';
+  h+='</div>';
+  h+='<div class="bisstats"><div class="box"><div class="lab">開荒</div><div class="num">'+countDone(r,"prog")+' / 11</div></div><div class="box"><div class="lab">畢業</div><div class="num">'+countDone(r,"final")+' / 11</div></div>'+
+    (t.colls||[]).map(c=>'<label class="box coll"><span class="lab">'+esc(c.n)+'</span><span><input type="checkbox" data-biscoll="'+esc(c.id)+'"'+((r.coll||{})[c.id]?' checked':'')+(edit?'':' disabled')+'> '+((r.coll||{})[c.id]?'已取得':'未取得')+'</span></label>').join("")+'</div>';
+  h+='<div class="chips" style="margin:6px 0 12px">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div>';
+  const link=(r.links||{})[bisSet]||"";
+  h+='<div class="bislink">'+(edit?'<input class="sel" data-bislink placeholder="配裝連結（選填）：neko7ina、xivgear 都可以" value="'+esc(link)+'">':'')+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">開啟配裝 ↗</a>':(edit?'':'<span class="muted small">沒有配裝連結</span>'))+'</div>';
+  h+='<div class="mtable"><table class="bistable"><thead><tr><th>部位</th><th>裝備名稱</th><th>來源</th><th>狀態</th>'+(bisSet==="prog"?'<th>同畢業</th>':'')+'</tr></thead><tbody>';
+  for(const s of BIS_SLOTS){
+    const sl=bslot(r,bisSet,s.k);const same=bisSet==="prog"&&sl.same;const eff=same?bslot(r,"final",s.k):sl;
+    const done=doneOf(r,bisSet,s.k);
+    const upg=bisSet==="prog"&&finalHas(r,s.k);
+    const st=upg?"✓ 已換成畢業裝":same?"跟畢業一起拿":sl.st==="aug"?"✓ 已強化":sl.st==="got"?(sl.src==="tome"&&sl.aug?"已取得・待強化":"✓ 已取得"):"未取得";
+    h+='<tr class="'+(done?'done':slotPartial(sl)?'part':'')+'"><td>'+s.n+'</td>'+
+      '<td>'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+s.k+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
+      '<td>'+(same?'<span class="src s-'+(eff.src||"")+'">'+(BIS_SRC[eff.src]||"—")+'</span>':
+        '<button class="src s-'+(sl.src||"none")+'" data-bissrc="'+s.k+'"'+(edit?'':' disabled')+'>'+(BIS_SRC[sl.src]||"設定來源")+'</button>'+
+        (sl.src==="tome"?'<label class="augck"><input type="checkbox" data-bisaug="'+s.k+'"'+(sl.aug?' checked':'')+(edit?'':' disabled')+'>需強化</label>':''))+'</td>'+
+      '<td>'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+s.k+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
+      (bisSet==="prog"?'<td><input type="checkbox" data-bissame="'+s.k+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
+  }
+  h+='</tbody></table></div>';
+  if(edit){
+    const others=ms.filter(x=>x.id!==bisWho&&recOf(x.id)[bisSet]&&Object.keys(recOf(x.id)[bisSet]).length);
+    h+='<div class="bistools">'+
+      '<details><summary>貼上配裝表，自動判斷來源</summary><p class="small muted">在配裝器選取整張裝備表複製後貼上；只有 11 行裝備名稱也可以，會依武器、頭、身……戒指的順序對應。依名稱關鍵字判斷：'+esc((t.kw||{}).raid||"")+' → 零式；'+esc((t.kw||{}).aug||"")+' → 點數＋強化；'+esc((t.kw||{}).tome||"")+' → 點數。</p>'+
+      '<textarea class="sel" id="bisPaste" rows="6" placeholder="貼在這裡"></textarea><div style="margin-top:6px"><button class="btn sm primary" data-act="bisParse">套用到「'+(bisSet==="prog"?"開荒":"畢業")+'」</button></div></details>'+
+      '<div class="addrow"><button class="btn sm" data-act="bisTemplate">一鍵套用常見'+(bisSet==="prog"?"開荒（全部點數）":"畢業配置")+'</button>'+
+      (others.length?'<select class="sel" id="bisCopyFrom" style="max-width:220px"><option value="">複製其他成員的'+(bisSet==="prog"?"開荒":"畢業")+'設定…</option>'+others.map(x=>'<option value="'+x.id+'">'+esc(nameOf(users[x.id]))+'</option>').join("")+'</select><button class="btn sm" data-act="bisCopy">複製</button>':'')+'</div>'+
+      '<p class="hint">一鍵套用和複製只會改「來源與名稱」，不會動到已取得的狀態。點「來源」可以切換零式 → 點數 → 製作 → 其他；點「狀態」切換取得進度。</p></div>';
+  }
+  return h+'</div>';
+}
+function bisAllHTML(t){
+  const ms=bisMembers();
+  let h='<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
+  h+='<div class="mtable"><table class="bisgrid"><thead><tr><th class="who">成員</th>'+BIS_SLOTS.map(s=>'<th>'+s.n+'</th>').join("")+(t.colls||[]).map(c=>'<th>'+esc(c.n)+'</th>').join("")+'<th>進度</th></tr></thead><tbody>';
+  for(const m of ms){
+    const r=recOf(m.id),u=users[m.id];
+    h+='<tr><td class="who"><button class="linkbtn" data-bisgo="'+m.id+'">'+esc(nameOf(u))+'</button><div class="small muted">'+esc(whoLabel(m))+'</div></td>';
+    for(const s of BIS_SLOTS){
+      const sl=bslot(r,bisSet,s.k),same=bisSet==="prog"&&sl.same,eff=same?bslot(r,"final",s.k):sl;
+      const done=doneOf(r,bisSet,s.k),part=!same&&slotPartial(sl);
+      h+='<td class="c '+(!eff.src?'empty':done?'done':part?'part':'need')+'" title="'+esc(eff.name||"")+'">'+(eff.src?BIS_SRC_SHORT[eff.src]:'—')+'</td>';
+    }
+    h+=(t.colls||[]).map(c=>'<td class="c '+((r.coll||{})[c.id]?'done':'need')+'">'+((r.coll||{})[c.id]?'✓':'✗')+'</td>').join("");
+    h+='<td class="prog">'+countDone(r,bisSet)+'/11</td></tr>';
+  }
+  h+='</tbody></table></div><p class="hint" style="margin:8px 0 0">零＝零式、點＝點數、製＝製作、他＝其他。綠色完成、黃色已取得但待強化、紅色未取得、灰色尚未設定。點名字可以看那個人的明細。</p></div>';
+  return h;
+}
+function bisDropsHTML(t){
+  const fl=t.floors||[];if(bisFloor>=fl.length)bisFloor=0;
+  const keys=((t.drops||{})["f"+bisFloor])||[];
+  let h='<div class="panel"><div class="chips" style="margin-bottom:12px">'+fl.map((f,i)=>'<button class="chip" data-bisfloor="'+i+'" aria-pressed="'+(i===bisFloor)+'">'+esc(f)+'</button>').join("")+'</div>';
+  if(!keys.length)return h+'<p class="muted">這層還沒有設定掉落。</p></div>';
+  h+='<div class="drops">'+keys.map(k=>{
+    const ns=needers(t,k).sort((a,b)=>lootCount(a.id)-lootCount(b.id));
+    return'<div class="dropcard"><div class="dt">'+esc(dropLabel(t,k))+'</div>'+
+      (ns.length?'<ul>'+ns.map(n=>'<li><b>'+esc(nameOf(users[n.id]))+'</b>'+(n.count>1?' ×'+n.count:'')+'<span class="small muted">（本期已分到 '+lootCount(n.id)+' 件）</span></li>').join("")+'</ul>':'<p class="small muted" style="margin:6px 0 0">沒有人需要</p>')+'</div>';
+  }).join("")+'</div><p class="hint" style="margin:10px 0 0">依「畢業目標」計算；強化素材依還沒強化的點數裝件數計算。名單依本期已分到的件數由少到多排列。</p></div>';
+  return h;
+}
+function bisLootHTML(t){
+  const ms=bisMembers(),fl=t.floors||[];const wk=weekKey();
+  const weeks=[];{let d=new Date(wk+"T08:00:00Z");for(let i=0;i<10;i++){weeks.push(d.toISOString().slice(0,10));d=new Date(d.getTime()-7*864e5);}}
+  if(!bisDraft)bisDraft={week:wk,floor:0,item:"",to:""};
+  const d=bisDraft;const keys=((t.drops||{})["f"+d.floor])||[];if(!keys.includes(d.item))d.item=keys[0]||"";
+  let h='';
+  if(bisCanEditAll()){
+    const ns=d.item?needers(t,d.item).map(n=>n.id):[];
+    h+='<div class="panel"><h2>記錄分裝</h2><div class="lootform">'+
+      '<label>週次<select class="sel" data-loot="week">'+weeks.map(w=>'<option'+(w===d.week?' selected':'')+'>'+w+'</option>').join("")+'</select></label>'+
+      '<label>樓層<select class="sel" data-loot="floor">'+fl.map((f,i)=>'<option value="'+i+'"'+(i===+d.floor?' selected':'')+'>'+esc(f)+'</option>').join("")+'</select></label>'+
+      '<label>物品<select class="sel" data-loot="item">'+keys.map(k=>'<option value="'+esc(k)+'"'+(k===d.item?' selected':'')+'>'+esc(dropLabel(t,k))+'</option>').join("")+'</select></label>'+
+      '<label>給誰<select class="sel" data-loot="to"><option value="">選擇成員…</option>'+
+        ms.map(m=>'<option value="'+m.id+'"'+(m.id===d.to?' selected':'')+'>'+(ns.includes(m.id)?'★ ':'')+esc(nameOf(users[m.id]))+'（已分 '+lootCount(m.id)+'）</option>').join("")+'</select></label>'+
+      '<div><button class="btn primary" data-act="lootAdd">記錄</button></div></div>'+
+      '<p class="hint">★ 表示這個人的畢業目標還缺這項。記錄裝備或收藏品後，會自動把對方的進度勾成已取得。週次以每週二台灣時間 16:00 重置為分界。</p></div>';
+  }
+  const list=bisLoot.filter(l=>l.tier===bisTierId);
+  h+='<div class="panel"><h2>分裝紀錄</h2>';
+  if(!list.length)h+='<p class="muted">還沒有紀錄。從下一次開打開始記錄就好。</p>';
+  else{
+    const byWeek={};list.forEach(l=>(byWeek[l.week]||(byWeek[l.week]=[])).push(l));
+    h+=Object.keys(byWeek).sort().reverse().map(w=>'<h3>'+w+' 這週</h3><ul class="lootlist">'+byWeek[w].sort((a,b)=>a.floor-b.floor).map(l=>
+      '<li><span class="target">'+esc(fl[l.floor]||"")+'</span> '+esc(dropLabel(t,l.item))+' → <b>'+esc(nameOf(users[l.to]))+'</b>'+
+      (bisCanEditAll()?' <button class="linkbtn" data-lootdel="'+l.id+'">刪除</button>':'')+'</li>').join("")+'</ul>').join("");
+  }
+  return h+'</div>';
+}
+function bisSettingsHTML(t){
+  if(!bisDraft||bisDraft._tier!==t.id)bisDraft={_tier:t.id,name:t.name,floors:[...(t.floors||[])],drops:JSON.parse(JSON.stringify(t.drops||{})),mats:{...(t.mats||{})},colls:(t.colls||[]).map(c=>({...c})),kw:{...(t.kw||{})},confirmed:!!t.confirmed};
+  const d=bisDraft;
+  const allKeys=[...DROP_GEAR.map(x=>x[0]),...MAT_KEYS.map(x=>x[0]),...d.colls.map(c=>"c:"+c.id)];
+  const lbl=k=>k.startsWith("c:")?((d.colls.find(c=>"c:"+c.id===k)||{}).n||"收藏品"):k.startsWith("mat")?(d.mats[k]||k):DROP_GEAR.find(x=>x[0]===k)[1];
+  let h='<div class="panel"><h2>本期設定</h2><div class="form" style="max-width:none">'+
+    '<label style="max-width:300px">名稱<input data-bset="name" maxlength="20" value="'+esc(d.name)+'"></label>'+
+    '<div><div class="flabel">樓層名稱</div><div class="addrow" style="margin-top:0">'+d.floors.map((f,i)=>'<input class="sel" style="max-width:110px" data-bfloor="'+i+'" maxlength="12" value="'+esc(f)+'">').join("")+'</div></div>'+
+    '<div><div class="flabel">掉落表（勾選每層會掉的東西）</div><div class="mtable"><table class="bisgrid droptbl"><thead><tr><th class="who">物品</th>'+d.floors.map(f=>'<th>'+esc(f)+'</th>').join("")+'</tr></thead><tbody>'+
+      allKeys.map(k=>'<tr><td class="who">'+esc(lbl(k))+'</td>'+d.floors.map((f,i)=>'<td><input type="checkbox" data-bdrop="'+i+'" data-key="'+esc(k)+'"'+(((d.drops["f"+i])||[]).includes(k)?' checked':'')+'></td>').join("")+'</tr>').join("")+'</tbody></table></div></div>'+
+    '<div><div class="flabel">強化素材名稱（請填遊戲內的正式名稱）</div><div class="row2">'+MAT_KEYS.map(([k,n])=>'<label>'+n+'用<input data-bmat="'+k+'" maxlength="20" value="'+esc(d.mats[k]||"")+'"></label>').join("")+'</div></div>'+
+    '<div><div class="flabel">本期收藏品</div>'+d.colls.map((c,i)=>'<div class="addrow" style="margin-top:4px"><input class="sel" data-bcoll="'+i+'" maxlength="20" value="'+esc(c.n)+'"><button class="x" data-bcollrm="'+i+'" aria-label="移除">×</button></div>').join("")+
+      '<button class="btn sm" data-act="bisCollAdd" style="margin-top:6px">＋ 新增收藏品</button></div>'+
+    '<div><div class="flabel">自動判斷來源的名稱關鍵字（以逗號分隔）</div><div class="row2">'+
+      '<label>零式<input data-bkw="raid" value="'+esc(d.kw.raid||"")+'"></label><label>點數＋強化<input data-bkw="aug" value="'+esc(d.kw.aug||"")+'"></label><label>點數<input data-bkw="tome" value="'+esc(d.kw.tome||"")+'"></label></div></div>'+
+    '<label class="small" style="display:flex;gap:6px;align-items:center;font-weight:500"><input type="checkbox" data-bset="confirmed"'+(d.confirmed?' checked':'')+' style="width:auto"> 掉落表已確認（勾選後不再顯示「待確認」提示）</label>'+
+    '<div><button class="btn primary" data-act="bisSaveTier">儲存設定</button></div></div></div>'+
+    (isOwner?'<div class="panel"><h2>新增一期</h2><p class="muted small">之後重量級開打時，新增一期就好，舊的紀錄會保留，可以在標題旁切換。</p><button class="btn" data-act="bisNewTier">新增一期零式</button></div>':'');
+  return h;
+}
+
+/* ---- 動作 ---- */
+async function bisClick(t,e){
+  const T=bisTier();
+  const go2=x=>t.closest(x);
+  let el;
+  if((el=go2("[data-bistab]"))){bisTab=el.dataset.bistab;bisDraft=null;render();return true;}
+  if((el=go2("[data-bisset]"))){bisSet=el.dataset.bisset;render();return true;}
+  if((el=go2("[data-bisfloor]"))){bisFloor=+el.dataset.bisfloor;render();return true;}
+  if((el=go2("[data-bisgo]"))){bisWho=el.dataset.bisgo;bisTab="mine";render();return true;}
+  if((el=go2("[data-bissrc]"))){
+    const k=el.dataset.bissrc;if(!bisCanEdit(bisWho))return true;
+    const sl=bslot(recOf(bisWho),bisSet,k);const order=["raid","tome","craft","other"];
+    const nx=order[(order.indexOf(sl.src)+1)%order.length];
+    await bisPatch(bisWho,{[bisSet+"."+k]:{...sl,src:nx,aug:nx==="tome"?(bisSet==="final"):false,st:sl.st==="aug"&&nx!=="tome"?"got":(sl.st||"none")}});return true;
+  }
+  if((el=go2("[data-bisst]"))){
+    const k=el.dataset.bisst;if(!bisCanEdit(bisWho))return true;
+    const sl=bslot(recOf(bisWho),bisSet,k);const cyc=sl.src==="tome"&&sl.aug?["none","got","aug"]:["none","got"];
+    const nx=cyc[(cyc.indexOf(sl.st||"none")+1)%cyc.length];
+    await bisPatch(bisWho,{[bisSet+"."+k]:{...sl,st:nx}});return true;
+  }
+  const a=(go2("[data-act]")||{}).dataset;if(!a)return false;const act=a.act;
+  if(act==="bisCreateTier"){await addDoc(collection(db,"statics",curTid,"bisTiers"),defaultTier());toast("已建立「次重量級」");return true;}
+  if(act==="bisNewTier"){const d=defaultTier();d.name="新的一期";d.floors=["1 層","2 層","3 層","4 層"];d.colls=[];d.drops={f0:[],f1:[],f2:[],f3:[]};
+    const ref=await addDoc(collection(db,"statics",curTid,"bisTiers"),d);bisTierId=ref.id;bisDraft=null;toast("已新增，請在設定裡填寫名稱與掉落表");return true;}
+  if(act==="bisParse"){
+    const r=bisParse($("#bisPaste").value,T);if(r.error){toast(r.error);return true;}
+    const rec=recOf(bisWho),patch={};
+    r.items.forEach(it=>{const sl=bslot(rec,bisSet,it.k);patch[bisSet+"."+it.k]={...sl,name:it.name,src:it.src,aug:it.aug,st:sl.st||"none",same:false};});
+    await bisPatch(bisWho,patch);toast("已套用 "+r.items.length+" 件，請檢查來源是否正確");return true;
+  }
+  if(act==="bisTemplate"){
+    const btn=go2("[data-act]");if(!armedTwice("tpl"+bisSet,btn,"再按一次確認套用"))return true;
+    const rec=recOf(bisWho),patch={};
+    BIS_SLOTS.forEach(s=>{const sl=bslot(rec,bisSet,s.k);const tp=bisSet==="final"?FINAL_TEMPLATE[s.k]:["tome",0];
+      patch[bisSet+"."+s.k]={...sl,src:tp[0],aug:!!tp[1],st:sl.st==="aug"&&!tp[1]?"got":(sl.st||"none"),same:false};});
+    await bisPatch(bisWho,patch);toast("已套用，請依實際配裝微調");return true;
+  }
+  if(act==="bisCopy"){
+    const from=$("#bisCopyFrom").value;if(!from){toast("請先選擇成員");return true;}
+    const src=recOf(from)[bisSet]||{},rec=recOf(bisWho),patch={};
+    BIS_SLOTS.forEach(s=>{const o=src[s.k];if(!o)return;const sl=bslot(rec,bisSet,s.k);
+      patch[bisSet+"."+s.k]={...sl,src:o.src||"",aug:!!o.aug,name:o.name||"",same:!!o.same,st:sl.st||"none"};});
+    await bisPatch(bisWho,patch);toast("已複製 "+nameOf(users[from])+" 的設定");return true;
+  }
+  if(act==="lootAdd"){
+    const d=bisDraft;if(!d.item||!d.to){toast("請選擇物品和成員");return true;}
+    await addDoc(collection(db,"statics",curTid,"loot"),{tier:bisTierId,week:d.week,floor:+d.floor,item:d.item,to:d.to,by:me.uid,createdAt:Date.now()});
+    // 自動更新進度
+    const rec=recOf(d.to);let msg="已記錄";
+    if(d.item.startsWith("c:")){await bisPatch(d.to,{["coll."+d.item.slice(2)]:true});msg+="，已勾選收藏品";}
+    else if(d.item.startsWith("mat")){
+      const sl=BIS_SLOTS.filter(s=>MAT_OF[s.g]===d.item&&(()=>{const f=bslot(rec,"final",s.k);return f.src==="tome"&&f.aug&&f.st!=="aug";})());
+      msg+=sl.length?"。可以強化："+sl.map(s=>s.n).join("、")+"（強化後請到我的 BiS 勾選）":"";
+    }else{
+      const s=BIS_SLOTS.find(x=>x.d===d.item&&(()=>{const f=bslot(rec,"final",x.k);return f.src==="raid"&&f.st!=="got"&&f.st!=="aug";})());
+      if(s){await bisPatch(d.to,{["final."+s.k]:{...bslot(rec,"final",s.k),st:"got"}});msg+="，已勾選畢業的"+s.n;}
+      else msg+="（提醒：他的畢業目標這格不是零式或已經有了）";
+    }
+    bisDraft={...d,to:""};toast(msg);render();return true;
+  }
+  if(act==="bisCollAdd"){bisDraft.colls.push({id:"c"+Date.now().toString(36),n:""});render();return true;}
+  if(act==="bisSaveTier"){
+    const d=bisDraft;const btn=go2("[data-act]");btn.disabled=true;
+    const colls=d.colls.filter(c=>c.n.trim()).map(c=>({id:c.id,n:c.n.trim()}));const ids=colls.map(c=>"c:"+c.id);
+    const drops={};d.floors.forEach((f,i)=>drops["f"+i]=((d.drops["f"+i])||[]).filter(k=>!k.startsWith("c:")||ids.includes(k)));
+    await updateDoc(doc(db,"statics",curTid,"bisTiers",T.id),{name:d.name.trim()||"零式",floors:d.floors.map(f=>f.trim()||"?"),drops,mats:d.mats,colls,kw:d.kw,confirmed:!!d.confirmed});
+    bisDraft=null;toast("已儲存設定");render();return true;
+  }
+  if((el=go2("[data-bcollrm]"))){bisDraft.colls.splice(+el.dataset.bcollrm,1);render();return true;}
+  return false;
+}
+async function bisChange(t){
+  if(t.dataset.bistier!==undefined){bisTierId=t.value;bisDraft=null;render();return true;}
+  if(t.dataset.biswho!==undefined){bisWho=t.value;render();return true;}
+  if(t.dataset.bislink!==undefined){const v=t.value.trim();if(v&&!/^https:\/\//.test(v)){toast("連結要以 https:// 開頭");return true;}await bisPatch(bisWho,{["links."+bisSet]:v});toast("已儲存配裝連結");return true;}
+  if(t.dataset.bisname!==undefined){const k=t.dataset.bisname;await bisPatch(bisWho,{[bisSet+"."+k]:{...bslot(recOf(bisWho),bisSet,k),name:t.value.trim().slice(0,40)}});return true;}
+  if(t.dataset.bisaug!==undefined){const k=t.dataset.bisaug,sl=bslot(recOf(bisWho),bisSet,k);await bisPatch(bisWho,{[bisSet+"."+k]:{...sl,aug:t.checked,st:!t.checked&&sl.st==="aug"?"got":(sl.st||"none")}});return true;}
+  if(t.dataset.bissame!==undefined){const k=t.dataset.bissame;await bisPatch(bisWho,{["prog."+k]:{...bslot(recOf(bisWho),"prog",k),same:t.checked}});return true;}
+  if(t.dataset.biscoll!==undefined){await bisPatch(bisWho,{["coll."+t.dataset.biscoll]:t.checked});toast(t.checked?"已取得":"已取消");return true;}
+  if(t.dataset.loot){const k=t.dataset.loot;bisDraft[k]=t.value;if(k==="floor")bisDraft.item="";render();return true;}
+  if(t.dataset.bset){const k=t.dataset.bset;bisDraft[k]=t.type==="checkbox"?t.checked:t.value;return true;}
+  if(t.dataset.bfloor!==undefined){bisDraft.floors[+t.dataset.bfloor]=t.value;return true;}
+  if(t.dataset.bdrop!==undefined){const i=t.dataset.bdrop,k=t.dataset.key,arr=bisDraft.drops["f"+i]||(bisDraft.drops["f"+i]=[]);
+    if(t.checked){if(!arr.includes(k))arr.push(k);}else arr.splice(arr.indexOf(k),1);return true;}
+  if(t.dataset.bmat){bisDraft.mats[t.dataset.bmat]=t.value;return true;}
+  if(t.dataset.bcoll!==undefined){bisDraft.colls[+t.dataset.bcoll].n=t.value;return true;}
+  if(t.dataset.bkw){bisDraft.kw[t.dataset.bkw]=t.value;return true;}
+  return false;
+}
+
 /* 建立固定團（總團長） */
 function createStaticHTML(){
   return'<div style="margin-bottom:12px"><button class="linkbtn" data-act="lobby">← 回飛地大廳</button></div>'+
@@ -641,14 +1056,15 @@ function rosterHTML(st){
   const roles=st.roles||{};const assigned=new Set(Object.values(roles));
   const rest=activeIds(st.id).filter(id=>!assigned.has(id));
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+
-    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=(membersOf(st.id)[id]||{}).cover;return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">可代 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
   const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;
   return'<div class="panel"><h2>功能</h2><div class="mods">'+
     '<a class="mod" href="schedule.html"><span class="t">出席時間調查</span><span class="d">填寫可以出團的時段</span><span class="badge open">使用中</span></a>'+
     vis.map(x=>{const s=mods[x.k]||"owner";return'<button class="mod" data-mod="'+x.k+'"><span class="t">'+x.n+'</span><span class="d">'+x.d+'</span>'+
-      (mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見・建置中</span>':'<span class="badge">建置中</span>')+'</button>';}).join("")+
+      (x.k==="bis"?(mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見</span>':'<span class="badge open">使用中</span>'):
+       mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見・建置中</span>':'<span class="badge">建置中</span>')+'</button>';}).join("")+
     '</div>'+(!mgr&&!vis.length?'<p class="muted small" style="margin:12px 0 0">更多功能準備中，敬請期待。</p>':'')+'</div>';
 }
 
@@ -685,7 +1101,8 @@ function membersMgHTML(st,pending){
     h+='<div class="mtable"><div class="inner"><div class="mrow jrow mhead"><span>成員</span><span>職責</span><span>固定團職業</span><span>備用職業 1</span><span>備用職業 2</span><span></span></div>'+
     active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id),alts=m.alts||[];const warn=mismatch(sl,teamJob(st.id,id));
       return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b><div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
-        '<select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
+        '<div><select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
+          (sl?'':'<select data-cover="'+id+'" aria-label="可代位置" style="margin-top:4px"><option value="">可代：無</option>'+SLOTS.map(s=>'<option value="'+s.k+'"'+(s.k===(m.cover||"")?' selected':'')+'>可代 '+s.k+'</option>').join("")+'</select>')+'</div>'+
         '<div>'+jobSel('data-tjob="'+id+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
         jobSel('data-talt="'+id+'" data-i="0" aria-label="備用職業 1"',alts[0]||"","無")+
         jobSel('data-talt="'+id+'" data-i="1" aria-label="備用職業 2"',alts[1]||"","無")+
@@ -765,6 +1182,7 @@ document.addEventListener("click",async e=>{
   const t=e.target;
   const act=t.closest("[data-act]");
   try{
+    if(view==="mod"&&await bisClick(t,e))return;
     if(act){
       const a=act.dataset.act;
       if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
@@ -816,7 +1234,7 @@ document.addEventListener("click",async e=>{
     const ldel=t.closest("[data-ldel]");if(ldel){if(!armedTwice("ldel"+ldel.dataset.ldel,ldel,"確定？"))return;await deleteDoc(doc(db,"links",ldel.dataset.ldel));toast(isOwner?"已下架":"已撤回");return;}
     const lpin=t.closest("[data-lpin]");if(lpin){const l=links[lpin.dataset.lpin];await updateDoc(doc(db,"links",l.id),{pinned:!l.pinned});toast(l.pinned?"已取消置頂":"已置頂");return;}
     const mg=t.closest("[data-mg]");if(mg){mgTab=mg.dataset.mg;tgtDraft=null;render();return;}
-    const md=t.closest("button[data-mod]");if(md){toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
+    const md=t.closest("button[data-mod]");if(md){if(md.dataset.mod==="bis"){bisTab="mine";go("mod");return;}toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
     const rm=t.closest("[data-tgtrm]");if(rm){tgtDraft.splice(+rm.dataset.tgtrm,1);$("#tgtList").innerHTML=tgtListHTML();return;}
     const sub=t.closest("[data-sub]");if(sub){const k=sub.dataset.sub,s=profileDraft.subJobs;const i=s.indexOf(k);i<0?s.push(k):s.splice(i,1);sub.setAttribute("aria-pressed",i<0);return;}
     const ap=t.closest("[data-approve]");if(ap){
@@ -843,6 +1261,8 @@ document.addEventListener("click",async e=>{
 document.addEventListener("change",async e=>{
   const t=e.target;
   try{
+    if(view==="mod"&&await bisChange(t))return;
+    if(t.dataset.cover!==undefined){await updateDoc(doc(db,"statics",curTid,"members",t.dataset.cover),{cover:t.value});toast(t.value?"已設為可代 "+t.value:"已取消可代位置");return;}
     if(t.dataset.slot!==undefined){const id=t.dataset.slot;await setSlot(id,t.value);const w=mismatch(t.value,teamJob(curTid,id));toast(w?"提醒："+w:(t.value?"已設為 "+t.value:"已改為替補"));return;}
     if(t.dataset.tjob!==undefined){const id=t.dataset.tjob,v=t.value;const m=membersOf(curTid)[id]||{};
       const alts=(m.alts||[]).filter(k=>k&&k!==v);
