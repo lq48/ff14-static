@@ -17,7 +17,7 @@
   color-scheme:light;
   --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
   --accent:#2F63C9; --accent-ink:#FFFFFF; --gold:#B8860B; --danger:#C23A4F;
-  --tank:#2F63C9; --heal:#2E8B57; --dps:#C0392B;
+  --tank:#2F63C9; --heal:#2E8B57; --dps:#C0392B; --raid:#7A45C2; --tome:#2F63C9; --craft:#16807F;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
@@ -27,14 +27,14 @@
     color-scheme:dark;
     --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
     --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
-    --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A;
+    --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF; --tome:#7FA6FF; --craft:#5CCFCB;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
   --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
-  --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A;
+  --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF; --tome:#7FA6FF; --craft:#5CCFCB;
 }
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -135,7 +135,12 @@ a{color:var(--accent)}
 .req .info{flex:1;min-width:180px}
 .modrow{display:grid;grid-template-columns:1fr 200px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .modrow:first-child{border-top:0}
-.tgtrow{display:grid;grid-template-columns:1fr 120px 34px;gap:8px;margin-bottom:6px}
+.tgtrow{display:grid;grid-template-columns:1fr 110px 64px 56px 34px;gap:8px;margin-bottom:6px;align-items:center}
+.tgthead{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.tgtrow .ck{display:flex;justify-content:center}
+.tgtrow .ck input{width:18px;height:18px}
+.target.cleared{color:var(--heal);border-color:color-mix(in srgb,var(--heal) 45%,var(--line))}
+.target.main.cleared{color:var(--gold);border-color:var(--gold)}
 .tgtrow input,.tgtrow select{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px}
 .x{border:0;background:none;color:var(--muted);font-size:18px;border-radius:50%}
 .x:hover{color:var(--danger)}
@@ -175,9 +180,9 @@ a{color:var(--accent)}
 .danger-zone{border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
 .slot .alts{font-size:11px;color:var(--muted)}
 .warn{font-size:12px;color:var(--danger);margin-top:2px}
-.mrow.jrow{grid-template-columns:minmax(170px,1.3fr) 90px minmax(150px,1.2fr) minmax(120px,1fr) minmax(120px,1fr) auto}
+.mrow.jrow{grid-template-columns:minmax(160px,1.2fr) 150px minmax(150px,1.2fr) minmax(120px,1fr) minmax(120px,1fr) auto;align-items:start}
 .mrow.prow{grid-template-columns:minmax(150px,1.3fr) repeat(4,minmax(96px,1fr))}
-.mtable .inner{min-width:820px}
+.mtable .inner{min-width:900px}
 .lfilter{margin:4px 0 12px}
 .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
 .lcard{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--bg);overflow:hidden}
@@ -219,9 +224,9 @@ a{color:var(--accent)}
 .bistable tr.part td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
 .bistable .nm-in{width:100%;min-width:160px;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:4px 8px;font-size:13px}
 .src{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;background:var(--bg);white-space:nowrap}
-.src.s-raid{background:color-mix(in srgb,var(--dps) 14%,var(--surface));color:var(--dps);border-color:color-mix(in srgb,var(--dps) 40%,var(--line))}
+.src.s-raid{background:color-mix(in srgb,var(--raid) 14%,var(--surface));color:var(--raid);border-color:color-mix(in srgb,var(--raid) 40%,var(--line))}
 .src.s-tome{background:color-mix(in srgb,var(--tank) 14%,var(--surface));color:var(--tank);border-color:color-mix(in srgb,var(--tank) 40%,var(--line))}
-.src.s-craft{background:color-mix(in srgb,var(--heal) 14%,var(--surface));color:var(--heal);border-color:color-mix(in srgb,var(--heal) 40%,var(--line))}
+.src.s-craft{background:color-mix(in srgb,var(--craft) 14%,var(--surface));color:var(--craft);border-color:color-mix(in srgb,var(--craft) 40%,var(--line))}
 .src.s-none{color:var(--muted);border-style:dashed}
 .augck{display:inline-flex;align-items:center;gap:3px;font-size:12px;margin-left:6px;white-space:nowrap}
 .stbtn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 10px;font-size:13px;white-space:nowrap}
@@ -232,9 +237,13 @@ a{color:var(--accent)}
 .bisgrid td{padding:6px;border-bottom:1px solid var(--line);text-align:center}
 .bisgrid td.who,.bisgrid th.who{text-align:left;position:sticky;left:0;background:var(--surface);min-width:120px}
 .bisgrid td.c{font-size:12px;font-weight:700;min-width:34px}
-.bisgrid td.done{background:color-mix(in srgb,var(--heal) 22%,transparent);color:var(--heal)}
-.bisgrid td.part{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold)}
-.bisgrid td.need{background:color-mix(in srgb,var(--dps) 16%,transparent);color:var(--dps)}
+.bisgrid td.c{--sc:var(--muted)}
+.bisgrid td.s-raid{--sc:var(--raid)} .bisgrid td.s-tome{--sc:var(--tome)} .bisgrid td.s-craft{--sc:var(--craft)} .bisgrid td.s-coll{--sc:var(--heal)}
+.bisgrid td.done{background:color-mix(in srgb,var(--sc) 24%,transparent);color:var(--sc)}
+.bisgrid td.part{background:color-mix(in srgb,var(--sc) 10%,transparent);color:var(--sc);outline:2px dashed var(--gold);outline-offset:-4px}
+.bisgrid td.need{background:transparent;color:var(--sc);box-shadow:inset 0 0 0 2px var(--danger)}
+.bislegend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:var(--muted);margin:0 0 10px}
+.bislegend .sw{display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;border-radius:4px;font-weight:700;font-size:11px;margin-right:4px;vertical-align:middle}
 .bisgrid td.empty{color:var(--muted)}
 .bisgrid td.prog{font-weight:700;white-space:nowrap}
 .droptbl td{text-align:center}
@@ -253,6 +262,12 @@ a{color:var(--accent)}
 .phform label{display:grid;gap:4px;font-size:13px;font-weight:500}
 .phform input,.phform select{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:7px 9px;width:100%}
 .phbtns{display:flex;flex-wrap:wrap;gap:10px;align-items:center;grid-column:1/-1}
+.slot[data-slotpick]{cursor:pointer}
+.slot.picked{outline:2px solid var(--accent);outline-offset:2px}
+.fillpanel{margin-top:10px;padding:10px 12px;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));font-size:14px}
+.alsochips{display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin-top:4px}
+.mini{border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:0 5px;font-size:11px;line-height:18px}
+.mini[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -444,6 +459,8 @@ function canSee(mod){
   return false;
 }
 const teamJob=(tid,uid)=>((membersOf(tid)[uid]||{}).job)||((users[uid]||{}).job)||"";
+function alsoOf(tid,uid){const m=membersOf(tid)[uid]||{};return Array.isArray(m.also)?m.also:(m.cover?[m.cover]:[]);}
+let slotPick=null;
 const teamAlts=(tid,uid)=>((membersOf(tid)[uid]||{}).alts)||[];
 const slotRole=k=>(SLOTS.find(s=>s.k===k)||{}).r;
 function mismatch(slot,job){const r=slotRole(slot),j=JOB[job];if(!r||!j||j.r===r)return"";return slot+" 通常是"+{tank:"防護",heal:"治療",dps:"輸出"}[r]+"職業，目前是"+j.n;}
@@ -555,10 +572,10 @@ function lobbyHTML(){
 }
 function teamCardHTML(st){
   const ms=membersOf(st.id),act=activeIds(st.id),mine=me&&ms[me.uid];
-  const ln=leaderNames(st),t=(st.targets||[])[0];
+  const ln=leaderNames(st),tg=st.targets||[],t=tg.find(x=>x.main),dn=tg.filter(x=>x.done).length;
   const rel=[leaderOf(st)?'你是團長':'',mine&&mine.status==="active"?'你是成員':mine&&mine.status==="pending"?'申請中':''].filter(Boolean).join("・")||(isOwner?'':'可申請加入');
   return'<button class="teamcard" data-team="'+esc(st.id)+'"><span class="tn">'+esc(st.name)+'</span>'+
-    (t?'<span><span class="target main">'+esc(t.n)+'</span></span>':'')+
+    ((t||dn)?'<span>'+(t?'<span class="target main'+(t.done?' cleared':'')+'">'+(t.done?'✓ ':'')+esc(t.n)+'</span> ':'')+(dn?'<span class="small muted">已通關 '+dn+' / '+tg.length+'</span>':'')+'</span>':'')+
     '<span class="small muted">'+act.length+' 位成員'+(ln.length?'・團長：'+esc(ln.join("、")):'')+'</span>'+
     '<span class="avs">'+act.slice(0,10).map(id=>'<img src="'+esc(avatarUrl(users[id]))+'" alt="" loading="lazy">').join("")+'</span>'+
     (rel?'<span class="rel">'+rel+'</span>':'')+'</button>';
@@ -712,8 +729,8 @@ function bisMembers(){
   const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
   return activeIds(st.id).map(id=>({id,slot:slotOf(id)})).sort((a,b)=>{const ia=order.indexOf(a.slot),ib=order.indexOf(b.slot);return(ia<0?99:ia)-(ib<0?99:ib);});
 }
-const coverOf=id=>((membersOf(curTid)[id]||{}).cover)||"";
-function whoLabel(m){return m.slot||("替補"+(coverOf(m.id)?"・可代 "+coverOf(m.id):""));}
+const coverOf=id=>alsoOf(curTid,id).join("、");
+function whoLabel(m){const a=alsoOf(curTid,m.id).filter(k=>k!==m.slot);return(m.slot||"替補")+(a.length?"・也可打 "+a.join("、"):"");}
 function weekKey(t){ // 每週二 08:00 UTC（台灣 16:00）重置
   const d=new Date(t||Date.now());const x=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),8));
   while(x.getUTCDay()!==2||x>d)x.setUTCDate(x.getUTCDate()-1);
@@ -845,6 +862,12 @@ function bisMineHTML(t){
 function bisAllHTML(t){
   const ms=bisMembers();
   let h='<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
+  h+='<div class="bislegend"><span><span class="sw" style="background:color-mix(in srgb,var(--raid) 24%,transparent);color:var(--raid)">零</span>零式</span>'+
+    '<span><span class="sw" style="background:color-mix(in srgb,var(--tome) 24%,transparent);color:var(--tome)">點</span>點數</span>'+
+    '<span><span class="sw" style="background:color-mix(in srgb,var(--craft) 24%,transparent);color:var(--craft)">製</span>製作</span>'+
+    '<span style="margin-left:8px"><span class="sw" style="background:color-mix(in srgb,var(--muted) 18%,transparent)">　</span>已完成</span>'+
+    '<span><span class="sw" style="outline:2px dashed var(--gold);outline-offset:-3px">　</span>已取得・待強化</span>'+
+    '<span><span class="sw" style="box-shadow:inset 0 0 0 2px var(--danger)">　</span>未取得</span></div>';
   h+='<div class="mtable"><table class="bisgrid"><thead><tr><th class="who">成員</th>'+BIS_SLOTS.map(s=>'<th>'+s.n+'</th>').join("")+(t.colls||[]).map(c=>'<th>'+esc(c.n)+'</th>').join("")+'<th>進度</th></tr></thead><tbody>';
   for(const m of ms){
     const r=recOf(m.id),u=users[m.id];
@@ -852,12 +875,13 @@ function bisAllHTML(t){
     for(const s of BIS_SLOTS){
       const sl=bslot(r,bisSet,s.k),same=bisSet==="prog"&&sl.same,eff=same?bslot(r,"final",s.k):sl;
       const done=doneOf(r,bisSet,s.k),part=!same&&slotPartial(sl);
-      h+='<td class="c '+(!eff.src?'empty':done?'done':part?'part':'need')+'" title="'+esc(eff.name||"")+'">'+(eff.src?BIS_SRC_SHORT[eff.src]:'—')+'</td>';
+      const stt=!eff.src?'empty':done?'done':part?'part':'need';
+      h+='<td class="c s-'+(eff.src||'none')+' '+stt+'" title="'+esc([BIS_SRC[eff.src],{done:"已完成",part:"已取得・待強化",need:"未取得"}[stt],eff.name].filter(Boolean).join("・"))+'">'+(eff.src?BIS_SRC_SHORT[eff.src]:'—')+'</td>';
     }
-    h+=(t.colls||[]).map(c=>'<td class="c '+((r.coll||{})[c.id]?'done':'need')+'">'+((r.coll||{})[c.id]?'✓':'✗')+'</td>').join("");
+    h+=(t.colls||[]).map(c=>'<td class="c s-coll '+((r.coll||{})[c.id]?'done':'need')+'">'+((r.coll||{})[c.id]?'✓':'✗')+'</td>').join("");
     h+='<td class="prog">'+countDone(r,bisSet)+'/11</td></tr>';
   }
-  h+='</tbody></table></div><p class="hint" style="margin:8px 0 0">零＝零式、點＝點數、製＝製作、他＝其他。綠色完成、黃色已取得但待強化、紅色未取得、灰色尚未設定。點名字可以看那個人的明細。</p></div>';
+  h+='</tbody></table></div><p class="hint" style="margin:8px 0 0">顏色代表來源，框線代表狀態：填滿＝已完成、黃色虛線＝已取得待強化、紅框＝未取得。滑鼠移到格子上可以看裝備名稱。點名字可以看那個人的明細。</p></div>';
   return h;
 }
 function bisDropsHTML(t){
@@ -1044,26 +1068,36 @@ function heroHTML(st){
   return'<section class="hero"><h1>'+esc(st.name)+'</h1>'+(st.slogan?'<p class="slogan">'+esc(st.slogan)+'</p>':'')+
     (ln.length?'<p class="small muted" style="margin:6px 0 0">團長：'+esc(ln.join("、"))+'</p>':'')+
     (st.intro?'<p class="intro">'+esc(st.intro)+'</p>':'')+
-    (t.length?'<div class="targets">'+t.map((x,i)=>'<span class="target'+(i===0?' main':'')+'">'+esc(x.n)+'</span>').join("")+'</div>':'')+'</section>';
+    (t.length?'<div class="targets">'+t.map(x=>'<span class="target'+(x.main?' main':'')+(x.done?' cleared':'')+'"'+(x.main?' title="主要目標"':'')+'>'+(x.done?'✓ ':'')+esc(x.n)+'</span>').join("")+'</div>':'')+'</section>';
 }
 function joinHTML(m){
   if(m&&m.status==="pending")return'<div class="panel"><h2>已送出加入申請</h2><p class="muted">等待團長核准，核准後這裡會自動顯示完整內容。</p><button class="btn sm" data-act="withdraw">取消申請</button></div>';
   return'<div class="panel"><h2>加入這個固定團</h2><p class="muted">送出申請後，由團長核准。</p><div class="form"><label>想對團長說的話（選填）<input id="jNote" maxlength="100" placeholder="例如：我是 D3 的奪魂者"></label><div><button class="btn primary" data-act="join">申請加入</button></div></div></div>';
 }
 function cardHTML(slot,uid){
-  const u=uid&&users[uid];
-  if(!u)return'<div class="slot r-'+slot.r+' empty"><span class="lab">'+slot.k+'</span>尚未分配</div>';
+  const u=uid&&users[uid];const pk=slotPick===slot.k?' picked':'';
+  if(!u)return'<div class="slot r-'+slot.r+' empty'+pk+'" data-slotpick="'+slot.k+'" role="button" tabindex="0"><span class="lab">'+slot.k+'</span>尚未分配</div>';
+  const also=alsoOf(curTid,uid).filter(k=>k!==slot.k);
   const tj=teamJob(curTid,uid),j=JOB[tj],alts=teamAlts(curTid,uid).filter(k=>JOB[k]);
-  return'<div class="slot r-'+slot.r+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
+  return'<div class="slot r-'+slot.r+pk+'" data-slotpick="'+slot.k+'" role="button" tabindex="0" title="點一下看誰能補 '+slot.k+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
     '<div class="nm">'+esc(nameOf(u))+'</div>'+phTag(u)+'<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
     (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(alts.length?'<div class="alts">備用：'+esc(alts.map(jobLabel).join("、"))+'</div>':'')+
+    (also.length?'<div class="alts">也可打 '+esc(also.join("、"))+'</div>':'')+
     (u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
 function rosterHTML(st){
   const roles=st.roles||{};const assigned=new Set(Object.values(roles));
   const rest=activeIds(st.id).filter(id=>!assigned.has(id));
-  return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+
-    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=(membersOf(st.id)[id]||{}).cover;return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">可代 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+  let pick='';
+  if(slotPick){
+    const main=roles[slotPick];const cands=activeIds(st.id).filter(id=>id!==main&&alsoOf(st.id,id).includes(slotPick));
+    const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
+    pick='<div class="fillpanel"><b>誰能打 '+slotPick+'</b>　'+(main?'正選：'+esc(nameOf(users[main]))+'　':'')+
+      (cands.length?'也可打：'+cands.map(id=>{const j=JOB[teamJob(st.id,id)];return esc(nameOf(users[id]))+'（'+(slotOf(id)?'正選 '+slotOf(id):'替補')+(j?'・'+esc(j.n):'')+'）';}).join("、"):'<span class="muted">目前沒有人標示也可以打這個位置</span>')+
+      ' <button class="linkbtn" data-slotpick="'+slotPick+'">關閉</button></div>';
+  }
+  return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+pick+
+    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=alsoOf(st.id,id).join("、");return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">也可打 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
   const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;
@@ -1109,7 +1143,7 @@ function membersMgHTML(st,pending){
     active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id),alts=m.alts||[];const warn=mismatch(sl,teamJob(st.id,id));
       return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b>'+phTag(u)+'<div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
         '<div><select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
-          (sl?'':'<select data-cover="'+id+'" aria-label="可代位置" style="margin-top:4px"><option value="">可代：無</option>'+SLOTS.map(s=>'<option value="'+s.k+'"'+(s.k===(m.cover||"")?' selected':'')+'>可代 '+s.k+'</option>').join("")+'</select>')+'</div>'+
+          '<div class="alsochips"><span class="small muted">也可打</span>'+SLOTS.filter(s=>s.k!==sl).map(s=>'<button type="button" class="mini" data-also="'+id+'" data-k="'+s.k+'" aria-pressed="'+alsoOf(st.id,id).includes(s.k)+'">'+s.k+'</button>').join("")+'</div></div>'+
         '<div>'+jobSel('data-tjob="'+id+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
         jobSel('data-talt="'+id+'" data-i="0" aria-label="備用職業 1"',alts[0]||"","無")+
         jobSel('data-talt="'+id+'" data-i="1" aria-label="備用職業 2"',alts[1]||"","無")+
@@ -1152,13 +1186,17 @@ function teamMgHTML(st){
     '<label>固定團名稱<input id="tName" maxlength="30" value="'+esc(st.name)+'"></label>'+
     '<label>口號（選填）<input id="tSlogan" maxlength="40" value="'+esc(st.slogan||"")+'" placeholder="例如：一起把伊甸打穿！"></label>'+
     '<label>簡介（選填）<textarea id="tIntro" rows="3" maxlength="400" placeholder="開荒時間、目標、注意事項……">'+esc(st.intro||"")+'</textarea></label>'+
-    '<div><div style="font-size:14px;font-weight:500;margin-bottom:6px">目標副本（第一個會標示為主要目標）</div><div id="tgtList">'+tgtListHTML()+'</div>'+
+    '<div><div style="font-size:14px;font-weight:500;margin-bottom:6px">目標副本</div><div class="hint" style="margin:-2px 0 8px">主要目標最多選一個，也可以不選；打完的副本勾「已通關」，標籤前會加上 ✓。</div><div id="tgtList">'+tgtListHTML()+'</div>'+
     '<button class="btn sm" data-act="tgtAdd">＋ 新增副本</button><div class="hint">之後 BiS 追蹤和攻略法整理會依這份清單分類，例如輕量級零式的掉落紀錄。</div></div>'+
     '<div><button class="btn primary" data-act="saveTeam">儲存團隊資料</button></div></div></div>';
 }
 function tgtListHTML(){
-  return tgtDraft.map((x,i)=>'<div class="tgtrow"><input data-tgtn="'+i+'" maxlength="30" value="'+esc(x.n)+'" aria-label="副本名稱"><select data-tgtt="'+i+'" aria-label="類型">'+
-    Object.entries(TARGET_TYPES).map(([k,n])=>'<option value="'+k+'"'+(x.t===k?' selected':'')+'>'+n+'</option>').join("")+'</select><button class="x" data-tgtrm="'+i+'" aria-label="移除">×</button></div>').join("");
+  return(tgtDraft.length?'<div class="tgtrow tgthead"><span>副本名稱</span><span>類型</span><span>主要目標</span><span>已通關</span><span></span></div>':'')+
+    tgtDraft.map((x,i)=>'<div class="tgtrow"><input data-tgtn="'+i+'" maxlength="30" value="'+esc(x.n)+'" aria-label="副本名稱"><select data-tgtt="'+i+'" aria-label="類型">'+
+    Object.entries(TARGET_TYPES).map(([k,n])=>'<option value="'+k+'"'+(x.t===k?' selected':'')+'>'+n+'</option>').join("")+'</select>'+
+    '<label class="ck"><input type="checkbox" data-tgtmain="'+i+'"'+(x.main?' checked':'')+' aria-label="設為主要目標"></label>'+
+    '<label class="ck"><input type="checkbox" data-tgtdone="'+i+'"'+(x.done?' checked':'')+' aria-label="已通關"></label>'+
+    '<button class="x" data-tgtrm="'+i+'" aria-label="移除">×</button></div>').join("");
 }
 const CAPS=[["members","成員管理","核准申請、加入或移出成員、分配職責與權限"],["info","團隊資料","修改團名、口號、簡介與目標副本"],["modules","功能開放","切換各功能的開放狀態"],["survey","出席調查","為這個團發起、截止與管理出席時間調查"]];
 function leadersMgHTML(st){
@@ -1177,7 +1215,11 @@ function afterManage(){
   if(mgTab!=="team")return;
   const list=$("#tgtList");
   list.addEventListener("input",e=>{const i=e.target.dataset.tgtn;if(i!=null)tgtDraft[+i].n=e.target.value;});
-  list.addEventListener("change",e=>{const i=e.target.dataset.tgtt;if(i!=null)tgtDraft[+i].t=e.target.value;});
+  list.addEventListener("change",e=>{const d=e.target.dataset;
+    if(d.tgtt!=null)tgtDraft[+d.tgtt].t=e.target.value;
+    if(d.tgtdone!=null)tgtDraft[+d.tgtdone].done=e.target.checked;
+    if(d.tgtmain!=null){const i=+d.tgtmain,on=e.target.checked;tgtDraft.forEach((x,j)=>x.main=on&&j===i);list.innerHTML=tgtListHTML();}
+  });
 }
 
 /* ---------- 動作 ---------- */
@@ -1245,7 +1287,7 @@ document.addEventListener("click",async e=>{
       if(a==="tgtAdd"){tgtDraft.push({n:"",t:"savage"});$("#tgtList").innerHTML=tgtListHTML();return;}
       if(a==="saveTeam"){
         const name=$("#tName").value.trim();if(!name){toast("請輸入名稱");return;}
-        const targets=tgtDraft.map(x=>({n:x.n.trim(),t:x.t})).filter(x=>x.n).slice(0,20);
+        const targets=tgtDraft.map(x=>{const o={n:x.n.trim(),t:x.t};if(x.main)o.main=true;if(x.done)o.done=true;return o;}).filter(x=>x.n).slice(0,20);
         act.disabled=true;
         await updateDoc(doc(db,"statics",curTid),{name,slogan:$("#tSlogan").value.trim(),intro:$("#tIntro").value.trim(),targets});
         tgtDraft=null;toast("已儲存");act.disabled=false;return;
@@ -1263,6 +1305,11 @@ document.addEventListener("click",async e=>{
       }
     }
     const tc=t.closest("[data-team]");if(tc){go("team",tc.dataset.team);return;}
+    const sp=t.closest("[data-slotpick]");if(sp&&view==="team"){slotPick=slotPick===sp.dataset.slotpick?null:sp.dataset.slotpick;render();return;}
+    const al=t.closest("[data-also]");if(al){const id=al.dataset.also,k=al.dataset.k;const cur2=alsoOf(curTid,id).filter(x=>x!==k);
+      if(al.getAttribute("aria-pressed")!=="true")cur2.push(k);
+      const order=SLOTS.map(s=>s.k);cur2.sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+      await updateDoc(doc(db,"statics",curTid,"members",id),{also:cur2,cover:""});toast(cur2.length?"也可打："+cur2.join("、"):"已清除也可打的位置");return;}
     const pd=t.closest("[data-phdir]");if(pd){const p=DIRECTORY.find(x=>x.did===pd.dataset.phdir);if(p){phDraft={...phDraft,did:p.did,nick:p.n};render();}return;}
     const lf=t.closest("[data-lf]");if(lf){linkFilter=lf.dataset.lf;render();return;}
     const le=t.closest("[data-ledit]");if(le){const l=links[le.dataset.ledit];if(!l)return;
