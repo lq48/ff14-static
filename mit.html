@@ -14,7 +14,7 @@
   --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
   --accent:#2F63C9; --accent-ink:#FFFFFF; --gold:#B8860B; --danger:#C23A4F;
   --tank:#2F63C9; --heal:#2E8B57; --dps:#C0392B; --raid:#7A45C2;
-  --surface2:#EDF1F7; --headbg:#DFE7F4; --warnbg:#FFE7CF; --warn:#A9520A;
+  --surface2:#EDF1F7; --headbg:#E1E4EA; --warnbg:#FFE7CF; --warn:#A9520A;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
@@ -23,7 +23,7 @@
     --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
     --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
     --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF;
-    --surface2:#202940; --headbg:#1F2B45; --warnbg:#4A3118; --warn:#F2A65A;
+    --surface2:#202940; --headbg:#262C38; --warnbg:#4A3118; --warn:#F2A65A;
   }
 }
 :root[data-theme="dark"]{
@@ -31,7 +31,7 @@
   --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
   --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
   --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF;
-  --surface2:#202940; --headbg:#1F2B45; --warnbg:#4A3118; --warn:#F2A65A;
+  --surface2:#202940; --headbg:#262C38; --warnbg:#4A3118; --warn:#F2A65A;
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
@@ -72,7 +72,6 @@ table.g{border-collapse:separate;border-spacing:0;width:max-content}
 .g .cm{left:46px;width:176px;min-width:176px;max-width:176px;text-align:left;box-shadow:2px 0 0 var(--line)}
 .g thead .ct,.g thead .cm{z-index:3}
 .jh{text-align:center;font-weight:900}
-.jh .who{display:block;font-weight:500;font-size:11px;color:var(--muted)}
 .jh.tank{color:var(--tank)}.jh.heal{color:var(--heal)}.jh.dps{color:var(--dps)}.jh.bh{color:var(--gold)}
 .jh.mine{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
 .sh{width:36px;min-width:36px;max-width:36px;text-align:center}
@@ -117,8 +116,13 @@ tr.on .ct,tr.on .cm{box-shadow:inset 3px 0 0 var(--accent)}
 .lb img{width:32px;height:32px;border-radius:6px;display:block}
 .lb b{position:absolute;right:-3px;bottom:-4px;background:var(--ink);color:var(--bg);font-size:10px;line-height:14px;padding:0 3px;border-radius:4px}
 .lbh img{width:32px;height:32px;border-radius:6px;display:block}
-.g tr.tk .ct,.g tr.tk .cm{background:color-mix(in srgb,var(--tank) 16%,var(--surface))}
-.g tr.hl .ct,.g tr.hl .cm{background:color-mix(in srgb,var(--heal) 16%,var(--surface))}
+.g tr.tk .ct,.g tr.tk .cm{background:color-mix(in srgb,var(--tank) 30%,var(--surface))}
+.g tr.hl .ct,.g tr.hl .cm{background:color-mix(in srgb,var(--heal) 30%,var(--surface))}
+.g tr.tk .ct{box-shadow:inset 5px 0 0 var(--tank)}
+.g tr.hl .ct{box-shadow:inset 5px 0 0 var(--heal)}
+table.g.names .r1 th{height:62px}
+table.g.names .r2 th{top:62px}
+.jh .who{display:block;font-weight:500;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:1px auto 0}
 .addrow{display:flex;gap:8px;padding:10px 14px;position:sticky;left:0}
 .addrow button{border:1px dashed var(--line);background:transparent;border-radius:10px;min-height:40px;padding:0 14px;color:var(--muted)}
 .foot{font-size:12px;color:var(--muted);padding:0 14px 16px;position:sticky;left:0;max-width:760px}
@@ -191,7 +195,9 @@ const JOBS=[
   {k:"BRD",n:"吟遊詩人",r:"dps"},{k:"MCH",n:"機工士",r:"dps"},{k:"DNC",n:"舞者",r:"dps"},
   {k:"BLM",n:"黑魔道士",r:"dps"},{k:"SMN",n:"召喚士",r:"dps"},{k:"RDM",n:"赤魔道士",r:"dps"},{k:"PCT",n:"繪靈法師",r:"dps"}
 ];
-const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
+const SHORT={DRK:"暗騎",GNB:"絕槍",WHM:"白魔",AST:"占星",DRG:"龍騎",RPR:"奪魂",VPR:"毒蛇",BRD:"詩人",MCH:"機工",BLM:"黑魔",SMN:"召喚",RDM:"赤魔",PCT:"繪靈"};
+const JOB=Object.fromEntries(JOBS.map(j=>[j.k,{...j,s:SHORT[j.k]||j.n}]));
+let showNames=true;try{showNames=localStorage.getItem("mitNames")!=="0";}catch(e){}
 const SLOTS=["MT","ST","H1","H2","D1","D2","D3","D4"];
 const SLOT_ROLE={MT:"tank",ST:"tank",H1:"heal",H2:"heal",D1:"dps",D2:"dps",D3:"dps",D4:"dps"};
 const TAGS=["","死刑","全體AOE","分攤","分散","擊退","小怪","狂暴"];
@@ -275,6 +281,7 @@ function render(){
   h+='<select class="f duty" id="dutySel" aria-label="選擇副本">'+(duties.length?"":'<option value="">（還沒有副本）</option>')+duties.map(d=>'<option value="'+esc(d.id)+'"'+(d.id===did?" selected":"")+'>'+esc(d.name)+'</option>').join("")+'</select>';
   if(isOwner)h+='<button class="btn" data-a="dutyset">副本設定</button>';
   if(tid&&duty)h+='<button class="btn" data-a="comp">陣容</button>';
+  if(tid&&duty)h+='<button class="btn" data-a="names" aria-pressed="'+showNames+'">'+(showNames?"隱藏玩家":"顯示玩家")+'</button>';
   h+='<button class="btn" data-a="skills">技能庫</button>'+(duty?'<button class="btn" data-a="text">文字小抄</button>':'')+'<button class="btn" data-a="io">匯出／匯入</button></div></div>';
   if(duty){
     h+='<div class="scrollx">'+(duty.stages||[]).map((s,i)=>'<button class="tab'+(i===cur?" on":"")+'" data-a="stage" data-i="'+i+'">'+esc(s.name)+'</button>').join("")+'</div>';
@@ -288,9 +295,10 @@ function renderGrid(){
   const gw=$("#gw");if(!gw)return;
   if(!duty){gw.innerHTML='<div class="empty">'+(!ready.duties?"載入中…":duties.length?"找不到這個副本。":isOwner?"還沒有副本。按「副本設定」新增，或用「匯出／匯入」匯入資料。":"還沒有副本，請等團長建立。")+'</div>';return;}
   const sx=gw.scrollLeft,sy=gw.scrollTop,rs=rows(),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),V=vSlots(),ms=mySlot(),ca=canAll();
-  let h='<table class="g"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th><th class="jh bh" colspan="2">爆發<br>藥水</th><th class="jh bh">LB</th>';
+  let h='<table class="g'+(showNames?" names":"")+'"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th><th class="jh bh" colspan="2">爆發</th><th class="jh bh">LB</th>';
   V.forEach(s=>{const j=compOf(s),n=jobSkills(j).length,role=(JOB[j]||{}).r||SLOT_ROLE[s],u=((st&&st.roles)||{})[s];
-    h+='<th class="jh '+role+(s===ms?" mine":"")+'" colspan="'+Math.max(n,1)+'">'+s+'<br>'+esc(j?((JOB[j]||{}).n||j):"未設定")+(u&&users[u]?'<span class="who">'+esc(nameOf(users[u]))+'</span>':'')+'</th>';});
+    const U=u&&users[u],pid=U?(U.charName||nameOf(U)):"",full=s+" "+(j?((JOB[j]||{}).n||j):"未設定")+(U?"・"+nameOf(U)+(U.charName&&U.charName!==nameOf(U)?"（"+U.charName+"）":""):"");
+    h+='<th class="jh '+role+(s===ms?" mine":"")+'" colspan="'+Math.max(n,1)+'" title="'+esc(full)+'">'+s+'<br>'+esc(j?((JOB[j]||{}).s||j):"未設定")+(showNames&&pid?'<span class="who" style="max-width:'+(Math.max(n,1)*36-6)+'px">'+esc(pid)+'</span>':'')+'</th>';});
   h+='</tr><tr class="r2"><th class="sh first" title="團隊爆發｜點格子切換 120 → 60 → 無"><div class="shi"><span class="bx">爆</span><div class="nm">爆發</div><div class="cdv"><b>'+BURST_DUR+'</b><br>60</div></div></th><th class="sh" title="爆發藥｜持續 '+POT.dur+' 秒，CD '+POT.cd+' 秒"><div class="shi"><span class="bx pot">藥</span><div class="nm">藥水</div><div class="cdv"><b>'+POT.dur+'</b><br>'+POT.cd+'</div></div></th><th class="sh first" title="極限技｜點格子選擇由哪個位置施放"><div class="shi"><span class="lbh"><img src="'+LB_ICON+'" alt=""></span><div class="nm">極限技</div></div></th>';
   V.forEach(s=>{const j=compOf(s),l=jobSkills(j);if(!l.length){h+='<th class="sh first" style="width:auto;min-width:96px;max-width:none"><div class="shi" style="justify-content:center;color:var(--muted);font-size:12px">'+(j?"技能庫沒有<br>"+esc((JOB[j]||{}).n||j)+"的技能":"先到「陣容」<br>設定職業")+'</div></th>';return;}
     l.forEach((sk,k)=>{const v=sv(sk);h+='<th class="sh'+(k===0?" first":"")+'" title="'+esc(sk.name+(v.dur?"｜持續 "+v.dur+" 秒":"")+(v.cd?"｜CD "+v.cd+" 秒":"")+(sk.desc?"｜"+sk.desc:""))+'"><div class="shi">'+skIco(j,sk)+'<div class="nm">'+esc(sk.name)+'</div><div class="cdv">'+(v.dur?"<b>"+v.dur+"</b><br>":"")+(v.cd||"")+'</div></div></th>';});});
@@ -391,6 +399,7 @@ async function delImg(id){const rowId=sel;setP(rowId,{imgs:(prow(rowId).imgs||[]
 function newRow(kind){const r={id:uid(),t:"",mech:"",tag:"",ctag:"",dmg:""};if(kind)r.kind=kind;return r;}
 function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,rs=rows();let i;
   if(a==="stage"){cur=+b.dataset.i;sel=null;renderDrawer();render();}
+  else if(a==="names"){showNames=!showNames;try{localStorage.setItem("mitNames",showNames?"1":"0");}catch(err){}render();}
   else if(a==="filt"){filt=b.dataset.s;render();}
   else if(a==="cell")toggleSkill(b.dataset.s,b.dataset.r,b.dataset.k);
   else if(a==="dtog")toggleSkill(b.dataset.s,sel,b.dataset.k);
