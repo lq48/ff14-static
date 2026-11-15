@@ -462,6 +462,8 @@ const teamJob=(tid,uid)=>((membersOf(tid)[uid]||{}).job)||((users[uid]||{}).job)
 function alsoOf(tid,uid){const m=membersOf(tid)[uid]||{};return Array.isArray(m.also)?m.also:(m.cover?[m.cover]:[]);}
 let slotPick=null;
 const teamAlts=(tid,uid)=>((membersOf(tid)[uid]||{}).alts)||[];
+const SLOTS4=["MT","H1","D1","D2"];
+const slotsOf=st=>st&&st.size===4?SLOTS.filter(s=>SLOTS4.includes(s.k)):SLOTS;
 const slotRole=k=>(SLOTS.find(s=>s.k===k)||{}).r;
 function mismatch(slot,job){const r=slotRole(slot),j=JOB[job];if(!r||!j||j.r===r)return"";return slot+" 通常是"+{tank:"防護",heal:"治療",dps:"輸出"}[r]+"職業，目前是"+j.n;}
 const activeIds=tid=>Object.keys(membersOf(tid)).filter(id=>membersOf(tid)[id].status==="active");
@@ -1086,7 +1088,7 @@ function cardHTML(slot,uid){
     (u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
 function rosterHTML(st){
-  const roles=st.roles||{};const assigned=new Set(Object.values(roles));
+  const roles=st.roles||{};const assigned=new Set(slotsOf(st).map(s=>roles[s.k]).filter(Boolean));
   const rest=activeIds(st.id).filter(id=>!assigned.has(id));
   let pick='';
   if(slotPick){
@@ -1096,7 +1098,7 @@ function rosterHTML(st){
       (cands.length?'也可打：'+cands.map(id=>{const j=JOB[teamJob(st.id,id)];return esc(nameOf(users[id]))+'（'+(slotOf(id)?'正選 '+slotOf(id):'替補')+(j?'・'+esc(j.n):'')+'）';}).join("、"):'<span class="muted">目前沒有人標示也可以打這個位置</span>')+
       ' <button class="linkbtn" data-slotpick="'+slotPick+'">關閉</button></div>';
   }
-  return'<div class="panel"><h2>陣容</h2><div class="roster">'+SLOTS.map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+pick+
+  return'<div class="panel"><h2>陣容</h2><div class="roster">'+slotsOf(st).map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+pick+
     (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=alsoOf(st.id,id).join("、");return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">也可打 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
@@ -1128,7 +1130,7 @@ function manageHTML(st){
 }
 function membersMgHTML(st,pending){
   const ms=membersOf(st.id),roles=st.roles||{};const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
-  const active=activeIds(st.id).sort((a,b)=>{const ia=SLOTS.findIndex(s=>s.k===slotOf(a)),ib=SLOTS.findIndex(s=>s.k===slotOf(b));return(ia<0?99:ia)-(ib<0?99:ib);});
+  const SL=slotsOf(st);const active=activeIds(st.id).sort((a,b)=>{const ia=SL.findIndex(s=>s.k===slotOf(a)),ib=SL.findIndex(s=>s.k===slotOf(b));return(ia<0?99:ia)-(ib<0?99:ib);});
   const outsiders=Object.keys(users).filter(id=>!ms[id]);
   let h='';
   if(pending.length)h+='<div class="panel"><h2>加入申請</h2>'+pending.map(id=>{const u=users[id],m=ms[id];
@@ -1142,8 +1144,8 @@ function membersMgHTML(st,pending){
     h+='<div class="mtable"><div class="inner"><div class="mrow jrow mhead"><span>成員</span><span>職責</span><span>固定團職業</span><span>備用職業 1</span><span>備用職業 2</span><span></span></div>'+
     active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id),alts=m.alts||[];const warn=mismatch(sl,teamJob(st.id,id));
       return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b>'+phTag(u)+'<div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
-        '<div><select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SLOTS.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
-          '<div class="alsochips"><span class="small muted">也可打</span>'+SLOTS.filter(s=>s.k!==sl).map(s=>'<button type="button" class="mini" data-also="'+id+'" data-k="'+s.k+'" aria-pressed="'+alsoOf(st.id,id).includes(s.k)+'">'+s.k+'</button>').join("")+'</div></div>'+
+        '<div><select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SL.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
+          '<div class="alsochips"><span class="small muted">也可打</span>'+SL.filter(s=>s.k!==sl).map(s=>'<button type="button" class="mini" data-also="'+id+'" data-k="'+s.k+'" aria-pressed="'+alsoOf(st.id,id).includes(s.k)+'">'+s.k+'</button>').join("")+'</div></div>'+
         '<div>'+jobSel('data-tjob="'+id+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
         jobSel('data-talt="'+id+'" data-i="0" aria-label="備用職業 1"',alts[0]||"","無")+
         jobSel('data-talt="'+id+'" data-i="1" aria-label="備用職業 2"',alts[1]||"","無")+
@@ -1185,6 +1187,8 @@ function teamMgHTML(st){
   return'<div class="panel"><h2>團隊資料</h2><div class="form">'+
     '<label>固定團名稱<input id="tName" maxlength="30" value="'+esc(st.name)+'"></label>'+
     '<label>口號（選填）<input id="tSlogan" maxlength="40" value="'+esc(st.slogan||"")+'" placeholder="例如：一起把伊甸打穿！"></label>'+
+    '<label>隊伍人數<select id="tSize"><option value="8"'+(st.size===4?'':' selected')+'>8 人（MT／ST／H1／H2／D1～D4）</option><option value="4"'+(st.size===4?' selected':'')+'>4 人（MT／H1／D1／D2）</option></select></label>'+
+    '<div class="hint" style="margin-top:-6px">打異聞迷宮這類四人副本的固定團選 4 人，陣容就只會顯示 MT、H1、D1、D2。</div>'+
     '<label>簡介（選填）<textarea id="tIntro" rows="3" maxlength="400" placeholder="開荒時間、目標、注意事項……">'+esc(st.intro||"")+'</textarea></label>'+
     '<div><div style="font-size:14px;font-weight:500;margin-bottom:6px">目標副本</div><div class="hint" style="margin:-2px 0 8px">主要目標最多選一個，也可以不選；打完的副本勾「已通關」，標籤前會加上 ✓。</div><div id="tgtList">'+tgtListHTML()+'</div>'+
     '<button class="btn sm" data-act="tgtAdd">＋ 新增副本</button><div class="hint">之後 BiS 追蹤和攻略法整理會依這份清單分類，例如輕量級零式的掉落紀錄。</div></div>'+
@@ -1289,8 +1293,9 @@ document.addEventListener("click",async e=>{
         const name=$("#tName").value.trim();if(!name){toast("請輸入名稱");return;}
         const targets=tgtDraft.map(x=>{const o={n:x.n.trim(),t:x.t};if(x.main)o.main=true;if(x.done)o.done=true;return o;}).filter(x=>x.n).slice(0,20);
         act.disabled=true;
-        await updateDoc(doc(db,"statics",curTid),{name,slogan:$("#tSlogan").value.trim(),intro:$("#tIntro").value.trim(),targets});
-        tgtDraft=null;toast("已儲存");act.disabled=false;return;
+        const size=$("#tSize").value==="4"?4:8,cs=cur(),hid=size===4?["ST","H2","D3","D4"].filter(k=>(cs.roles||{})[k]):[];
+        await updateDoc(doc(db,"statics",curTid),{name,slogan:$("#tSlogan").value.trim(),intro:$("#tIntro").value.trim(),targets,size});
+        tgtDraft=null;toast(hid.length?"已儲存；原本在 "+hid.join("、")+" 的成員會先列為替補":"已儲存");act.disabled=false;return;
       }
       if(a==="leaderAdd"){
         const id=$("#leaderAdd").value;if(!id){toast("請先選擇成員");return;}
