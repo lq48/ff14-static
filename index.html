@@ -1104,7 +1104,7 @@ function modulesHTML(st){
   return'<div class="panel"><h2>功能</h2><div class="mods">'+
     '<a class="mod" href="schedule.html"><span class="t">出席時間調查</span><span class="d">填寫可以出團的時段</span><span class="badge open">使用中</span></a>'+
     vis.map(x=>{const s=mods[x.k]||"owner";return'<button class="mod" data-mod="'+x.k+'"><span class="t">'+x.n+'</span><span class="d">'+x.d+'</span>'+
-      (x.k==="bis"?(mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見</span>':'<span class="badge open">使用中</span>'):
+      (x.k==="bis"||x.k==="mit"?(mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見</span>':'<span class="badge open">使用中</span>'):
        mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見・建置中</span>':'<span class="badge">建置中</span>')+'</button>';}).join("")+
     '</div>'+(!mgr&&!vis.length?'<p class="muted small" style="margin:12px 0 0">更多功能準備中，敬請期待。</p>':'')+'</div>';
 }
@@ -1319,7 +1319,7 @@ document.addEventListener("click",async e=>{
     const ldel=t.closest("[data-ldel]");if(ldel){if(!armedTwice("ldel"+ldel.dataset.ldel,ldel,"確定？"))return;await deleteDoc(doc(db,"links",ldel.dataset.ldel));toast(isOwner?"已下架":"已撤回");return;}
     const lpin=t.closest("[data-lpin]");if(lpin){const l=links[lpin.dataset.lpin];await updateDoc(doc(db,"links",l.id),{pinned:!l.pinned});toast(l.pinned?"已取消置頂":"已置頂");return;}
     const mg=t.closest("[data-mg]");if(mg){mgTab=mg.dataset.mg;tgtDraft=null;render();return;}
-    const md=t.closest("button[data-mod]");if(md){if(md.dataset.mod==="bis"){bisTab="mine";go("mod");return;}toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
+    const md=t.closest("button[data-mod]");if(md){if(md.dataset.mod==="mit"){location.href="mit.html?team="+encodeURIComponent(curTid);return;}if(md.dataset.mod==="bis"){bisTab="mine";go("mod");return;}toast("「"+MODULES.find(x=>x.k===md.dataset.mod).n+"」還在建置中");return;}
     const rm=t.closest("[data-tgtrm]");if(rm){tgtDraft.splice(+rm.dataset.tgtrm,1);$("#tgtList").innerHTML=tgtListHTML();return;}
     const sub=t.closest("[data-sub]");if(sub){const k=sub.dataset.sub,s=profileDraft.subJobs;const i=s.indexOf(k);i<0?s.push(k):s.splice(i,1);sub.setAttribute("aria-pressed",i<0);return;}
     const ap=t.closest("[data-approve]");if(ap){

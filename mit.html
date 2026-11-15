@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>減傷軸｜光之戰士飛地</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
+  --accent:#2F63C9; --accent-ink:#FFFFFF; --gold:#B8860B; --danger:#C23A4F;
+  --tank:#2F63C9; --heal:#2E8B57; --dps:#C0392B; --raid:#7A45C2;
+  --surface2:#EDF1F7; --headbg:#DFE7F4; --warnbg:#FFE7CF; --warn:#A9520A;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+    --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
+    --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF;
+    --surface2:#202940; --headbg:#1F2B45; --warnbg:#4A3118; --warn:#F2A65A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+  --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
+  --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF;
+  --surface2:#202940; --headbg:#1F2B45; --warnbg:#4A3118; --warn:#F2A65A;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+#app{display:flex;flex-direction:column;height:100%}
+.bar{padding:12px 14px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line);background:var(--surface)}
+.bar1{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.back{font-size:13px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--accent)}
+h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:20px;margin:2px 0 0}
+.sub{font-size:12px;color:var(--muted)}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 11px;min-height:36px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+select.f.duty{min-height:36px;font-weight:700;max-width:260px}
+.scrollx{display:flex;gap:6px;overflow-x:auto;align-items:center}
+.tab{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;min-height:32px}
+.tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.perm{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.perm.ed{border-color:var(--heal);color:var(--heal)}
+.gw{flex:1;overflow:auto;position:relative}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+table.g{border-collapse:separate;border-spacing:0;width:max-content}
+.g th,.g td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0}
+.g thead th{position:sticky;background:var(--surface);z-index:2}
+.g thead tr.r1 th{top:0;height:46px;font-size:12.5px;line-height:1.2}
+.g thead tr.r2 th{top:46px;vertical-align:top;padding:4px 2px}
+.g .ct,.g .cm{position:sticky;background:var(--surface);z-index:1}
+.g .ct{left:0;width:46px;min-width:46px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px}
+.g .cm{left:46px;width:176px;min-width:176px;max-width:176px;text-align:left;box-shadow:2px 0 0 var(--line)}
+.g thead .ct,.g thead .cm{z-index:3}
+.jh{text-align:center;font-weight:900}
+.jh .who{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.jh.tank{color:var(--tank)}.jh.heal{color:var(--heal)}.jh.dps{color:var(--dps)}.jh.bh{color:var(--gold)}
+.jh.mine{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.sh{width:36px;min-width:36px;max-width:36px;text-align:center}
+.shi{display:flex;flex-direction:column;align-items:center;height:132px}
+.sh .nm{writing-mode:vertical-rl;font-size:12px;font-weight:700;margin:4px auto 2px;letter-spacing:1px;text-align:start}
+.sh .cdv{margin-top:auto;font-size:10px;color:var(--muted);line-height:1.25}
+.sh .cdv b{color:var(--ink)}
+.sh.first,.cell.first{border-left:2px solid var(--line)}
+.mb{width:100%;text-align:left;background:transparent;border:0;padding:5px 6px;min-height:40px;display:flex;flex-direction:column;gap:2px}
+.mb .n{font-weight:700;white-space:normal;word-break:break-word;line-height:1.3;font-size:13px}
+.mb .meta{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+.pill{font-size:10.5px;font-weight:700;padding:0 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted);line-height:16px}
+.pill.t-死刑,.pill.t-狂暴{border-color:var(--dps);color:var(--dps)}
+.pill.t-全體AOE{border-color:var(--accent);color:var(--accent)}
+.pill.t-分攤,.pill.t-分散{border-color:var(--heal);color:var(--heal)}
+.pill.c{border-color:var(--ink);color:var(--ink);border-style:dashed}
+.pill.x{background:var(--surface2);color:var(--ink);border-color:var(--surface2)}
+.dm{font-size:11px;color:var(--muted)}
+.est{color:var(--muted);font-style:italic}
+tr.head .ct,tr.head .cm{background:var(--headbg)}
+tr.head .mb .n{font-size:15px;font-weight:900}
+tr.on .ct,tr.on .cm{box-shadow:inset 3px 0 0 var(--accent)}
+.cell{width:36px;min-width:36px;max-width:36px;height:40px;text-align:center;background:transparent}
+.cell.ed{cursor:pointer}
+.cell.ed:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.cell.cd{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 22%,transparent) 0 4px,transparent 4px 8px)}
+.cell.act-tank{background:color-mix(in srgb,var(--tank) 22%,transparent)}
+.cell.act-heal{background:color-mix(in srgb,var(--heal) 22%,transparent)}
+.cell.act-dps{background:color-mix(in srgb,var(--dps) 20%,transparent)}
+.cell.act-b120{background:rgba(255,110,30,.28)}
+.cell.act-pot{background:rgba(150,90,210,.26)}
+.cell.bad{background:var(--warnbg)}
+.cell.bad .ico,.cell.bad .tx{outline:3px solid var(--warn);outline-offset:1px}
+.ico{width:32px;height:32px;border-radius:6px;display:inline-block;vertical-align:middle;object-fit:cover}
+.tx{display:inline-flex;width:32px;height:32px;border-radius:6px;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#FFFFFF;vertical-align:middle}
+.tx.tank{background:var(--tank)}.tx.heal{background:var(--heal)}.tx.dps{background:var(--dps)}
+.bx{display:inline-flex;width:32px;height:32px;border-radius:7px;align-items:center;justify-content:center;font-weight:900;font-size:13px;background:#E8C468;color:#1B1608;flex:none}
+.bx.b120{background:linear-gradient(135deg,#FF8A1F,#E03A1E);color:#FFFFFF;box-shadow:0 0 0 2px #FFC24A,0 0 8px rgba(255,120,30,.75);font-size:14px}
+.bx.b60{background:transparent;color:var(--muted);border:1.5px dashed var(--muted);font-weight:700;font-size:12px}
+.bx.pot{background:#7A3FB0;color:#FFFFFF}
+.addrow{display:flex;gap:8px;padding:10px 14px;position:sticky;left:0}
+.addrow button{border:1px dashed var(--line);background:transparent;border-radius:10px;min-height:40px;padding:0 14px;color:var(--muted)}
+.foot{font-size:12px;color:var(--muted);padding:0 14px 16px;position:sticky;left:0;max-width:760px}
+.dr{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;background:var(--surface);border-left:1px solid var(--line);z-index:40;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:-8px 0 24px rgba(0,0,0,.18)}
+@media (max-width:720px){.dr{top:auto;height:82vh;width:100%;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}}
+.drh{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.drh h2{font-size:16px;margin:0;flex:1}
+.drb{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sec{font-size:12px;font-weight:900;color:var(--muted);letter-spacing:.08em;border-top:1px solid var(--line);padding-top:10px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld>span{font-size:12px;color:var(--muted);font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:36px;width:100%}
+.f:disabled{opacity:.7}
+textarea.f{min-height:96px;resize:vertical}
+.ro{padding:4px 0;white-space:pre-wrap}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1px solid var(--line);background:var(--surface2);border-radius:8px;min-height:36px}
+.seg button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.lk{display:flex;gap:6px;align-items:center}
+.lk a{flex:1;word-break:break-all}
+.ib{width:34px;height:34px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.ib svg{width:15px;height:15px}
+.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.im{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface2);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+.im img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.im .ib{position:absolute;top:4px;right:4px;width:28px;height:28px}
+.sheet.img{max-width:1000px;padding:8px}
+.sheet.img img{width:100%;height:auto;display:block;border-radius:10px}
+.uses{display:flex;flex-direction:column;gap:8px}
+.uj{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.uj .jn{font-size:12px;font-weight:900;width:52px}
+.uj .jn.tank{color:var(--tank)}.uj .jn.heal{color:var(--heal)}.uj .jn.dps{color:var(--dps)}
+.uk{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:3px;display:inline-flex}
+.uk.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.uk:not(.on) .ico,.uk:not(.on) .tx{opacity:.4}
+.uk:disabled{cursor:default}
+.drf{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;border-top:1px solid var(--line)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px}
+.sheet{background:var(--surface);border-radius:16px;width:100%;max-width:600px;max-height:88vh;overflow:auto;padding:16px}
+.sheet h2{font-size:17px;margin:0 0 10px}
+.sk{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.sk .n{flex:1;min-width:0}.sk .c{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}
+.addsk{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.addsk .w{grid-column:1/-1}
+.ta{width:100%;min-height:220px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.slotrow{display:flex;gap:8px;align-items:center;margin:6px 0}
+.slotrow b{width:40px}
+.arm{background:var(--danger)!important;color:#FFFFFF!important;border-color:var(--danger)!important;width:auto!important;padding:0 10px!important;font-size:12px;font-weight:700;white-space:nowrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty">載入中…</div></div>
+<script type="module">
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
+
+/* ===== 常數 ===== */
+const JOBS=[
+  {k:"PLD",n:"騎士",r:"tank"},{k:"WAR",n:"戰士",r:"tank"},{k:"DRK",n:"暗黑騎士",r:"tank"},{k:"GNB",n:"絕槍戰士",r:"tank"},
+  {k:"WHM",n:"白魔道士",r:"heal"},{k:"SCH",n:"學者",r:"heal"},{k:"AST",n:"占星術師",r:"heal"},{k:"SGE",n:"賢者",r:"heal"},
+  {k:"MNK",n:"武僧",r:"dps"},{k:"DRG",n:"龍騎士",r:"dps"},{k:"NIN",n:"忍者",r:"dps"},{k:"SAM",n:"武士",r:"dps"},{k:"RPR",n:"奪魂者",r:"dps"},{k:"VPR",n:"毒蛇劍士",r:"dps"},
+  {k:"BRD",n:"吟遊詩人",r:"dps"},{k:"MCH",n:"機工士",r:"dps"},{k:"DNC",n:"舞者",r:"dps"},
+  {k:"BLM",n:"黑魔道士",r:"dps"},{k:"SMN",n:"召喚士",r:"dps"},{k:"RDM",n:"赤魔道士",r:"dps"},{k:"PCT",n:"繪靈法師",r:"dps"}
+];
+const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
+const SLOTS=["MT","ST","H1","H2","D1","D2","D3","D4"];
+const SLOT_ROLE={MT:"tank",ST:"tank",H1:"heal",H2:"heal",D1:"dps",D2:"dps",D3:"dps",D4:"dps"};
+const TAGS=["","死刑","全體AOE","分攤","分散","擊退","小怪","狂暴"];
+const BURST=["","120","60"];
+const POT={dur:30,cd:270},BURST_DUR=20;
+const IC={up:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>',dn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"/></svg>',x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>'};
+
+/* ===== 狀態 ===== */
+const qs=new URLSearchParams(location.search);
+const tid=qs.get("team")||"";
+let did=qs.get("duty")||"";
+let me=null,isOwner=false,st=null,members={},users={},duties=[],lib={jobs:{}},duty=null,plan={comp:{},rows:{}},slotDocs={};
+let cur=0,sel=null,filt="all",modal=null,toastT=null,gridT=null;
+let dutyDirty=false,dutyT=null,libDirty=false,libT=null,planDirty=false,planT=null;
+let imgCache={},uploading=0;
+let unDuty=null,unPlan=null,unSlots=null,ready={duties:false,lib:false};
+
+/* ===== 小工具 ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const clone=o=>JSON.parse(JSON.stringify(o));
+function secs(t){if(!t)return null;const m=String(t).trim().match(/^(\d+)(?::(\d{1,2}))?$/);if(!m)return null;return m[2]!=null?(+m[1])*60+(+m[2]):+m[1];}
+function fmt(s){s=Math.round(s);return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2);}
+function toast(m){let el=$("#toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{el.hidden=true;},2400);}
+function armed(b,label){if(b.dataset.armed)return true;b.dataset.armed="1";const o=b.innerHTML;b.innerHTML=label;b.classList.add("arm");setTimeout(()=>{if(b.isConnected&&b.dataset.armed){delete b.dataset.armed;b.innerHTML=o;b.classList.remove("arm");}},3000);return false;}
+const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"";
+
+/* ===== 權限（要和 firestore.rules 一致） ===== */
+const isLeader=()=>!!(me&&st&&(st.leaders||{})[me.uid]);
+const myMem=()=>(me&&members[me.uid])||null;
+const active=()=>{const m=myMem();return !!(m&&m.status==="active");};
+const myPerm=()=>((myMem()||{}).perms||{}).mit||"none";
+function canView(){
+  if(!tid)return !!me;
+  if(isOwner||isLeader())return true;
+  if(!active())return false;
+  const s=((st&&st.modules)||{}).mit||"owner";
+  return s==="all"||(s==="selected"&&myPerm()!=="none");
+}
+const canAll=()=>!!tid&&(isOwner||isLeader()||(active()&&canView()&&myPerm()==="all"));
+const canSlot=s=>canAll()||(!!tid&&active()&&canView()&&["own","all"].includes(myPerm())&&((st&&st.roles)||{})[s]===me.uid);
+const canMech=()=>isOwner;
+const mySlot=()=>{if(!me||!st)return "";const r=st.roles||{};return Object.keys(r).find(k=>r[k]===me.uid)||"";};
+
+/* ===== 資料取用 ===== */
+const LV=()=>(duty&&duty.level)||100;
+function sv(sk){let cd=+sk.cd||0,dur=+sk.dur||0;const lv=sk.lv||{};Object.keys(lv).map(Number).sort((a,b)=>a-b).forEach(l=>{if(l<=LV()){if(lv[l].cd!=null&&lv[l].cd!=="")cd=+lv[l].cd;if(lv[l].dur!=null&&lv[l].dur!=="")dur=+lv[l].dur;}});return{cd,dur};}
+const jobSkills=j=>(((lib.jobs||{})[j]||{}).skills||[]).filter(s=>!s.minLv||+s.minLv<=LV());
+const allJobSkills=j=>(((lib.jobs||{})[j]||{}).skills||[]);
+const skillOf=(j,id)=>allJobSkills(j).find(s=>s.id===id);
+const dSlots=()=>(duty&&duty.slots&&duty.slots.length?duty.slots:["MT","H1","D1","D2"]);
+function memberJob(u){if(!u)return "";const m=members[u]||{};return m.job||((users[u]||{}).job)||"";}
+function compOf(s){const c=(plan.comp||{})[s];if(c)return c;const u=((st&&st.roles)||{})[s];return memberJob(u)||"";}
+function vSlots(){return dSlots().filter(s=>filt==="all"||filt===s||(filt==="mine"&&s===mySlot()));}
+const stage=()=>duty&&duty.stages&&duty.stages[cur];
+const rows=()=>(stage()&&stage().rows)||[];
+const prow=id=>((plan.rows||{})[id])||{};
+const assign=(s,id)=>((((slotDocs[s]||{}).a)||{})[id])||[];
+function skIco(j,sk,cls){const role=(JOB[j]||{}).r||"dps";if(sk.img)return '<img class="ico'+(cls?" "+cls:"")+'" src="'+esc(sk.img)+'" alt="'+esc(sk.name)+'" title="'+esc(sk.name)+'">';return '<span class="tx '+role+(cls?" "+cls:"")+'" role="img" aria-label="'+esc(sk.name)+'" title="'+esc(sk.name)+'">'+esc(sk.name.slice(0,2))+'</span>';}
+
+/* ===== 時間推估與 CD ===== */
+function est(rs){const t=rs.map(r=>secs(r.t)),out=[];for(let i=0;i<rs.length;i++){if(t[i]!=null){out.push({v:t[i],e:false});continue;}let a=i-1;while(a>=0&&t[a]==null)a--;let b=i+1;while(b<rs.length&&t[b]==null)b++;out.push(a>=0&&b<rs.length?{v:t[a]+(t[b]-t[a])*(i-a)/(b-a),e:true}:{v:null,e:true});}return out;}
+function cdState(rs,E){const out={};dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const{cd,dur}=sv(sk);let last=null;rs.forEach((r,i)=>{const t=E[i].v,used=assign(s,r.id).includes(sk.id),k=r.id+"|"+s+"|"+sk.id,d=(last!=null&&t!=null)?t-last:null;
+  if(used){if(d!=null&&cd&&d<cd)out[k]={bad:cd-d};else{out[k]={use:1};if(t!=null)last=t;}}
+  else if(d!=null){if(dur&&d<=dur)out[k]={act:1,left:dur-d};else if(cd&&d<cd)out[k]={cd:1,left:cd-d};}});});});return out;}
+function teamState(rs,E){const out={};let lb=null,lbv="",lp=null;rs.forEach((r,i)=>{const t=E[i].v,p=prow(r.id);
+  if(p.burst){out[r.id+"|B"]={use:1};if(t!=null){lb=t;lbv=p.burst;}}else if(lb!=null&&t!=null&&t-lb<=BURST_DUR)out[r.id+"|B"]={act:1,left:BURST_DUR-(t-lb),v:lbv};
+  const d=(lp!=null&&t!=null)?t-lp:null;if(p.pot){if(d!=null&&d<POT.cd)out[r.id+"|P"]={bad:POT.cd-d};else{out[r.id+"|P"]={use:1};if(t!=null)lp=t;}}else if(d!=null){if(d<=POT.dur)out[r.id+"|P"]={act:1,left:POT.dur-d};else if(d<POT.cd)out[r.id+"|P"]={cd:1,left:POT.cd-d};}});return out;}
+
+/* ===== 畫面 ===== */
+function render(){
+  const app=$("#app");
+  if(!me){app.innerHTML='<div class="empty"><p>請先到飛地首頁登入，再回來這一頁。</p><p><a class="btn primary" href="index.html'+(tid?"?team="+encodeURIComponent(tid):"")+'">前往首頁登入</a></p></div>';return;}
+  if(tid&&!st){app.innerHTML='<div class="empty">載入固團資料中…</div>';return;}
+  if(!canView()){app.innerHTML='<div class="empty"><p>這個固團還沒有開放減傷軸給你。</p><p><a href="index.html?team='+encodeURIComponent(tid)+'">← 回固團</a></p></div>';return;}
+  const editTxt=!tid?(isOwner?"可編輯機制與技能庫":"僅檢視"):canAll()?"可編輯全部":canSlot(mySlot())?"可編輯 "+mySlot():"僅檢視";
+  let h='<div class="bar"><div class="bar1"><div>'+(tid?'<a class="back" href="index.html?team='+encodeURIComponent(tid)+'">← 回 '+esc(st.name||"固團")+'</a>':'<a class="back" href="index.html">← 回飛地</a>')+
+    '<h1>減傷軸</h1><div class="sub">'+(duty?esc(duty.name)+'・Lv'+esc(duty.level)+'・'+dSlots().length+' 人':'')+'　<span class="perm'+(editTxt!=="僅檢視"?" ed":"")+'">'+esc(editTxt)+'</span></div></div><div class="tools">';
+  h+='<select class="f duty" id="dutySel" aria-label="選擇副本">'+(duties.length?"":'<option value="">（還沒有副本）</option>')+duties.map(d=>'<option value="'+esc(d.id)+'"'+(d.id===did?" selected":"")+'>'+esc(d.name)+'</option>').join("")+'</select>';
+  if(isOwner)h+='<button class="btn" data-a="dutyset">副本設定</button>';
+  if(tid&&duty)h+='<button class="btn" data-a="comp">陣容</button>';
+  h+='<button class="btn" data-a="skills">技能庫</button>'+(duty?'<button class="btn" data-a="text">文字小抄</button>':'')+'<button class="btn" data-a="io">匯出／匯入</button></div></div>';
+  if(duty){
+    h+='<div class="scrollx">'+(duty.stages||[]).map((s,i)=>'<button class="tab'+(i===cur?" on":"")+'" data-a="stage" data-i="'+i+'">'+esc(s.name)+'</button>').join("")+'</div>';
+    h+='<div class="scrollx"><span class="lbl">只看</span><button class="tab'+(filt==="all"?" on":"")+'" data-a="filt" data-s="all">全部</button>'+(mySlot()&&dSlots().includes(mySlot())?'<button class="tab'+(filt==="mine"?" on":"")+'" data-a="filt" data-s="mine">我的</button>':'')+
+      dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+s+'">'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
+  }
+  h+='</div><div class="gw" id="gw"></div>';
+  app.innerHTML=h;renderGrid();
+}
+function renderGrid(){
+  const gw=$("#gw");if(!gw)return;
+  if(!duty){gw.innerHTML='<div class="empty">'+(!ready.duties?"載入中…":duties.length?"找不到這個副本。":isOwner?"還沒有副本。按「副本設定」新增，或用「匯出／匯入」匯入資料。":"還沒有副本，請等團長建立。")+'</div>';return;}
+  const sx=gw.scrollLeft,sy=gw.scrollTop,rs=rows(),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),V=vSlots(),ms=mySlot(),ca=canAll();
+  let h='<table class="g"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th><th class="jh bh" colspan="2">爆發<br>藥水</th>';
+  V.forEach(s=>{const j=compOf(s),n=jobSkills(j).length,role=(JOB[j]||{}).r||SLOT_ROLE[s],u=((st&&st.roles)||{})[s];
+    h+='<th class="jh '+role+(s===ms?" mine":"")+'" colspan="'+Math.max(n,1)+'">'+s+'<br>'+esc(j?((JOB[j]||{}).n||j):"未設定")+(u&&users[u]?'<span class="who">'+esc(nameOf(users[u]))+'</span>':'')+'</th>';});
+  h+='</tr><tr class="r2"><th class="sh first" title="團隊爆發｜點格子切換 120 → 60 → 無"><div class="shi"><span class="bx">爆</span><div class="nm">爆發</div><div class="cdv"><b>'+BURST_DUR+'</b><br>60</div></div></th><th class="sh" title="爆發藥｜持續 '+POT.dur+' 秒，CD '+POT.cd+' 秒"><div class="shi"><span class="bx pot">藥</span><div class="nm">藥水</div><div class="cdv"><b>'+POT.dur+'</b><br>'+POT.cd+'</div></div></th>';
+  V.forEach(s=>{const j=compOf(s),l=jobSkills(j);if(!l.length){h+='<th class="sh first" style="width:auto;min-width:96px;max-width:none"><div class="shi" style="justify-content:center;color:var(--muted);font-size:12px">'+(j?"技能庫沒有<br>"+esc((JOB[j]||{}).n||j)+"的技能":"先到「陣容」<br>設定職業")+'</div></th>';return;}
+    l.forEach((sk,k)=>{const v=sv(sk);h+='<th class="sh'+(k===0?" first":"")+'" title="'+esc(sk.name+(v.dur?"｜持續 "+v.dur+" 秒":"")+(v.cd?"｜CD "+v.cd+" 秒":"")+(sk.desc?"｜"+sk.desc:""))+'"><div class="shi">'+skIco(j,sk)+'<div class="nm">'+esc(sk.name)+'</div><div class="cdv">'+(v.dur?"<b>"+v.dur+"</b><br>":"")+(v.cd||"")+'</div></div></th>';});});
+  h+='</tr></thead><tbody>';
+  rs.forEach((r,i)=>{const head=r.kind==="head",p=prow(r.id);h+='<tr class="'+(head?"head":"")+(sel===r.id?" on":"")+'">';
+    const tt=r.t?esc(r.t):(E[i].v!=null?'<span class="est">~'+fmt(E[i].v)+'</span>':'<span class="est">—</span>');
+    h+='<td class="ct">'+tt+'</td><td class="cm"><button class="mb" data-a="open" data-r="'+r.id+'"><span class="n">'+esc(r.mech||"（未命名）")+'</span><span class="meta">';
+    if(r.tag)h+='<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>';if(r.ctag)h+='<span class="pill c">'+esc(r.ctag)+'</span>';
+    if(p.note)h+='<span class="pill x">解法</span>';if((p.imgs||[]).length)h+='<span class="pill x">圖'+p.imgs.length+'</span>';if((p.links||[]).length)h+='<span class="pill x">連結'+p.links.length+'</span>';
+    h+='</span>'+(r.dmg?'<span class="dm">'+esc(r.dmg)+'</span>':'')+'</button></td>';
+    const tb=T[r.id+"|B"]||{},tp=T[r.id+"|P"]||{};
+    h+='<td class="cell first'+(ca?" ed":"")+(tb.act&&!tb.use&&tb.v==="120"?" act-b120":"")+'" '+(ca?'data-a="bcell" ':'')+'data-r="'+r.id+'" title="'+esc(p.burst?p.burst+" 爆發"+(ca?"（點一下切換）":""):tb.act&&tb.v==="120"?"120 爆發中，剩約 "+Math.round(tb.left)+" 秒":ca?"點一下標 120，再點變 60":"")+'">'+(p.burst?'<span class="bx b'+esc(p.burst)+'">'+esc(p.burst)+'</span>':'')+'</td>';
+    h+='<td class="cell'+(ca?" ed":"")+(tp.bad?" bad":tp.act&&!tp.use?" act-pot":tp.cd?" cd":"")+'" '+(ca?'data-a="pcell" ':'')+'data-r="'+r.id+'" title="'+esc(tp.bad?"藥水 CD 還差 "+Math.ceil(tp.bad)+" 秒":tp.use?"吃爆發藥":tp.act?"藥水效果中，剩約 "+Math.round(tp.left)+" 秒":tp.cd?"藥水 CD 中，還要約 "+Math.round(tp.left)+" 秒":ca?"點一下標記吃藥":"")+'">'+(p.pot?'<span class="bx pot">藥</span>':'')+'</td>';
+    V.forEach(s=>{const j=compOf(s),l=jobSkills(j),ed=canSlot(s);if(!l.length){h+='<td class="cell first"></td>';return;}
+      l.forEach((sk,k)=>{const c=C[r.id+"|"+s+"|"+sk.id]||{},role=(JOB[j]||{}).r||"dps";
+        const cls="cell"+(k===0?" first":"")+(ed?" ed":"")+(c.bad?" bad":c.act?" act-"+role:c.cd?" cd":"");
+        const lab=s+" "+sk.name+(c.bad?"（CD 還差 "+Math.ceil(c.bad)+" 秒）":c.use?"（使用）":c.act?"（效果中，剩約 "+Math.round(c.left)+" 秒）":c.cd?"（CD 中，還要約 "+Math.round(c.left)+" 秒）":"");
+        h+='<td class="'+cls+'" '+(ed?'data-a="cell" ':'')+'data-r="'+r.id+'" data-s="'+s+'" data-k="'+sk.id+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+(c.use||c.bad?skIco(j,sk):"")+'</td>';});});
+    h+='</tr>';});
+  h+='</tbody></table>';
+  if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
+  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
+  gw.innerHTML=h;gw.scrollLeft=sx;gw.scrollTop=sy;
+}
+const gridSoon=()=>{clearTimeout(gridT);gridT=setTimeout(renderGrid,250);};
+
+/* ===== 機制詳情 ===== */
+function renderDrawer(){
+  let dr=$("#dr");const r=sel&&rows().find(x=>x.id===sel);
+  if(!r){sel=null;if(dr)dr.remove();return;}
+  if(!dr){dr=document.createElement("aside");dr.id="dr";dr.className="dr";dr.setAttribute("aria-label","機制詳情");document.body.appendChild(dr);dr.addEventListener("click",onClick);dr.addEventListener("input",onDrInput);dr.addEventListener("change",onDrChange);}
+  const keep=document.activeElement&&dr.contains(document.activeElement)?document.activeElement.dataset.f:null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
+  const cm=canMech(),ca=canAll(),p=prow(r.id),dis=cm?"":" disabled";
+  let h='<div class="drh"><h2>'+(r.kind==="head"?"段落":"機制")+'詳情</h2><button class="ib" aria-label="關閉" data-a="dclose">'+IC.x+'</button></div><div class="drb">';
+  if(cm)h+='<div class="seg"><button class="'+(r.kind!=="head"?"on":"")+'" data-a="kind" data-k="">機制</button><button class="'+(r.kind==="head"?"on":"")+'" data-a="kind" data-k="head">段落（小怪／階段）</button></div>';
+  h+='<label class="fld"><span>名稱</span><input class="f" data-f="mech" value="'+esc(r.mech)+'"'+dis+'></label>';
+  h+='<div class="two"><label class="fld"><span>時間</span><input class="f" data-f="t" inputmode="numeric" placeholder="0:00" value="'+esc(r.t)+'"'+dis+'></label><label class="fld"><span>傷害</span><input class="f" data-f="dmg" value="'+esc(r.dmg)+'" placeholder="例 80k+45k×2"'+dis+'></label></div>';
+  h+='<div class="two"><label class="fld"><span>類型</span><select class="f" data-f="tag"'+dis+'>'+TAGS.map(t=>'<option value="'+t+'"'+(r.tag===t?" selected":"")+'>'+(t||"—")+'</option>').join("")+'</select></label><label class="fld"><span>自訂標籤</span><input class="f" data-f="ctag" value="'+esc(r.ctag)+'" placeholder="例：左右刀、接線"'+dis+'></label></div>';
+  if(!cm)h+='<p class="hint">機制內容由網站管理員維護，所有固團共用。</p>';
+  if(tid){
+    h+='<div class="sec">本團設定</div><div class="two"><label class="fld"><span>爆發</span><select class="f" data-p="burst"'+(ca?"":" disabled")+'>'+BURST.map(t=>'<option value="'+t+'"'+((p.burst||"")===t?" selected":"")+'>'+(t?t+" 爆發":"—")+'</option>').join("")+'</select></label><label class="fld"><span>藥水</span><select class="f" data-p="pot"'+(ca?"":" disabled")+'><option value="">—</option><option value="1"'+(p.pot?" selected":"")+'>吃爆發藥</option></select></label></div>';
+    h+='<div class="fld"><span>減傷分工</span><div class="uses">';
+    dSlots().forEach(s=>{const j=compOf(s),l=jobSkills(j),role=(JOB[j]||{}).r||SLOT_ROLE[s],ed=canSlot(s),a=assign(s,r.id);
+      h+='<div class="uj"><span class="jn '+role+'">'+s+' '+esc(j?((JOB[j]||{}).n||j):"")+'</span>';if(!l.length)h+='<span class="hint">沒有技能</span>';
+      l.forEach(sk=>{const on=a.includes(sk.id);h+='<button class="uk'+(on?" on":"")+'" '+(ed?'data-a="dtog" ':'disabled ')+'data-s="'+s+'" data-k="'+sk.id+'" aria-pressed="'+on+'" title="'+esc(sk.name)+'">'+skIco(j,sk)+'</button>';});h+='</div>';});
+    h+='</div></div>';
+    h+='<label class="fld"><span>解法／備註</span>'+(ca?'<textarea class="f" data-p="note" placeholder="例：分攤去 A 點，坦克站王前面">'+esc(p.note||"")+'</textarea>':'<div class="ro">'+(p.note?esc(p.note):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
+    h+='<div class="fld"><span>連結（攻略、站位圖）</span>'+(p.links||[]).map((l,i)=>'<div class="lk"><a href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>'+(ca?'<button class="ib" aria-label="刪除連結" data-a="ldel" data-i="'+i+'">'+IC.x+'</button>':'')+'</div>').join("");
+    if(ca)h+='<div class="two"><input class="f" id="lkL" placeholder="名稱（可不填）"><input class="f" id="lkU" placeholder="https://…" inputmode="url"></div><button class="btn" data-a="ladd">新增連結</button>';
+    else if(!(p.links||[]).length)h+='<span class="hint">（沒有）</span>';
+    h+='<p class="hint">完整的攻略圖文可以整理在 Notion，公開分享後把「頁面」網址貼在這裡。</p></div>';
+    const ims=p.imgs||[];h+='<div class="fld"><span>站位圖</span>';
+    if(ims.length)h+='<div class="imgs">'+ims.map((id,i)=>{loadImg(id);const src=imgCache[id];return '<div class="im">'+(src?'<img src="'+esc(src)+'" alt="'+esc(r.mech)+' 站位圖 '+(i+1)+'" data-a="zoom" data-id="'+id+'">':'<span class="hint">'+(src===""?"讀取失敗":"載入中…")+'</span>')+(ca?'<button class="ib" aria-label="移除這張圖" data-a="idel" data-id="'+id+'">'+IC.x+'</button>':'')+'</div>';}).join("")+'</div>';
+    else if(!ca)h+='<span class="hint">（沒有）</span>';
+    if(ca)h+='<label class="btn" style="text-align:center">'+(uploading?"上傳中…":"上傳圖片")+'<input type="file" accept="image/*" multiple id="up" hidden></label><p class="hint">會自動壓縮後存進網站，一張大約 100～300 KB。</p>';
+    h+='</div>';
+  }
+  h+='</div>';
+  if(cm)h+='<div class="drf"><button class="ib" aria-label="上移" data-a="up">'+IC.up+'</button><button class="ib" aria-label="下移" data-a="dn">'+IC.dn+'</button><button class="btn" data-a="insbelow">在下方插入</button><button class="btn danger" data-a="rdel" style="margin-left:auto">刪除</button></div>';
+  dr.innerHTML=h;dr.querySelector(".drb").scrollTop=sc;
+  if(keep){const el=dr.querySelector('[data-f="'+keep+'"],[data-p="'+keep+'"]');if(el)el.focus();}
+}
+function onDrInput(e){const t=e.target;if(!sel)return;
+  if(t.dataset.f&&canMech()){const r=rows().find(x=>x.id===sel);r[t.dataset.f]=t.value;saveDutySoon();gridSoon();}
+  else if(t.dataset.p==="note"&&canAll()){setP(sel,{note:t.value});gridSoon();}}
+function onDrChange(e){const t=e.target;if(t.id==="up"){upload(t.files);return;}if(t.dataset.p==="burst"||t.dataset.p==="pot"){setP(sel,{[t.dataset.p]:t.value});renderGrid();}else if(t.dataset.f)renderGrid();}
+
+/* ===== 寫入 ===== */
+function saveDutySoon(){if(!canMech()||!duty)return;dutyDirty=true;clearTimeout(dutyT);dutyT=setTimeout(saveDuty,700);}
+async function saveDuty(){clearTimeout(dutyT);if(!duty)return;const d=clone(duty);delete d.id;d.updatedAt=Date.now();
+  try{await setDoc(doc(db,"mitDuties",duty.id),d);dutyDirty=false;}catch(e){console.error(e);toast("機制儲存失敗："+(e.code||e.message));}}
+function saveLibSoon(){if(!isOwner)return;libDirty=true;clearTimeout(libT);libT=setTimeout(saveLib,700);}
+async function saveLib(){clearTimeout(libT);try{await setDoc(doc(db,"mitSkills","lib"),{jobs:lib.jobs||{},updatedAt:Date.now()});libDirty=false;}catch(e){console.error(e);toast("技能庫儲存失敗："+(e.code||e.message));}}
+const planRef=()=>doc(db,"statics",tid,"mit",did);
+function setP(rowId,patch){if(!canAll())return;plan.rows=plan.rows||{};const cur0=plan.rows[rowId]||{};plan.rows[rowId]={...cur0,...patch};Object.keys(plan.rows[rowId]).forEach(k=>{if(plan.rows[rowId][k]===""||plan.rows[rowId][k]==null)delete plan.rows[rowId][k];});savePlanSoon();}
+function savePlanSoon(){planDirty=true;clearTimeout(planT);planT=setTimeout(savePlan,600);}
+async function savePlan(){clearTimeout(planT);try{await setDoc(planRef(),{comp:plan.comp||{},rows:plan.rows||{},updatedAt:Date.now(),by:me.uid});planDirty=false;}catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限":e.code||e.message));}}
+async function toggleSkill(s,rowId,k){if(!canSlot(s))return;const sd=slotDocs[s]=slotDocs[s]||{a:{}};sd.a=sd.a||{};const l=(sd.a[rowId]||[]).slice(),i=l.indexOf(k);if(i>=0)l.splice(i,1);else l.push(k);sd.a[rowId]=l;
+  renderGrid();if(sel===rowId)renderDrawer();
+  try{await setDoc(doc(db,"statics",tid,"mit",did,"slots",s),{a:{[rowId]:l},updatedAt:Date.now(),by:me.uid},{merge:true});}catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限改 "+s:e.code||e.message));}}
+
+/* ===== 圖片 ===== */
+const imgRef=id=>doc(db,"statics",tid,"mitImgs",id);
+function loadImg(id){if(imgCache[id]!==undefined)return;imgCache[id]=null;getDoc(imgRef(id)).then(s=>{imgCache[id]=s.exists()?s.data().data:"";if(sel)renderDrawer();}).catch(()=>{imgCache[id]="";if(sel)renderDrawer();});}
+function compress(f){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{URL.revokeObjectURL(img.src);let scale=Math.min(1,1600/Math.max(img.width,img.height)),q=.82,out="";
+  for(let i=0;i<8;i++){const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));const x=c.getContext("2d");x.fillStyle="#FFFFFF";x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+    out=c.toDataURL("image/webp",q);if(!out.startsWith("data:image/webp"))out=c.toDataURL("image/jpeg",q);if(out.length<=880000)break;if(q>.55)q-=.12;else scale*=.8;}
+  out.length<=880000?res(out):rej(new Error("too big"));};img.onerror=()=>rej(new Error("decode"));img.src=URL.createObjectURL(f);});}
+async function upload(files){if(!canAll()||!files||!files.length)return;const rowId=sel;uploading++;renderDrawer();
+  for(const f of files){try{const data=await compress(f),id=uid()+uid();await setDoc(imgRef(id),{did,row:rowId,data,by:me.uid,createdAt:Date.now()});imgCache[id]=data;setP(rowId,{imgs:[...(prow(rowId).imgs||[]),id]});}
+    catch(e){console.error(e);toast(e.message==="too big"?"這張圖太大，壓縮後還是超過上限":e.message==="decode"?"讀不到這張圖片":"上傳失敗："+(e.code==="permission-denied"?"沒有權限":e.code||e.message));}}
+  uploading--;renderDrawer();renderGrid();toast("已上傳");}
+async function delImg(id){const rowId=sel;setP(rowId,{imgs:(prow(rowId).imgs||[]).filter(x=>x!==id)});renderDrawer();renderGrid();try{await deleteDoc(imgRef(id));}catch(e){console.error(e);}delete imgCache[id];}
+
+/* ===== 點擊 ===== */
+function newRow(kind){const r={id:uid(),t:"",mech:"",tag:"",ctag:"",dmg:""};if(kind)r.kind=kind;return r;}
+function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,rs=rows();let i;
+  if(a==="stage"){cur=+b.dataset.i;sel=null;renderDrawer();render();}
+  else if(a==="filt"){filt=b.dataset.s;render();}
+  else if(a==="cell")toggleSkill(b.dataset.s,b.dataset.r,b.dataset.k);
+  else if(a==="dtog")toggleSkill(b.dataset.s,sel,b.dataset.k);
+  else if(a==="bcell"){const p=prow(b.dataset.r);setP(b.dataset.r,{burst:!p.burst?"120":p.burst==="120"?"60":""});renderGrid();if(sel===b.dataset.r)renderDrawer();}
+  else if(a==="pcell"){const p=prow(b.dataset.r);setP(b.dataset.r,{pot:p.pot?"":"1"});renderGrid();if(sel===b.dataset.r)renderDrawer();}
+  else if(a==="open"){sel=b.dataset.r;renderDrawer();renderGrid();}
+  else if(a==="dclose"){sel=null;renderDrawer();renderGrid();}
+  else if((a==="addrow"||a==="addhead")&&canMech()){const nr=newRow(a==="addhead"?"head":"");rs.push(nr);sel=nr.id;saveDutySoon();renderGrid();renderDrawer();const g=$("#gw");g.scrollTop=g.scrollHeight;const m=$('#dr [data-f="mech"]');if(m)m.focus();}
+  else if(a==="insbelow"&&canMech()){i=rs.findIndex(x=>x.id===sel);const nr=newRow("");rs.splice(i+1,0,nr);sel=nr.id;saveDutySoon();renderGrid();renderDrawer();const m=$('#dr [data-f="mech"]');if(m)m.focus();}
+  else if(a==="kind"&&canMech()){const r=rs.find(x=>x.id===sel);if(b.dataset.k)r.kind="head";else delete r.kind;saveDutySoon();renderDrawer();renderGrid();}
+  else if((a==="up"||a==="dn")&&canMech()){i=rs.findIndex(x=>x.id===sel);const t=a==="up"?i-1:i+1;if(t<0||t>=rs.length)return;rs.splice(t,0,rs.splice(i,1)[0]);saveDutySoon();renderGrid();}
+  else if(a==="rdel"&&canMech()){if(!armed(b,"再按一次刪除"))return;rs.splice(rs.findIndex(x=>x.id===sel),1);sel=null;saveDutySoon();renderDrawer();renderGrid();}
+  else if(a==="ladd"){const U=$("#lkU").value.trim(),L=$("#lkL").value.trim();if(!/^https?:\/\//i.test(U)){toast("連結要以 http:// 或 https:// 開頭");return;}setP(sel,{links:[...(prow(sel).links||[]),{label:L,url:U}]});renderDrawer();renderGrid();}
+  else if(a==="zoom"){modal={k:"img",src:imgCache[b.dataset.id]};renderModal();}
+  else if(a==="idel"&&canAll()){if(!armed(b,"確認"))return;delImg(b.dataset.id);}
+  else if(a==="ldel"){const l=(prow(sel).links||[]).slice();l.splice(+b.dataset.i,1);setP(sel,{links:l});renderDrawer();renderGrid();}
+  else if(a==="skills"){modal={k:"skills",j:modal&&modal.j||compOf(dSlots()[0])||"PLD"};renderModal();}
+  else if(a==="skjob"){modal.j=b.dataset.j;renderModal();}
+  else if(a==="skadd")skAdd();
+  else if(a==="skup"&&isOwner){i=+b.dataset.i;if(i<1)return;const l=lib.jobs[modal.j].skills;l.splice(i-1,0,l.splice(i,1)[0]);saveLibSoon();renderModal();render();}
+  else if(a==="skdel"&&isOwner){if(!armed(b,"確認"))return;lib.jobs[modal.j].skills.splice(+b.dataset.i,1);saveLibSoon();renderModal();render();}
+  else if(a==="skedit"){modal.edit=b.dataset.id;renderModal();}
+  else if(a==="text"){modal={k:"text"};renderModal();}
+  else if(a==="io"){modal={k:"io"};renderModal();}
+  else if(a==="copy")copyTA();
+  else if(a==="import")doImport(b);
+  else if(a==="comp"){modal={k:"comp"};renderModal();}
+  else if(a==="compsave")compSave();
+  else if(a==="dutyset"){modal={k:"duty"};renderModal();}
+  else if(a==="dutynew"){modal={k:"duty",isNew:true};renderModal();}
+  else if(a==="dutysave")dutySave();
+  else if(a==="stadd"){modal.stages.push({id:"s"+uid(),name:"新階段",rows:[]});renderModal();}
+  else if(a==="stdel"){if(!armed(b,"確認"))return;modal.stages.splice(+b.dataset.i,1);renderModal();}
+  else if(a==="stup"){i=+b.dataset.i;if(i<1)return;modal.stages.splice(i-1,0,modal.stages.splice(i,1)[0]);renderModal();}
+  else if(a==="mclose")closeModal();
+}
+
+/* ===== 對話框 ===== */
+function renderModal(){
+  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("change",onModalChange);}
+  let h='<div class="sheet" role="dialog" aria-modal="true">';
+  if(modal.k==="img"){m.innerHTML='<div class="sheet img" role="dialog" aria-modal="true" aria-label="站位圖"><img src="'+esc(modal.src)+'" alt="站位圖放大"><div class="end"><button class="btn" data-a="mclose">關閉</button></div></div>';return;}
+  if(modal.k==="skills"){
+    h+='<h2>技能庫'+(duty?'<span class="sub">（目前副本 Lv'+esc(duty.level)+'）</span>':'')+'</h2><div class="scrollx">';
+    const shown=JOBS.filter(j=>isOwner||allJobSkills(j.k).length||j.k===modal.j);
+    h+=shown.map(j=>'<button class="tab'+(modal.j===j.k?" on":"")+'" data-a="skjob" data-j="'+j.k+'">'+esc(j.n)+(allJobSkills(j.k).length?" "+allJobSkills(j.k).length:"")+'</button>').join("")+'</div>';
+    const l=allJobSkills(modal.j);
+    if(!l.length)h+='<p class="hint" style="margin-top:10px">'+esc((JOB[modal.j]||{}).n||modal.j)+' 還沒有技能。</p>';
+    l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(s.minLv?'<span class="hint">　'+s.minLv+' 等以上</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
+      (isOwner?'<button class="ib" aria-label="編輯 '+esc(s.name)+'" data-a="skedit" data-id="'+s.id+'">✎</button><button class="ib" aria-label="上移" data-a="skup" data-i="'+i+'">'+IC.up+'</button><button class="ib" aria-label="刪除 '+esc(s.name)+'" data-a="skdel" data-i="'+i+'">'+IC.x+'</button>':'')+'</div>';});
+    if(isOwner){const ed=modal.edit?allJobSkills(modal.j).find(s=>s.id===modal.edit):null,v=ed||{},l100=((v.lv||{})[100])||{};
+      h+='<h2 style="margin-top:16px;font-size:15px">'+(ed?"編輯「"+esc(ed.name)+"」":"新增技能")+'</h2><div class="addsk">'+
+        '<input id="skn" class="f w" placeholder="技能名稱" aria-label="技能名稱" value="'+esc(v.name||"")+'">'+
+        '<input id="skc" class="f" placeholder="CD 秒" inputmode="numeric" aria-label="CD 秒數" value="'+esc(v.cd||"")+'">'+
+        '<input id="skd" class="f" placeholder="持續 秒" inputmode="numeric" aria-label="持續秒數" value="'+esc(v.dur||"")+'">'+
+        '<input id="skm" class="f" placeholder="最低等級" inputmode="numeric" aria-label="幾等以上才有" value="'+esc(v.minLv||"")+'">'+
+        '<input id="skc1" class="f" placeholder="100等 CD" inputmode="numeric" aria-label="100 等 CD" value="'+esc(l100.cd!=null?l100.cd:"")+'">'+
+        '<input id="skd1" class="f" placeholder="100等 持續" inputmode="numeric" aria-label="100 等持續秒數" value="'+esc(l100.dur!=null?l100.dur:"")+'">'+
+        '<label class="btn" style="text-align:center">圖示<input type="file" accept="image/*" id="skimg" hidden></label>'+
+        '<input id="skdesc" class="f w" placeholder="效果說明（可不填）" aria-label="效果說明" value="'+esc(v.desc||"")+'"></div>'+
+        '<p class="hint" style="margin-top:6px">CD／持續填 90 等的數值；100 等不一樣時再填右邊兩格。副本是幾等就自動套用對應數值。'+(modal.img?" 已選好圖示。":"")+'</p>'+
+        '<div class="end">'+(ed?'<button class="btn" data-a="skedit" data-id="">取消編輯</button>':'')+'<button class="btn primary" data-a="skadd">'+(ed?"儲存":"新增")+'</button></div>';}
+    h+='<div class="end"><button class="btn" data-a="mclose">關閉</button></div>';
+  }else if(modal.k==="text"){
+    h+='<h2>文字小抄</h2><textarea class="f ta" readonly id="ta">'+esc(textSheet())+'</textarea><div class="end"><button class="btn" data-a="copy">複製</button><button class="btn primary" data-a="mclose">關閉</button></div>';
+  }else if(modal.k==="io"){
+    h+='<h2>匯出／匯入</h2><p class="hint">匯出的資料包含這個副本的機制'+(tid?"和本團的分工":"")+'，可以備份。'+(isOwner?"匯入會依資料內容寫入技能庫、副本機制"+(tid?"和本團分工":"")+"。":"只有網站管理員可以匯入。")+'</p>'+
+      '<textarea class="f ta" id="ta" style="margin-top:8px">'+esc(JSON.stringify(exportData()))+'</textarea>'+
+      (isOwner?'<label class="btn" style="display:inline-block;margin-top:8px">選擇檔案<input type="file" accept=".json,application/json" id="iofile" hidden></label>':'')+
+      '<div class="end"><button class="btn" data-a="copy">複製</button>'+(isOwner?'<button class="btn" data-a="import">匯入</button>':'')+'<button class="btn primary" data-a="mclose">關閉</button></div>';
+  }else if(modal.k==="comp"){
+    const ca=canAll();
+    h+='<h2>本團陣容</h2><p class="hint">預設依固團「陣容」裡每個位置的人與職業。這個副本想換職業時在這裡調整'+(ca?"":"（需要編輯全部的權限）")+'。</p>';
+    dSlots().forEach(s=>{const u=((st&&st.roles)||{})[s],def=memberJob(u),c=(plan.comp||{})[s]||"";
+      h+='<div class="slotrow"><b>'+s+'</b><select class="f" data-comp="'+s+'"'+(ca?"":" disabled")+'><option value="">預設'+(def?"（"+esc((JOB[def]||{}).n||def)+"）":"（未設定）")+'</option>'+JOBS.map(j=>'<option value="'+j.k+'"'+(c===j.k?" selected":"")+'>'+esc(j.n)+(allJobSkills(j.k).length?"":"（無技能）")+'</option>').join("")+'</select><span class="hint" style="white-space:nowrap">'+esc(u&&users[u]?nameOf(users[u]):"")+'</span></div>';});
+    h+='<div class="end"><button class="btn" data-a="mclose">關閉</button>'+(ca?'<button class="btn primary" data-a="compsave">儲存</button>':'')+'</div>';
+  }else if(modal.k==="duty"){
+    if(!modal.stages){const d=modal.isNew?null:duty;modal.name=d?d.name:"";modal.id=d?d.id:"";modal.level=d?d.level:100;modal.slots=d?(d.slots||[]).slice():["MT","ST","H1","H2","D1","D2","D3","D4"];modal.stages=d?(d.stages||[]).map(s=>({id:s.id,name:s.name,rows:null})):[{id:"s"+uid(),name:"一王",rows:[]}];}
+    h+='<h2>'+(modal.isNew||!duty?"新增副本":"副本設定")+'</h2>';
+    if(!modal.isNew&&duty)h+='<div class="end" style="margin:0 0 8px;justify-content:flex-start"><button class="btn" data-a="dutynew">＋ 新增另一個副本</button></div>';
+    h+='<div class="two"><label class="fld"><span>副本名稱</span><input class="f" id="dn" value="'+esc(modal.name)+'"></label><label class="fld"><span>等級</span><input class="f" id="dl" inputmode="numeric" value="'+esc(modal.level)+'"></label></div>';
+    if(modal.isNew||!duty)h+='<label class="fld" style="margin-top:8px"><span>代號（網址用，英數字）</span><input class="f" id="did" value="'+esc(modal.id)+'" placeholder="例：aloalo"></label>';
+    h+='<div class="fld" style="margin-top:8px"><span>位置</span><div class="scrollx" style="flex-wrap:wrap">'+SLOTS.map(s=>'<label class="tab'+(modal.slots.includes(s)?" on":"")+'"><input type="checkbox" data-slot="'+s+'"'+(modal.slots.includes(s)?" checked":"")+' hidden>'+s+'</label>').join("")+'</div></div>';
+    h+='<div class="fld" style="margin-top:8px"><span>階段</span>'+modal.stages.map((s,i)=>'<div class="slotrow"><input class="f" data-stn="'+i+'" value="'+esc(s.name)+'" aria-label="階段名稱"><button class="ib" aria-label="上移" data-a="stup" data-i="'+i+'">'+IC.up+'</button><button class="ib" aria-label="刪除階段" data-a="stdel" data-i="'+i+'">'+IC.x+'</button></div>').join("")+'<button class="btn" data-a="stadd">＋ 新增階段</button></div>';
+    h+='<div class="end"><button class="btn" data-a="mclose">取消</button><button class="btn primary" data-a="dutysave">儲存</button></div>';
+  }
+  m.innerHTML=h+'</div>';
+}
+function onModalChange(e){const t=e.target;
+  if(t.id==="skimg"&&t.files[0])readIcon(t.files[0]).then(u=>{modal.img=u;renderModal();toast("圖示已選好");}).catch(()=>toast("圖片讀取失敗"));
+  else if(t.id==="iofile"&&t.files[0])t.files[0].text().then(x=>{$("#ta").value=x;toast("已讀入檔案，按「匯入」");});
+  else if(t.dataset.slot){const s=t.dataset.slot;modal.name=$("#dn").value;modal.level=$("#dl").value;if($("#did"))modal.id=$("#did").value;document.querySelectorAll("[data-stn]").forEach(el=>{modal.stages[+el.dataset.stn].name=el.value;});
+    modal.slots=t.checked?SLOTS.filter(x=>x===s||modal.slots.includes(x)):modal.slots.filter(x=>x!==s);renderModal();}
+}
+function closeModal(){modal=null;const m=$("#modal");if(m)m.remove();}
+function readIcon(f){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=c.height=40;const x=c.getContext("2d"),s=Math.min(img.width,img.height);x.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,40,40);res(c.toDataURL("image/png"));URL.revokeObjectURL(img.src);};img.onerror=rej;img.src=URL.createObjectURL(f);});}
+function skAdd(){if(!isOwner)return;const n=$("#skn").value.trim();if(!n){toast("請輸入技能名稱");return;}
+  const num=id=>{const v=parseInt($(id).value,10);return isNaN(v)?"":v;};
+  lib.jobs=lib.jobs||{};const J=lib.jobs[modal.j]=lib.jobs[modal.j]||{skills:[]};
+  const ed=modal.edit?J.skills.find(s=>s.id===modal.edit):null,s=ed||{id:modal.j.toLowerCase()+uid()};
+  s.name=n;s.cd=num("#skc")||0;s.dur=num("#skd")||0;s.desc=$("#skdesc").value.trim();
+  const m=num("#skm");if(m)s.minLv=m;else delete s.minLv;
+  const c1=num("#skc1"),d1=num("#skd1");if(c1!==""||d1!==""){s.lv={100:{}};if(c1!=="")s.lv[100].cd=c1;if(d1!=="")s.lv[100].dur=d1;}else delete s.lv;
+  if(modal.img)s.img=modal.img;if(!ed)J.skills.push(s);
+  modal.edit="";modal.img=null;saveLibSoon();renderModal();render();toast(ed?"已更新":"已新增");}
+function compSave(){if(!canAll())return;const c={};document.querySelectorAll("[data-comp]").forEach(el=>{if(el.value)c[el.dataset.comp]=el.value;});plan.comp=c;savePlanSoon();closeModal();render();toast("陣容已更新");}
+async function dutySave(){if(!isOwner)return;const name=$("#dn").value.trim(),level=parseInt($("#dl").value,10)||100;document.querySelectorAll("[data-stn]").forEach(el=>{modal.stages[+el.dataset.stn].name=el.value.trim()||"未命名";});
+  if(!name){toast("請輸入副本名稱");return;}if(!modal.slots.length){toast("至少選一個位置");return;}
+  if(modal.isNew||!duty){const id=($("#did").value||"").trim();if(!/^[A-Za-z0-9_-]{2,40}$/.test(id)){toast("代號只能用英數字");return;}if(duties.some(d=>d.id===id)){toast("代號已經有人用了");return;}
+    await setDoc(doc(db,"mitDuties",id),{name,level,slots:modal.slots,stages:modal.stages.map(s=>({id:s.id,name:s.name,rows:[]})),updatedAt:Date.now()});closeModal();switchDuty(id);toast("已新增副本");return;}
+  const old=Object.fromEntries((duty.stages||[]).map(s=>[s.id,s]));
+  duty.name=name;duty.level=level;duty.slots=modal.slots;duty.stages=modal.stages.map(s=>({id:s.id,name:s.name,rows:old[s.id]?old[s.id].rows:[]}));
+  if(cur>=duty.stages.length)cur=0;await saveDuty();closeModal();render();toast("已儲存");}
+function textSheet(){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.length)return;out.push("【"+s.name+"】");s.rows.forEach(r=>{const p=prow(r.id),parts=[];
+  dSlots().forEach(sl=>{const j=compOf(sl),n=assign(sl,r.id).map(id=>(skillOf(j,id)||{}).name).filter(Boolean);if(n.length)parts.push(sl+" "+n.join("、"));});
+  out.push((r.kind==="head"?"■ ":"  ")+(r.t?r.t+" ":"")+(r.mech||"？")+(r.tag||r.ctag?"（"+[r.tag,r.ctag].filter(Boolean).join("・")+"）":"")+(r.dmg?" "+r.dmg:"")+(p.burst?"【"+p.burst+" 爆發】":"")+(p.pot?"【藥】":"")+(parts.length?"｜"+parts.join("｜"):""));
+  if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||"還沒有內容";}
+function copyTA(){const ta=$("#ta");ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast("已複製"),()=>toast("請長按文字手動複製"));else toast(ok?"已複製":"請長按文字手動複製");}
+function exportData(){const o={type:"mit-seed",v:1};if(duty){const d=clone(duty);o.duty=d;}if(tid&&duty){o.plan={comp:plan.comp||{},rows:plan.rows||{},slots:Object.fromEntries(dSlots().map(s=>[s,{a:(slotDocs[s]||{}).a||{}}]))};}return o;}
+async function doImport(b){if(!isOwner)return;let o;try{o=JSON.parse($("#ta").value);}catch(e){toast("資料格式不對");return;}
+  if(!o||o.type!=="mit-seed"){toast("這不是減傷軸的匯入檔");return;}
+  if(!armed(b,"再按一次匯入"))return;
+  try{
+    if(o.skills){lib.jobs=lib.jobs||{};Object.keys(o.skills).forEach(j=>{lib.jobs[j]={skills:o.skills[j].skills||[]};});await saveLib();}
+    if(o.duty&&o.duty.id){const d=clone(o.duty),id=d.id;delete d.id;d.updatedAt=Date.now();await setDoc(doc(db,"mitDuties",id),d);did=id;}
+    if(o.plan&&tid&&did&&canAll()){const bt=writeBatch(db);bt.set(doc(db,"statics",tid,"mit",did),{comp:o.plan.comp||{},rows:o.plan.rows||{},updatedAt:Date.now(),by:me.uid});
+      Object.keys(o.plan.slots||{}).forEach(s=>bt.set(doc(db,"statics",tid,"mit",did,"slots",s),{a:(o.plan.slots[s]||{}).a||{},updatedAt:Date.now(),by:me.uid}));await bt.commit();}
+    closeModal();switchDuty(did);toast(o.plan&&!tid?"已匯入機制與技能（分工要從固團頁面進來才會匯入）":"已匯入");
+  }catch(e){console.error(e);toast("匯入失敗："+(e.code||e.message));}}
+
+/* ===== 即時同步 ===== */
+function switchDuty(id){did=id;cur=0;sel=null;renderDrawer();
+  const u=new URL(location.href);if(id)u.searchParams.set("duty",id);history.replaceState(null,"",u);
+  if(unDuty)unDuty();if(unPlan)unPlan();if(unSlots)unSlots();duty=null;plan={comp:{},rows:{}};slotDocs={};
+  if(!id){render();return;}
+  unDuty=onSnapshot(doc(db,"mitDuties",id),s=>{if(dutyDirty)return;duty=s.exists()?{id:s.id,...s.data()}:null;if(duty&&cur>=(duty.stages||[]).length)cur=0;render();if(sel)renderDrawer();},e=>{console.error(e);toast("副本讀取失敗");});
+  if(tid){
+    unPlan=onSnapshot(doc(db,"statics",tid,"mit",id),s=>{if(planDirty)return;plan=s.exists()?s.data():{comp:{},rows:{}};plan.comp=plan.comp||{};plan.rows=plan.rows||{};render();if(sel)renderDrawer();},e=>console.error(e));
+    unSlots=onSnapshot(collection(db,"statics",tid,"mit",id,"slots"),s=>{s.docChanges().forEach(c=>{if(c.type==="removed")delete slotDocs[c.doc.id];else if(!c.doc.metadata.hasPendingWrites)slotDocs[c.doc.id]=c.doc.data();});renderGrid();if(sel)renderDrawer();},e=>console.error(e));
+  }
+  render();
+}
+async function loadUser(u){if(!u||users[u])return;try{const s=await getDoc(doc(db,"users",u));if(s.exists()){users[u]=s.data();render();}}catch(e){}}
+function start(){
+  onSnapshot(collection(db,"mitDuties"),s=>{duties=s.docs.map(d=>({id:d.id,name:d.data().name||d.id})).sort((a,b)=>a.name.localeCompare(b.name,"zh-Hant"));ready.duties=true;
+    if(!did&&duties.length)switchDuty(duties[0].id);else render();},e=>{console.error(e);toast("副本清單讀取失敗");});
+  onSnapshot(doc(db,"mitSkills","lib"),s=>{if(libDirty)return;lib=s.exists()?s.data():{jobs:{}};lib.jobs=lib.jobs||{};ready.lib=true;render();if(modal&&modal.k==="skills")renderModal();},e=>console.error(e));
+  if(tid){
+    onSnapshot(doc(db,"statics",tid),s=>{st=s.exists()?{id:s.id,...s.data()}:{name:"（找不到固團）"};Object.values(st.roles||{}).forEach(loadUser);render();},e=>console.error(e));
+    onSnapshot(collection(db,"statics",tid,"members"),s=>{members={};s.forEach(d=>{members[d.id]=d.data();});render();},e=>console.error(e));
+  }
+  if(did)switchDuty(did);
+}
+
+document.getElementById("app").addEventListener("click",onClick);
+document.addEventListener("change",e=>{if(e.target.id==="dutySel")switchDuty(e.target.value);});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(modal)closeModal();else if(sel){sel=null;renderDrawer();renderGrid();}}});
+window.addEventListener("beforeunload",()=>{if(dutyDirty)saveDuty();if(libDirty)saveLib();if(planDirty&&tid)savePlan();});
+
+let started=false;
+onAuthStateChanged(auth,async u=>{
+  if(!u){me=null;render();return;}
+  me=u;try{const tr=await u.getIdTokenResult();isOwner=tr.claims.dc===OWNER_DISCORD_ID||(u.email===OWNER_EMAIL&&u.emailVerified);}catch(e){isOwner=false;}
+  if(!started){started=true;start();}render();
+});
+</script>
+</body>
+</html>
