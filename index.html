@@ -1172,7 +1172,8 @@ function membersMgHTML(st,pending){
     '</div><p class="hint" style="margin:8px 0 0">取得 Discord ID：Discord 設定開啟「開發者模式」，對名字按右鍵 →「複製使用者 ID」。</p></div>';}
   h+='<div class="panel"><h2>從飛地成員直接加入</h2>'+(outsiders.length?'<p class="muted small">這些人已經建立過靈魂水晶，但還不是這個團的成員。</p><div class="others">'+
     outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+id+'">加入</button></div>';}).join("")+'</div>':
-    '<p class="muted">飛地成員都已經在這個團裡了。</p>')+'</div>';
+    '<p class="muted">飛地成員都已經在這個團裡了。</p>')+
+    (outsiders.length?'<label class="small" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="addWelcomeOn"> 加入時在 Discord 發歡迎公告</label>':'')+'</div>';
   return h;
 }
 function modulesMgHTML(st){
@@ -1336,7 +1337,7 @@ document.addEventListener("click",async e=>{
     const ad=t.closest("[data-add]");if(ad){
       const id=ad.dataset.add;ad.disabled=true;
       await setDoc(doc(db,"statics",curTid,"members",id),{status:"active",joinedAt:Date.now(),perms:DEFAULT_PERMS});
-      toast("已加入 "+nameOf(users[id]));if(id!==me.uid)welcome(id);return;
+      toast("已加入 "+nameOf(users[id]));if(id!==me.uid&&$("#addWelcomeOn")&&$("#addWelcomeOn").checked)welcome(id);return;
     }
     const rmv=t.closest("[data-remove]");if(rmv){
       const id=rmv.dataset.remove;if(!armedTwice("rm"+id,rmv,"確定移出？"))return;
