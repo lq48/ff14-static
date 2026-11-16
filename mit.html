@@ -99,6 +99,10 @@ tr.virt .ct{color:var(--muted);font-style:italic}
 .vb .vn{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .pill.rd{border-color:var(--muted);color:var(--muted);background:transparent}
 .cell{position:relative}
+.cell .tb{position:absolute;right:0;top:0;font-size:9.5px;font-weight:900;line-height:12px;padding:0 2px;border-radius:3px;background:var(--accent);color:var(--accent-ink);pointer-events:none}
+.cell .tb.en{background:var(--warn);color:#FFFFFF;min-width:12px;text-align:center}
+.early select.f,.early input.tgi{width:auto;min-height:30px;padding:2px 6px}
+.early input.tgi{width:130px}
 .cell .eb{position:absolute;right:0;bottom:0;font-size:9.5px;font-weight:900;line-height:12px;padding:0 2px;border-radius:3px;background:var(--ink);color:var(--bg);pointer-events:none}
 .cell.short .ico,.cell.short .tx{outline:2px dashed var(--warn);outline-offset:1px}
 .hit{display:grid;grid-template-columns:96px 1fr 52px 56px 34px;gap:6px;align-items:center;margin-bottom:6px}
@@ -286,6 +290,9 @@ function normRow(r){if(!Array.isArray(r.hits)){let d=(r.dmg||"").trim(),ty=r.dty
   if(d&&!/\d/.test(d)){if(!r.desc)r.desc=d;else r.desc+="\n"+d;d="";}
   r.hits=(d||ty)?[{dtype:ty,dmg:d}]:[];}delete r.dmg;delete r.dtype;return r;}
 function hitSpan(r){let m=0;(r.hits||[]).forEach(x=>{const o=+x.off||0;if(o>m)m=o;});return m;}
+const TGT_DEF={"白牛清汁":"ally","輸血":"ally","均衡診斷":"ally","靈橡清汁":"ally","牽制":"enemy","昏亂":"enemy"};
+const tgtOf=sk=>sk.tgt==="none"?"":(sk.tgt||TGT_DEF[sk.name]||"");
+function target(s,id,k){return (((((slotDocs[s]||{}).tg)||{})[id])||{})[k]||"";}
 function early(s,id,k){const o=((((slotDocs[s]||{}).o)||{})[id])||{};return +o[k]||0;}
 function dispRows(base){const E0=est(base),vs=[],byT={};base.forEach((r,i)=>{const s0=secs(r.t0);if(r.kind==="head"||s0==null)return;
   if(byT[s0]){byT[s0].all.push(r);return;}const v={id:"v_"+r.id,virt:true,of:r,all:[r],t:r.t0,s:s0,mi:i};byT[s0]=v;vs.push(v);});vs.sort((a,b)=>a.s-b.s);
@@ -353,8 +360,9 @@ function renderGrid(){
     V.forEach(s=>{const j=compOf(s),l=jobSkills(j),ed=canSlot(s)&&!vr;if(!l.length){h+='<td class="cell first"></td>';return;}
       l.forEach((sk,k)=>{const c=C[r.id+"|"+s+"|"+sk.id]||{},role=(JOB[j]||{}).r||"dps";
         const cls="cell"+(k===0?" first":"")+(ed?" ed":"")+(c.bad?" bad":c.act?" act-"+role:c.cd?" cd":"")+(c.short?" short":"");
-        const lab=s+" "+sk.name+(c.eo?"（提前 "+c.eo+" 秒開）":"")+(c.short==="judge"?"（開太早，判定時效果已結束）":c.short==="tail"?"（效果沒蓋到最後一段傷害）":"")+(c.bad?"（CD 還差 "+Math.ceil(c.bad)+" 秒）":c.use?"（使用）":c.act?"（效果中，剩約 "+Math.round(c.left)+" 秒）":c.cd?"（CD 中，還要約 "+Math.round(c.left)+" 秒）":"");
-        h+='<td class="'+cls+'" '+(ed?'data-a="cell" ':'')+'data-r="'+r.id+'" data-s="'+s+'" data-k="'+sk.id+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+(c.use||c.bad?skIco(j,sk)+(c.eo?'<span class="eb">-'+c.eo+'</span>':''):"")+'</td>';});});
+        const tg=(c.use||c.bad)?target(s,r.id,sk.id):"",tt=tgtOf(sk);
+        const lab=s+" "+sk.name+(tg?" → "+tg:"")+(c.eo?"（提前 "+c.eo+" 秒開）":"")+(c.short==="judge"?"（開太早，判定時效果已結束）":c.short==="tail"?"（效果沒蓋到最後一段傷害）":"")+(c.bad?"（CD 還差 "+Math.ceil(c.bad)+" 秒）":c.use?"（使用）":c.act?"（效果中，剩約 "+Math.round(c.left)+" 秒）":c.cd?"（CD 中，還要約 "+Math.round(c.left)+" 秒）":"");
+        h+='<td class="'+cls+'" '+(ed?'data-a="cell" ':'')+'data-r="'+r.id+'" data-s="'+s+'" data-k="'+sk.id+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+(c.use||c.bad?skIco(j,sk)+(tg?(tt==="ally"?'<span class="tb">'+esc(tg)+'</span>':'<span class="tb en">!</span>'):'')+(c.eo?'<span class="eb">-'+c.eo+'</span>':''):"")+'</td>';});});
     h+='</tr>';});
   h+='</tbody></table>';
   if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
@@ -368,7 +376,7 @@ function renderDrawer(){
   let dr=$("#dr");const r=sel&&rows().find(x=>x.id===sel);
   if(!r){sel=null;if(dr)dr.remove();return;}
   if(!dr){dr=document.createElement("aside");dr.id="dr";dr.className="dr";dr.setAttribute("aria-label","機制詳情");document.body.appendChild(dr);dr.addEventListener("click",onClick);dr.addEventListener("input",onDrInput);dr.addEventListener("change",onDrChange);}
-  const ae=document.activeElement&&dr.contains(document.activeElement)?document.activeElement:null,keepSel=ae?(ae.dataset.f?'[data-f="'+ae.dataset.f+'"]':ae.dataset.p?'[data-p="'+ae.dataset.p+'"]':ae.dataset.h?'[data-h="'+ae.dataset.h+'"][data-i="'+ae.dataset.i+'"]':ae.dataset.e?'[data-e="'+ae.dataset.e+'"][data-s="'+ae.dataset.s+'"]':null):null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
+  const ae=document.activeElement&&dr.contains(document.activeElement)?document.activeElement:null,keepSel=ae?(ae.dataset.f?'[data-f="'+ae.dataset.f+'"]':ae.dataset.p?'[data-p="'+ae.dataset.p+'"]':ae.dataset.h?'[data-h="'+ae.dataset.h+'"][data-i="'+ae.dataset.i+'"]':ae.dataset.e?'[data-e="'+ae.dataset.e+'"][data-s="'+ae.dataset.s+'"]':ae.dataset.tg?'[data-tg="'+ae.dataset.tg+'"][data-s="'+ae.dataset.s+'"]':null):null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
   const cm=canMech(),ca=canAll(),p=prow(r.id),dis=cm?"":" disabled";
   let h='<div class="drh"><h2>'+(r.kind==="head"?"段落":"機制")+'詳情</h2><button class="ib" aria-label="關閉" data-a="dclose">'+IC.x+'</button></div><div class="drb">';
   if(cm)h+='<div class="seg"><button class="'+(r.kind!=="head"?"on":"")+'" data-a="kind" data-k="">機制</button><button class="'+(r.kind==="head"?"on":"")+'" data-a="kind" data-k="head">段落（小怪／階段）</button></div>';
@@ -392,7 +400,11 @@ function renderDrawer(){
       h+='<div class="uj"><span class="jn '+role+'">'+s+' '+esc(j?((JOB[j]||{}).n||j):"")+'</span>';if(!l.length)h+='<span class="hint">沒有技能</span>';
       l.forEach(sk=>{const on=a.includes(sk.id);h+='<button class="uk'+(on?" on":"")+'" '+(ed?'data-a="dtog" ':'disabled ')+'data-s="'+s+'" data-k="'+sk.id+'" aria-pressed="'+on+'" title="'+esc(sk.name)+'">'+skIco(j,sk)+'</button>';});h+='</div>';
       const tj=secs(r.t),t0=secs(r.t0),lead=(tj!=null&&t0!=null&&tj>t0)?tj-t0:null;
-      l.filter(sk=>a.includes(sk.id)).forEach(sk=>{const eo=early(s,r.id,sk.id);if(!ed&&!eo)return;
+      l.filter(sk=>a.includes(sk.id)).forEach(sk=>{const eo=early(s,r.id,sk.id),tt=tgtOf(sk),tg=target(s,r.id,sk.id);if(!ed&&!eo&&!tg)return;
+        let th="";if(tt==="ally")th=ed?' 給 <select class="f" data-tg="'+sk.id+'" data-s="'+s+'" aria-label="'+esc(sk.name)+' 施放目標"><option value="">—</option>'+dSlots().map(x=>'<option'+(tg===x?" selected":"")+'>'+x+'</option>').join("")+'</select>':(tg?'：給 '+esc(tg):'');
+        else if(tt==="enemy")th=ed?' 目標 <input class="f tgi" data-tg="'+sk.id+'" data-s="'+s+'" maxlength="20" value="'+esc(tg)+'" placeholder="例：章魚（可不填）" aria-label="'+esc(sk.name)+' 施放目標">':(tg?'：目標 '+esc(tg):'');
+        if(th)h+='<div class="early">'+esc(sk.name)+th+'</div>';
+        if(!ed&&!eo)return;
         h+='<div class="early">'+esc(sk.name)+(ed?' 提前 <input class="f" data-e="'+sk.id+'" data-s="'+s+'" value="'+(eo||"")+'" placeholder="0" inputmode="numeric" aria-label="'+esc(sk.name)+' 提前幾秒"> 秒'+(lead?'<button class="btn" data-a="eset" data-s="'+s+'" data-k="'+sk.id+'" data-v="'+lead+'">讀條開始</button><button class="btn" data-a="eset" data-s="'+s+'" data-k="'+sk.id+'" data-v="'+Math.round(lead/2)+'">讀條一半</button>':'')+(eo?'<button class="btn" data-a="eset" data-s="'+s+'" data-k="'+sk.id+'" data-v="0">清除</button>':''):'：提前 '+eo+' 秒開')+'</div>';});});
     h+='</div></div>';
     h+='<label class="fld"><span>本團解法</span>'+(ca?'<textarea class="f" data-p="note" placeholder="例：分攤去 A 點，坦克站王前面">'+esc(p.note||"")+'</textarea>':'<div class="ro">'+(p.note?esc(p.note):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
@@ -415,7 +427,7 @@ function onDrInput(e){const t=e.target;if(!sel)return;
   if(t.dataset.f&&canMech()){const r=rows().find(x=>x.id===sel);r[t.dataset.f]=t.value;if(t.dataset.f==="t0"&&!t.value)delete r.t0;saveDutySoon();gridSoon();}
   else if(t.dataset.h&&canMech()){const r=rows().find(x=>x.id===sel),x=r.hits[+t.dataset.i],f=t.dataset.h;x[f]=(f==="n"||f==="off")?(t.value===""?"":+t.value||0):t.value;if(x[f]==="")delete x[f];saveDutySoon();gridSoon();}
   else if(t.dataset.p==="note"&&canAll()){setP(sel,{note:t.value});gridSoon();}}
-function onDrChange(e){const t=e.target;if(t.id==="up"){upload(t.files);return;}if(t.dataset.e){setEarly(t.dataset.s,sel,t.dataset.e,parseInt(t.value,10)||0);return;}if(t.dataset.h){renderDrawer();return;}if(t.dataset.p==="burst"||t.dataset.p==="pot"||t.dataset.p==="lb"){setP(sel,{[t.dataset.p]:t.value});renderGrid();}else if(t.dataset.f)renderGrid();}
+function onDrChange(e){const t=e.target;if(t.id==="up"){upload(t.files);return;}if(t.dataset.e){setEarly(t.dataset.s,sel,t.dataset.e,parseInt(t.value,10)||0);return;}if(t.dataset.tg){setTarget(t.dataset.s,sel,t.dataset.tg,t.value.trim().slice(0,20));return;}if(t.dataset.h){renderDrawer();return;}if(t.dataset.p==="burst"||t.dataset.p==="pot"||t.dataset.p==="lb"){setP(sel,{[t.dataset.p]:t.value});renderGrid();}else if(t.dataset.f)renderGrid();}
 
 /* ===== 寫入 ===== */
 function saveDutySoon(){if(!canMech()||!duty)return;dutyDirty=true;clearTimeout(dutyT);dutyT=setTimeout(saveDuty,700);}
@@ -429,10 +441,13 @@ function savePlanSoon(){planDirty=true;clearTimeout(planT);planT=setTimeout(save
 async function savePlan(){clearTimeout(planT);try{await setDoc(planRef(),{comp:plan.comp||{},rows:plan.rows||{},updatedAt:Date.now(),by:me.uid});planDirty=false;}catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限":e.code||e.message));}}
 async function setEarly(s,rowId,k,v){if(!canSlot(s))return;v=Math.max(0,Math.min(120,v|0));const sd=slotDocs[s]=slotDocs[s]||{a:{}};sd.o=sd.o||{};sd.o[rowId]=sd.o[rowId]||{};if(v)sd.o[rowId][k]=v;else delete sd.o[rowId][k];
   renderGrid();renderDrawer();try{await setDoc(doc(db,"statics",tid,"mit",did,"slots",s),{o:{[rowId]:{[k]:v?v:deleteField()}},updatedAt:Date.now(),by:me.uid},{merge:true});}catch(e){console.error(e);toast("儲存失敗："+(e.code||e.message));}}
+async function setTarget(s,rowId,k,v){if(!canSlot(s))return;const sd=slotDocs[s]=slotDocs[s]||{a:{}};sd.tg=sd.tg||{};sd.tg[rowId]=sd.tg[rowId]||{};if(v)sd.tg[rowId][k]=v;else delete sd.tg[rowId][k];
+  renderGrid();renderDrawer();try{await setDoc(doc(db,"statics",tid,"mit",did,"slots",s),{tg:{[rowId]:{[k]:v?v:deleteField()}},updatedAt:Date.now(),by:me.uid},{merge:true});}catch(e){console.error(e);toast("儲存失敗："+(e.code||e.message));}}
 async function toggleSkill(s,rowId,k){if(!canSlot(s))return;const sd=slotDocs[s]=slotDocs[s]||{a:{}};sd.a=sd.a||{};const l=(sd.a[rowId]||[]).slice(),i=l.indexOf(k);if(i>=0)l.splice(i,1);else l.push(k);sd.a[rowId]=l;
   renderGrid();if(sel===rowId)renderDrawer();
-  const off=i>=0&&early(s,rowId,k);if(off)delete sd.o[rowId][k];
-  try{await setDoc(doc(db,"statics",tid,"mit",did,"slots",s),off?{a:{[rowId]:l},o:{[rowId]:{[k]:deleteField()}},updatedAt:Date.now(),by:me.uid}:{a:{[rowId]:l},updatedAt:Date.now(),by:me.uid},{merge:true});}catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限改 "+s:e.code||e.message));}}
+  const off=i>=0&&early(s,rowId,k),tof=i>=0&&target(s,rowId,k);if(off)delete sd.o[rowId][k];if(tof)delete sd.tg[rowId][k];
+  const pay={a:{[rowId]:l},updatedAt:Date.now(),by:me.uid};if(off)pay.o={[rowId]:{[k]:deleteField()}};if(tof)pay.tg={[rowId]:{[k]:deleteField()}};
+  try{await setDoc(doc(db,"statics",tid,"mit",did,"slots",s),pay,{merge:true});}catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限改 "+s:e.code||e.message));}}
 
 /* ===== 圖片 ===== */
 const imgRef=id=>doc(db,"statics",tid,"mitImgs",id);
@@ -505,7 +520,7 @@ function renderModal(){
     h+=shown.map(j=>'<button class="tab'+(modal.j===j.k?" on":"")+'" data-a="skjob" data-j="'+j.k+'">'+esc(j.n)+(allJobSkills(j.k).length?" "+allJobSkills(j.k).length:"")+'</button>').join("")+'</div>';
     const l=allJobSkills(modal.j);
     if(!l.length)h+='<p class="hint" style="margin-top:10px">'+esc((JOB[modal.j]||{}).n||modal.j)+' 還沒有技能。</p>';
-    l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(s.minLv?'<span class="hint">　'+s.minLv+' 等以上</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
+    l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(s.minLv?'<span class="hint">　'+s.minLv+' 等以上</span>':'')+(tgtOf(s)?'<span class="hint">　'+(tgtOf(s)==="ally"?"對隊友":"對敵人")+'</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
       (isOwner?'<button class="ib" aria-label="編輯 '+esc(s.name)+'" data-a="skedit" data-id="'+s.id+'">✎</button><button class="ib" aria-label="上移" data-a="skup" data-i="'+i+'">'+IC.up+'</button><button class="ib" aria-label="刪除 '+esc(s.name)+'" data-a="skdel" data-i="'+i+'">'+IC.x+'</button>':'')+'</div>';});
     if(isOwner){const ed=modal.edit?allJobSkills(modal.j).find(s=>s.id===modal.edit):null,v=ed||{},l100=((v.lv||{})[100])||{};
       h+='<h2 style="margin-top:16px;font-size:15px">'+(ed?"編輯「"+esc(ed.name)+"」":"新增技能")+'</h2><div class="addsk">'+
@@ -516,6 +531,7 @@ function renderModal(){
         '<input id="skc1" class="f" placeholder="100等 CD" inputmode="numeric" aria-label="100 等 CD" value="'+esc(l100.cd!=null?l100.cd:"")+'">'+
         '<input id="skd1" class="f" placeholder="100等 持續" inputmode="numeric" aria-label="100 等持續秒數" value="'+esc(l100.dur!=null?l100.dur:"")+'">'+
         '<label class="btn" style="text-align:center">圖示<input type="file" accept="image/*" id="skimg" hidden></label>'+
+        '<select id="sktg" class="f w" aria-label="施放目標">'+[["","自動（白牛清汁、昏亂等常見技能會自動判斷）"],["none","無（自身或範圍）"],["ally","隊友（排軸時選給哪個位置）"],["enemy","敵人（排軸時可填目標）"]].map(([k,n])=>'<option value="'+k+'"'+((v.tgt||"")===k?" selected":"")+'>施放目標：'+n+'</option>').join("")+'</select>'+
         '<input id="skdesc" class="f w" placeholder="效果說明（可不填）" aria-label="效果說明" value="'+esc(v.desc||"")+'"></div>'+
         '<p class="hint" style="margin-top:6px">CD／持續填 90 等的數值；100 等不一樣時再填右邊兩格。副本是幾等就自動套用對應數值。'+(modal.img?" 已選好圖示。":"")+'</p>'+
         '<div class="end">'+(ed?'<button class="btn" data-a="skedit" data-id="">取消編輯</button>':'')+'<button class="btn primary" data-a="skadd">'+(ed?"儲存":"新增")+'</button></div>';}
@@ -557,7 +573,7 @@ function skAdd(){if(!isOwner)return;const n=$("#skn").value.trim();if(!n){toast(
   const num=id=>{const v=parseInt($(id).value,10);return isNaN(v)?"":v;};
   lib.jobs=lib.jobs||{};const J=lib.jobs[modal.j]=lib.jobs[modal.j]||{skills:[]};
   const ed=modal.edit?J.skills.find(s=>s.id===modal.edit):null,s=ed||{id:modal.j.toLowerCase()+uid()};
-  s.name=n;s.cd=num("#skc")||0;s.dur=num("#skd")||0;s.desc=$("#skdesc").value.trim();
+  s.name=n;s.cd=num("#skc")||0;s.dur=num("#skd")||0;s.desc=$("#skdesc").value.trim();const tv=$("#sktg").value;if(tv)s.tgt=tv;else delete s.tgt;
   const m=num("#skm");if(m)s.minLv=m;else delete s.minLv;
   const c1=num("#skc1"),d1=num("#skd1");if(c1!==""||d1!==""){s.lv={100:{}};if(c1!=="")s.lv[100].cd=c1;if(d1!=="")s.lv[100].dur=d1;}else delete s.lv;
   if(modal.img)s.img=modal.img;if(!ed)J.skills.push(s);
@@ -571,7 +587,7 @@ async function dutySave(){if(!isOwner)return;const name=$("#dn").value.trim(),le
   duty.name=name;duty.level=level;duty.slots=modal.slots;duty.stages=modal.stages.map(s=>({id:s.id,name:s.name,rows:old[s.id]?old[s.id].rows:[]}));
   if(cur>=duty.stages.length)cur=0;await saveDuty();closeModal();render();toast("已儲存");}
 function textSheet(){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.length)return;out.push("【"+s.name+"】");s.rows.forEach(r=>{const p=prow(r.id),parts=[];
-  dSlots().forEach(sl=>{const j=compOf(sl),n=assign(sl,r.id).map(id=>{const k=skillOf(j,id);if(!k)return "";const eo=early(sl,r.id,id);return k.name+(eo?"（提前 "+eo+" 秒）":"");}).filter(Boolean);if(n.length)parts.push(sl+" "+n.join("、"));});
+  dSlots().forEach(sl=>{const j=compOf(sl),n=assign(sl,r.id).map(id=>{const k=skillOf(j,id);if(!k)return "";const eo=early(sl,r.id,id);const tg=target(sl,r.id,id);return k.name+(tg?"→"+tg:"")+(eo?"（提前 "+eo+" 秒）":"");}).filter(Boolean);if(n.length)parts.push(sl+" "+n.join("、"));});
   out.push((r.kind==="head"?"■ ":"  ")+(r.t?r.t+" ":"")+(r.t0?"（"+r.t0+" 讀條）":"")+(r.mech||"")+(r.tag||r.ctag?"（"+[r.tag,r.ctag].filter(Boolean).join("・")+"）":"")+((r.hits||[]).length?" "+r.hits.map(x=>(DTYPE[x.dtype]?"["+DTYPE[x.dtype].n+"]":"")+(x.dmg||"")+(+x.n>1?"×"+(+x.n):"")).join("→"):"")+(p.burst?"【"+p.burst+" 爆發】":"")+(p.pot?"【藥】":"")+(p.lb?"【LB："+p.lb+"】":"")+(parts.length?"｜"+parts.join("｜"):""));
   if(r.desc)out.push("    說明："+r.desc.replace(/\n/g," "));if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||"還沒有內容";}
 function copyTA(){const ta=$("#ta");ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast("已複製"),()=>toast("請長按文字手動複製"));else toast(ok?"已複製":"請長按文字手動複製");}
