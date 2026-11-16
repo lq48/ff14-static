@@ -312,7 +312,7 @@ function target(s,id,k){return (((((slotDocs[s]||{}).tg)||{})[id])||{})[k]||"";}
 function early(s,id,k){const o=((((slotDocs[s]||{}).o)||{})[id])||{};return +o[k]||0;}
 function dispRows(base){const E0=est(base),vs=[],byT={};base.forEach((r,i)=>{const s0=secs(r.t0);if(r.kind==="head"||s0==null)return;
   if(byT[s0]){byT[s0].all.push(r);return;}const v={id:"v_"+r.id,virt:true,of:r,all:[r],t:r.t0,s:s0,mi:i};byT[s0]=v;vs.push(v);});vs.sort((a,b)=>a.s-b.s);
-  const out=[];base.forEach((r,i)=>{vs.forEach(v=>{if(v.done)return;if(v.mi===i||(v.mi>i&&E0[i].v!=null&&v.s<=E0[i].v)){out.push(v);v.done=1;}});out.push(r);});return out;}
+  const out=[];base.forEach((r,i)=>{vs.forEach(v=>{if(v.done)return;if(v.mi===i||(v.mi>i&&E0[i].v!=null&&(r.kind==="head"?v.s<E0[i].v:v.s<=E0[i].v))){out.push(v);v.done=1;}});out.push(r);});return out;}
 function est(rs){const t=rs.map(r=>secs(r.t)),out=[];for(let i=0;i<rs.length;i++){if(t[i]!=null){out.push({v:t[i],e:false});continue;}let a=i-1;while(a>=0&&t[a]==null)a--;let b=i+1;while(b<rs.length&&t[b]==null)b++;out.push(a>=0&&b<rs.length?{v:t[a]+(t[b]-t[a])*(i-a)/(b-a),e:true}:{v:null,e:true});}return out;}
 function cdState(L,E){const out={};dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const{cd,dur}=sv(sk),uses=[];
   L.forEach((r,i)=>{if(r.virt||!assign(s,r.id).includes(sk.id))return;const t=E[i].v,eo=early(s,r.id,sk.id);uses.push({id:r.id,r,t,eo,st:t!=null?t-eo:null});});
