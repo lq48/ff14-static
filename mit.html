@@ -483,6 +483,7 @@ function newRow(kind){const r={id:uid(),t:"",mech:"",tag:"",ctag:"",hits:[]};if(
 function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,rs=rows();let i;
   if(a==="stage"){cur=+b.dataset.i;sel=null;renderDrawer();render();}
   else if(a==="names"){showNames=!showNames;try{localStorage.setItem("mitNames",showNames?"1":"0");}catch(err){}render();}
+  else if(a==="tmode"){modal.slot=b.dataset.s;try{localStorage.setItem("mitTextMode",b.dataset.s===mySlot()?"mine":b.dataset.s);}catch(e){}renderModal();}
   else if(a==="filt"){filt=b.dataset.s;render();}
   else if(a==="cell")toggleSkill(b.dataset.s,b.dataset.r,b.dataset.k);
   else if(a==="dtog")toggleSkill(b.dataset.s,sel,b.dataset.k);
@@ -516,7 +517,7 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="tdel"){if(!armed(b,"再按一次刪除"))return;modal.draft.tiers.splice(modal.ti,1);modal.ti=0;renderModal();}
   else if(a==="fxadd"){const D=modal.draft;D.tiers[modal.ti].fx=D.tiers[modal.ti].fx||[];D.tiers[modal.ti].fx.push({k:"mit",v:"",w:tgtOf(D)==="ally"?"target":tgtOf(D)==="enemy"?"enemy":"self",t:"all"});renderModal();const ins=document.querySelectorAll('#modal [data-fx="v"]');if(ins.length)ins[ins.length-1].focus();}
   else if(a==="fxdel"){modal.draft.tiers[modal.ti].fx.splice(+b.dataset.i,1);renderModal();}
-  else if(a==="text"){modal={k:"text"};renderModal();}
+  else if(a==="text"){let s="all";try{s=localStorage.getItem("mitTextMode")||"all";}catch(e){}if(s==="mine")s=mySlot()||"all";if(s!=="all"&&!dSlots().includes(s))s="all";modal={k:"text",slot:s};renderModal();}
   else if(a==="io"){modal={k:"io"};renderModal();}
   else if(a==="copy")copyTA();
   else if(a==="import")doImport(b);
@@ -547,7 +548,10 @@ function renderModal(){
     if(isOwner)h+=skEditorHTML();
     h+='<div class="end"><button class="btn" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="text"){
-    h+='<h2>文字小抄</h2><textarea class="f ta" readonly id="ta">'+esc(textSheet())+'</textarea><div class="end"><button class="btn" data-a="copy">複製</button><button class="btn primary" data-a="mclose">關閉</button></div>';
+    const tm=modal.slot||"all";
+    h+='<h2>文字小抄</h2><div class="scrollx" style="margin-bottom:8px"><span class="lbl">顯示</span><button class="tab'+(tm==="all"?" on":"")+'" data-a="tmode" data-s="all">全部機制</button>'+dSlots().map(s=>'<button class="tab'+(tm===s?" on":"")+'" data-a="tmode" data-s="'+s+'">'+(s===mySlot()?"我的（"+s+"）":"只看 "+s)+'</button>').join("")+'</div>'+
+      (tm!=="all"?'<p class="hint" style="margin:0 0 8px">只列出 '+tm+' 需要放技能、或要放 LB 的機制。</p>':'')+
+      '<textarea class="f ta" readonly id="ta">'+esc(textSheet(tm==="all"?"":tm))+'</textarea><div class="end"><button class="btn" data-a="copy">複製</button><button class="btn primary" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="io"){
     h+='<h2>匯出／匯入</h2><p class="hint">匯出的資料包含這個副本的機制'+(tid?"和本團的分工":"")+'，可以備份。'+(isOwner?"匯入會依資料內容寫入技能庫、副本機制"+(tid?"和本團分工":"")+"。":"只有網站管理員可以匯入。")+'</p>'+
       '<textarea class="f ta" id="ta" style="margin-top:8px">'+esc(modal.raw!=null?modal.raw:JSON.stringify(exportData()))+'</textarea>'+
@@ -621,10 +625,12 @@ async function dutySave(){if(!isOwner)return;const name=$("#dn").value.trim(),le
   const old=Object.fromEntries((duty.stages||[]).map(s=>[s.id,s]));
   duty.name=name;duty.level=level;duty.slots=modal.slots;duty.stages=modal.stages.map(s=>({id:s.id,name:s.name,rows:old[s.id]?old[s.id].rows:[]}));
   if(cur>=duty.stages.length)cur=0;await saveDuty();closeModal();render();toast("已儲存");}
-function textSheet(){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.length)return;out.push("【"+s.name+"】");s.rows.forEach(r=>{const p=prow(r.id),parts=[];
-  dSlots().forEach(sl=>{const j=compOf(sl),n=assign(sl,r.id).map(id=>{const k=skillOf(j,id);if(!k)return "";const eo=early(sl,r.id,id);const tg=target(sl,r.id,id);return k.name+(tg?"→"+tg:"")+(eo?"（提前 "+eo+" 秒）":"");}).filter(Boolean);if(n.length)parts.push(sl+" "+n.join("、"));});
-  out.push((r.kind==="head"?"■ ":"  ")+(r.t?r.t+" ":"")+(r.t0?"（"+r.t0+" 讀條）":"")+(r.mech||"")+(r.tag||r.ctag?"（"+[r.tag,r.ctag].filter(Boolean).join("・")+"）":"")+((r.hits||[]).length?" "+r.hits.map(x=>(DTYPE[x.dtype]?"["+DTYPE[x.dtype].n+"]":"")+(x.dmg||"")+(+x.n>1?"×"+(+x.n):"")).join("→"):"")+(p.burst?"【"+p.burst+" 爆發】":"")+(p.pot?"【藥】":"")+(p.lb?"【LB："+p.lb+"】":"")+(parts.length?"｜"+parts.join("｜"):""));
-  if(r.desc)out.push("    說明："+r.desc.replace(/\n/g," "));if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||"還沒有內容";}
+function textSheet(only){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.length)return;
+  const rs=only?s.rows.filter(r=>(assign(only,r.id).some(id=>skillOf(compOf(only),id))||prow(r.id).lb===only)):s.rows;if(!rs.length)return;
+  out.push("【"+s.name+"】");rs.forEach(r=>{const p=prow(r.id),parts=[];
+  (only?[only]:dSlots()).forEach(sl=>{const j=compOf(sl),n=assign(sl,r.id).map(id=>{const k=skillOf(j,id);if(!k)return "";const eo=early(sl,r.id,id);const tg=target(sl,r.id,id);return k.name+(tg?"→"+tg:"")+(eo?"（提前 "+eo+" 秒）":"");}).filter(Boolean);if(n.length)parts.push(sl+" "+n.join("、"));});
+  out.push((r.kind==="head"?"■ ":"  ")+(r.t?r.t+" ":"")+(r.t0?"（"+r.t0+" 讀條）":"")+(r.mech||"")+(r.tag||r.ctag?"（"+[r.tag,r.ctag].filter(Boolean).join("・")+"）":"")+((r.hits||[]).length?" "+r.hits.map(x=>(DTYPE[x.dtype]?"["+DTYPE[x.dtype].n+"]":"")+(x.dmg||"")+(+x.n>1?"×"+(+x.n):"")).join("→"):"")+(p.burst?"【"+p.burst+" 爆發】":"")+(p.pot?"【藥】":"")+(p.lb?"【LB："+p.lb+"】":"")+(parts.length?"｜"+(only?parts.map(x=>x.slice(only.length+1)):parts).join("｜"):""));
+  if(r.desc)out.push("    說明："+r.desc.replace(/\n/g," "));if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||(only?only+" 目前沒有要放的技能":"還沒有內容");}
 function copyTA(){const ta=$("#ta");ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast("已複製"),()=>toast("請長按文字手動複製"));else toast(ok?"已複製":"請長按文字手動複製");}
 function exportData(){const o={type:"mit-seed",v:1};if(duty){const d=clone(duty);o.duty=d;}if(tid&&duty){o.plan={comp:plan.comp||{},rows:plan.rows||{},slots:Object.fromEntries(dSlots().map(s=>[s,{a:(slotDocs[s]||{}).a||{}}]))};}return o;}
 async function importStage(o,b){
