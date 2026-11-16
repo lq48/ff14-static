@@ -41,7 +41,7 @@ button{cursor:pointer}
 a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
-#app{display:flex;flex-direction:column;height:100%}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 .bar{padding:12px 14px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line);background:var(--surface)}
 .bar1{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .back{font-size:13px;color:var(--muted);text-decoration:none}
@@ -60,7 +60,8 @@ select.f.duty{min-height:36px;font-weight:700;max-width:260px}
 .lbl{font-size:12px;color:var(--muted);white-space:nowrap}
 .perm{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .perm.ed{border-color:var(--heal);color:var(--heal)}
-.gw{flex:1;overflow:auto;position:relative}
+.gw{flex:1;min-height:0;overflow:auto;position:relative}
+.bar{flex:none}
 .empty{padding:40px 16px;text-align:center;color:var(--muted)}
 table.g{border-collapse:separate;border-spacing:0;width:max-content}
 .g th,.g td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0}
@@ -95,7 +96,8 @@ table.g{border-collapse:separate;border-spacing:0;width:max-content}
 tr.virt .ct,tr.virt .cm{background:var(--surface)}
 tr.virt .ct{color:var(--muted);font-style:italic}
 .vb{min-height:30px;opacity:.75}
-.vb .vn{font-size:12px;font-weight:500;color:var(--muted)}
+.vb .vn{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.pill.rd{border-color:var(--muted);color:var(--muted);background:transparent}
 .cell{position:relative}
 .cell .eb{position:absolute;right:0;bottom:0;font-size:9.5px;font-weight:900;line-height:12px;padding:0 2px;border-radius:3px;background:var(--ink);color:var(--bg);pointer-events:none}
 .cell.short .ico,.cell.short .tx{outline:2px dashed var(--warn);outline-offset:1px}
@@ -285,7 +287,8 @@ function normRow(r){if(!Array.isArray(r.hits)){let d=(r.dmg||"").trim(),ty=r.dty
   r.hits=(d||ty)?[{dtype:ty,dmg:d}]:[];}delete r.dmg;delete r.dtype;return r;}
 function hitSpan(r){let m=0;(r.hits||[]).forEach(x=>{const o=+x.off||0;if(o>m)m=o;});return m;}
 function early(s,id,k){const o=((((slotDocs[s]||{}).o)||{})[id])||{};return +o[k]||0;}
-function dispRows(base){const E0=est(base),vs=[];base.forEach((r,i)=>{const s0=secs(r.t0);if(r.kind!=="head"&&s0!=null)vs.push({id:"v_"+r.id,virt:true,of:r,t:r.t0,s:s0,mi:i});});vs.sort((a,b)=>a.s-b.s);
+function dispRows(base){const E0=est(base),vs=[],byT={};base.forEach((r,i)=>{const s0=secs(r.t0);if(r.kind==="head"||s0==null)return;
+  if(byT[s0]){byT[s0].all.push(r);return;}const v={id:"v_"+r.id,virt:true,of:r,all:[r],t:r.t0,s:s0,mi:i};byT[s0]=v;vs.push(v);});vs.sort((a,b)=>a.s-b.s);
   const out=[];base.forEach((r,i)=>{vs.forEach(v=>{if(v.done)return;if(v.mi===i||(v.mi>i&&E0[i].v!=null&&v.s<=E0[i].v)){out.push(v);v.done=1;}});out.push(r);});return out;}
 function est(rs){const t=rs.map(r=>secs(r.t)),out=[];for(let i=0;i<rs.length;i++){if(t[i]!=null){out.push({v:t[i],e:false});continue;}let a=i-1;while(a>=0&&t[a]==null)a--;let b=i+1;while(b<rs.length&&t[b]==null)b++;out.push(a>=0&&b<rs.length?{v:t[a]+(t[b]-t[a])*(i-a)/(b-a),e:true}:{v:null,e:true});}return out;}
 function cdState(L,E){const out={};dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const{cd,dur}=sv(sk),uses=[];
@@ -319,8 +322,8 @@ function render(){
       dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+s+'">'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
   }
   h+='</div><div class="gw" id="gw"></div>';
-  const og=$("#gw"),ox=og?og.scrollLeft:0,oy=og?og.scrollTop:0;
-  app.innerHTML=h;const ng=$("#gw");if(ng){ng.scrollLeft=ox;ng.scrollTop=oy;}renderGrid();
+  const og=$("#gw"),ox=og?og.scrollLeft:0,oy=og?og.scrollTop:0,wy=window.scrollY;
+  app.innerHTML=h;const ng=$("#gw");renderGrid();if(ng){ng.scrollLeft=ox;ng.scrollTop=oy;}if(wy)window.scrollTo(0,wy);
 }
 function renderGrid(){
   const gw=$("#gw");if(!gw)return;
@@ -335,7 +338,8 @@ function renderGrid(){
     l.forEach((sk,k)=>{const v=sv(sk);h+='<th class="sh'+(k===0?" first":"")+'" title="'+esc(sk.name+(v.dur?"｜持續 "+v.dur+" 秒":"")+(v.cd?"｜CD "+v.cd+" 秒":"")+(sk.desc?"｜"+sk.desc:""))+'"><div class="shi">'+skIco(j,sk)+'<div class="nm">'+esc(sk.name)+'</div><div class="cdv">'+(v.dur?"<b>"+v.dur+"</b><br>":"")+(v.cd||"")+'</div></div></th>';});});
   h+='</tr></thead><tbody>';
   rs.forEach((r,i)=>{const vr=!!r.virt,head=r.kind==="head",p=prow(r.id),caR=ca&&!vr;
-    if(vr){h+='<tr class="virt"><td class="ct">'+esc(r.t)+'</td><td class="cm"><button class="mb vb" data-a="open" data-r="'+r.of.id+'"><span class="vn">↳ '+esc(r.of.mech||"")+' 開始</span>'+(r.of.t?'<span class="dm">'+esc(r.of.t)+' 判定</span>':'')+'</button></td>';}
+    if(vr){const names=[...new Set(r.all.map(x=>x.mech||"").filter(Boolean))],js=r.all.map(x=>x.t).filter(Boolean);
+      h+='<tr class="virt"><td class="ct">'+esc(r.t)+'</td><td class="cm"><button class="mb vb" data-a="open" data-r="'+r.of.id+'"><span class="vn"><span class="pill rd">讀條</span> '+esc(names.join("＋"))+'</span>'+(js.length?'<span class="dm">'+esc(js.join("、"))+' 判定</span>':'')+'</button></td>';}
     else{h+='<tr class="'+(head?"head":"")+(r.tag==="死刑"?" tk":r.tag==="全體AOE"?" hl":"")+(sel===r.id?" on":"")+'">';
     const tt=r.t?esc(r.t):(E[i].v!=null?'<span class="est">~'+fmt(E[i].v)+'</span>':'<span class="est">—</span>');
     h+='<td class="ct">'+tt+'</td><td class="cm"><button class="mb" data-a="open" data-r="'+r.id+'"><span class="n">'+esc(r.mech||"")+'</span><span class="meta">';
@@ -355,7 +359,7 @@ function renderGrid(){
   h+='</tbody></table>';
   if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
   h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
-  gw.innerHTML=h;gw.scrollLeft=sx;gw.scrollTop=sy;
+  const wy=window.scrollY;gw.innerHTML=h;gw.scrollLeft=sx;gw.scrollTop=sy;if(wy)window.scrollTo(0,wy);
 }
 const gridSoon=()=>{clearTimeout(gridT);gridT=setTimeout(renderGrid,250);};
 
@@ -369,7 +373,9 @@ function renderDrawer(){
   let h='<div class="drh"><h2>'+(r.kind==="head"?"段落":"機制")+'詳情</h2><button class="ib" aria-label="關閉" data-a="dclose">'+IC.x+'</button></div><div class="drb">';
   if(cm)h+='<div class="seg"><button class="'+(r.kind!=="head"?"on":"")+'" data-a="kind" data-k="">機制</button><button class="'+(r.kind==="head"?"on":"")+'" data-a="kind" data-k="head">段落（小怪／階段）</button></div>';
   h+='<label class="fld"><span>名稱</span><input class="f" data-f="mech" value="'+esc(r.mech)+'"'+dis+'></label>';
-  h+='<div class="two"><label class="fld"><span>判定時間</span><input class="f" data-f="t" inputmode="numeric" placeholder="0:00" value="'+esc(r.t)+'"'+dis+'></label><label class="fld"><span>開始時間（讀條／點名）</span><input class="f" data-f="t0" inputmode="numeric" placeholder="可不填" value="'+esc(r.t0||"")+'"'+dis+'></label></div>';
+  h+='<div class="two"><label class="fld"><span>判定時間</span><input class="f" data-f="t" inputmode="numeric" placeholder="0:00" value="'+esc(r.t)+'"'+dis+'></label><label class="fld"><span>讀條時間</span><input class="f" data-f="t0" inputmode="numeric" placeholder="可不填" value="'+esc(r.t0||"")+'"'+dis+'></label></div>';
+  if(cm){const rs0=rows(),ix=rs0.findIndex(x=>x.id===r.id);let pv=null;for(let q=ix-1;q>=0;q--){if(rs0[q].t0){pv=rs0[q];break;}}
+    h+='<p class="hint">同一次讀條有好幾個判定時，每個判定都填同一個讀條時間，表格會合併成一列讀條。'+(pv&&pv.t0!==r.t0?'</p><button class="btn" data-a="t0same" data-v="'+esc(pv.t0)+'">跟「'+esc(pv.mech||"上一個機制")+'」同一次讀條（'+esc(pv.t0)+'）</button>':'</p>');}
   h+='<div class="two"><label class="fld"><span>類型</span><select class="f" data-f="tag"'+dis+'>'+TAGS.map(t=>'<option value="'+t+'"'+(r.tag===t?" selected":"")+'>'+(t||"—")+'</option>').join("")+'</select></label><label class="fld"><span>自訂標籤</span><input class="f" data-f="ctag" value="'+esc(r.ctag)+'" placeholder="例：左右刀、接線"'+dis+'></label></div>';
   h+='<label class="fld"><span>機制說明</span>'+(cm?'<textarea class="f" data-f="desc" style="min-height:60px" placeholder="例：設置骰子＋擊退預兆">'+esc(r.desc||"")+'</textarea>':'<div class="ro">'+(r.desc?esc(r.desc):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
   h+='<div class="fld"><span>傷害</span>';const hs=r.hits||[];
@@ -458,6 +464,7 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="insbelow"&&canMech()){i=rs.findIndex(x=>x.id===sel);const nr=newRow("");rs.splice(i+1,0,nr);sel=nr.id;saveDutySoon();renderGrid();renderDrawer();const m=$('#dr [data-f="mech"]');if(m)m.focus();}
   else if(a==="hadd"&&canMech()){const r=rs.find(x=>x.id===sel);(r.hits=r.hits||[]).push({dtype:""});saveDutySoon();renderDrawer();renderGrid();const ins=document.querySelectorAll('#dr [data-h="dmg"]');if(ins.length)ins[ins.length-1].focus();}
   else if(a==="hdel"&&canMech()){const r=rs.find(x=>x.id===sel);r.hits.splice(+b.dataset.i,1);saveDutySoon();renderDrawer();renderGrid();}
+  else if(a==="t0same"&&canMech()){const r=rs.find(x=>x.id===sel);r.t0=b.dataset.v;saveDutySoon();renderDrawer();renderGrid();}
   else if(a==="eset")setEarly(b.dataset.s,sel,b.dataset.k,+b.dataset.v);
   else if(a==="kind"&&canMech()){const r=rs.find(x=>x.id===sel);if(b.dataset.k)r.kind="head";else delete r.kind;saveDutySoon();renderDrawer();renderGrid();}
   else if((a==="up"||a==="dn")&&canMech()){i=rs.findIndex(x=>x.id===sel);const t=a==="up"?i-1:i+1;if(t<0||t>=rs.length)return;rs.splice(t,0,rs.splice(i,1)[0]);saveDutySoon();renderGrid();}
@@ -565,7 +572,7 @@ async function dutySave(){if(!isOwner)return;const name=$("#dn").value.trim(),le
   if(cur>=duty.stages.length)cur=0;await saveDuty();closeModal();render();toast("已儲存");}
 function textSheet(){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.length)return;out.push("【"+s.name+"】");s.rows.forEach(r=>{const p=prow(r.id),parts=[];
   dSlots().forEach(sl=>{const j=compOf(sl),n=assign(sl,r.id).map(id=>{const k=skillOf(j,id);if(!k)return "";const eo=early(sl,r.id,id);return k.name+(eo?"（提前 "+eo+" 秒）":"");}).filter(Boolean);if(n.length)parts.push(sl+" "+n.join("、"));});
-  out.push((r.kind==="head"?"■ ":"  ")+(r.t?r.t+" ":"")+(r.t0?"（"+r.t0+" 開始）":"")+(r.mech||"")+(r.tag||r.ctag?"（"+[r.tag,r.ctag].filter(Boolean).join("・")+"）":"")+((r.hits||[]).length?" "+r.hits.map(x=>(DTYPE[x.dtype]?"["+DTYPE[x.dtype].n+"]":"")+(x.dmg||"")+(+x.n>1?"×"+(+x.n):"")).join("→"):"")+(p.burst?"【"+p.burst+" 爆發】":"")+(p.pot?"【藥】":"")+(p.lb?"【LB："+p.lb+"】":"")+(parts.length?"｜"+parts.join("｜"):""));
+  out.push((r.kind==="head"?"■ ":"  ")+(r.t?r.t+" ":"")+(r.t0?"（"+r.t0+" 讀條）":"")+(r.mech||"")+(r.tag||r.ctag?"（"+[r.tag,r.ctag].filter(Boolean).join("・")+"）":"")+((r.hits||[]).length?" "+r.hits.map(x=>(DTYPE[x.dtype]?"["+DTYPE[x.dtype].n+"]":"")+(x.dmg||"")+(+x.n>1?"×"+(+x.n):"")).join("→"):"")+(p.burst?"【"+p.burst+" 爆發】":"")+(p.pot?"【藥】":"")+(p.lb?"【LB："+p.lb+"】":"")+(parts.length?"｜"+parts.join("｜"):""));
   if(r.desc)out.push("    說明："+r.desc.replace(/\n/g," "));if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||"還沒有內容";}
 function copyTA(){const ta=$("#ta");ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast("已複製"),()=>toast("請長按文字手動複製"));else toast(ok?"已複製":"請長按文字手動複製");}
 function exportData(){const o={type:"mit-seed",v:1};if(duty){const d=clone(duty);o.duty=d;}if(tid&&duty){o.plan={comp:plan.comp||{},rows:plan.rows||{},slots:Object.fromEntries(dSlots().map(s=>[s,{a:(slotDocs[s]||{}).a||{}}]))};}return o;}
