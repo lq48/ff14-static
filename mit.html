@@ -189,6 +189,13 @@ textarea.f{min-height:96px;resize:vertical}
 .sk .n{flex:1;min-width:0}.sk .c{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}
 .addsk{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
 .addsk .w{grid-column:1/-1}
+.tier{border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px;background:var(--surface2)}
+.fxb{border:1px solid var(--line);border-radius:8px;padding:6px;margin-bottom:6px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.fx1{display:grid;grid-template-columns:84px 1fr 64px 34px;gap:6px}
+.fx2{display:flex;gap:6px;flex-wrap:wrap}
+.fx2 select{width:auto}
+.fx2 input{flex:1;min-width:160px}
+
 .ta{width:100%;min-height:220px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
 .hint{color:var(--muted);font-size:12.5px;margin:0}
@@ -270,8 +277,17 @@ const mySlot=()=>{if(!me||!st)return "";const r=st.roles||{};return Object.keys(
 
 /* ===== 資料取用 ===== */
 const LV=()=>(duty&&duty.level)||100;
-function sv(sk){let cd=+sk.cd||0,dur=+sk.dur||0;const lv=sk.lv||{};Object.keys(lv).map(Number).sort((a,b)=>a-b).forEach(l=>{if(l<=LV()){if(lv[l].cd!=null&&lv[l].cd!=="")cd=+lv[l].cd;if(lv[l].dur!=null&&lv[l].dur!=="")dur=+lv[l].dur;}});return{cd,dur};}
-const jobSkills=j=>(((lib.jobs||{})[j]||{}).skills||[]).filter(s=>!s.minLv||+s.minLv<=LV());
+const FXK={mit:"減傷",shield:"護盾",heal:"回復",other:"其他"},FXW={self:"自身",target:"目標",party:"全隊",enemy:"敵人"},FXT={all:"全部傷害",phys:"物理",magic:"魔法"};
+function tiersOf(sk){if(Array.isArray(sk.tiers)&&sk.tiers.length)return sk.tiers.slice().sort((a,b)=>(+a.lv||0)-(+b.lv||0));
+  const t=[{lv:+sk.minLv||1,cd:+sk.cd||0,dur:+sk.dur||0,fx:[]}],l=(sk.lv||{})[100];
+  if(l)t.push({lv:100,cd:l.cd!=null&&l.cd!==""?+l.cd:+sk.cd||0,dur:l.dur!=null&&l.dur!==""?+l.dur:+sk.dur||0,fx:[]});return t;}
+function tierAt(sk,lv){let r=null;tiersOf(sk).forEach(t=>{if((+t.lv||0)<=lv)r=t;});return r;}
+function sv(sk){const t=tierAt(sk,LV())||tiersOf(sk)[0];return{cd:+t.cd||0,dur:+t.dur||0};}
+function fxLine(f){const v=String(f.v||"").trim(),num=/^[\d.]+$/.test(v);
+  const val=f.k==="mit"?(v?(num?v+"%":v):""):f.k==="heal"?(v?"恢復力 "+v:""):v;
+  return [(f.w&&f.w!=="self"&&FXW[f.w])||"",FXK[f.k]||"",val,(f.t&&f.t!=="all"?"（"+FXT[f.t]+"）":"")].filter(Boolean).join(" ")+(f.d?" "+f.d+" 秒":"")+(f.c?"，"+f.c:"");}
+function fxText(sk){const t=tierAt(sk,LV());return t&&(t.fx||[]).length?t.fx.map(fxLine).join("／"):"";}
+const jobSkills=j=>allJobSkills(j).filter(s=>tierAt(s,LV()));
 const allJobSkills=j=>(((lib.jobs||{})[j]||{}).skills||[]);
 const skillOf=(j,id)=>allJobSkills(j).find(s=>s.id===id);
 const dSlots=()=>(duty&&duty.slots&&duty.slots.length?duty.slots:["MT","H1","D1","D2"]);
@@ -342,7 +358,7 @@ function renderGrid(){
     h+='<th class="jh '+role+(s===ms?" mine":"")+'" colspan="'+Math.max(n,1)+'" title="'+esc(full)+'">'+s+'<br>'+esc(j?((JOB[j]||{}).s||j):"未設定")+(showNames&&pid?'<span class="who" style="max-width:'+(Math.max(n,1)*36-6)+'px">'+esc(pid)+'</span>':'')+'</th>';});
   h+='</tr><tr class="r2"><th class="sh first" title="團隊爆發｜點格子切換 120 → 60 → 無"><div class="shi"><span class="bx">爆</span><div class="nm">爆發</div><div class="cdv"><b>'+BURST_DUR+'</b><br>60</div></div></th><th class="sh" title="爆發藥｜持續 '+POT.dur+' 秒，CD '+POT.cd+' 秒"><div class="shi"><img class="ico" src="'+POT_ICON+'" alt=""><div class="nm">藥水</div><div class="cdv"><b>'+POT.dur+'</b><br>'+POT.cd+'</div></div></th><th class="sh first" title="極限技｜點格子選擇由哪個位置施放"><div class="shi"><span class="lbh"><img src="'+LB_ICON+'" alt=""></span><div class="nm">極限技</div></div></th>';
   V.forEach(s=>{const j=compOf(s),l=jobSkills(j);if(!l.length){h+='<th class="sh first" style="width:auto;min-width:96px;max-width:none"><div class="shi" style="justify-content:center;color:var(--muted);font-size:12px">'+(j?"技能庫沒有<br>"+esc((JOB[j]||{}).n||j)+"的技能":"先到「陣容」<br>設定職業")+'</div></th>';return;}
-    l.forEach((sk,k)=>{const v=sv(sk);h+='<th class="sh'+(k===0?" first":"")+'" title="'+esc(sk.name+(v.dur?"｜持續 "+v.dur+" 秒":"")+(v.cd?"｜CD "+v.cd+" 秒":"")+(sk.desc?"｜"+sk.desc:""))+'"><div class="shi">'+skIco(j,sk)+'<div class="nm">'+esc(sk.name)+'</div><div class="cdv">'+(v.dur?"<b>"+v.dur+"</b><br>":"")+(v.cd||"")+'</div></div></th>';});});
+    l.forEach((sk,k)=>{const v=sv(sk);h+='<th class="sh'+(k===0?" first":"")+'" title="'+esc(sk.name+(v.dur?"｜持續 "+v.dur+" 秒":"")+(v.cd?"｜CD "+v.cd+" 秒":"")+(fxText(sk)?"\n"+fxText(sk):"")+(sk.desc?"\n"+sk.desc:""))+'"><div class="shi">'+skIco(j,sk)+'<div class="nm">'+esc(sk.name)+'</div><div class="cdv">'+(v.dur?"<b>"+v.dur+"</b><br>":"")+(v.cd||"")+'</div></div></th>';});});
   h+='</tr></thead><tbody>';
   rs.forEach((r,i)=>{const vr=!!r.virt,head=r.kind==="head",p=prow(r.id),caR=ca&&!vr;
     if(vr){const names=[...new Set(r.all.map(x=>x.mech||"").filter(Boolean))],js=r.all.map(x=>x.t).filter(Boolean);
@@ -489,11 +505,17 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="idel"&&canAll()){if(!armed(b,"確認"))return;delImg(b.dataset.id);}
   else if(a==="ldel"){const l=(prow(sel).links||[]).slice();l.splice(+b.dataset.i,1);setP(sel,{links:l});renderDrawer();renderGrid();}
   else if(a==="skills"){modal={k:"skills",j:modal&&modal.j||compOf(dSlots()[0])||"PLD"};renderModal();}
-  else if(a==="skjob"){modal.j=b.dataset.j;renderModal();}
+  else if(a==="skjob"){modal.j=b.dataset.j;modal.edit="";modal.draft=null;modal.ti=0;modal.img=null;renderModal();}
   else if(a==="skadd")skAdd();
   else if(a==="skup"&&isOwner){i=+b.dataset.i;if(i<1)return;const l=lib.jobs[modal.j].skills;l.splice(i-1,0,l.splice(i,1)[0]);saveLibSoon();renderModal();render();}
   else if(a==="skdel"&&isOwner){if(!armed(b,"確認"))return;lib.jobs[modal.j].skills.splice(+b.dataset.i,1);saveLibSoon();renderModal();render();}
-  else if(a==="skedit"){modal.edit=b.dataset.id;renderModal();}
+  else if(a==="skedit"){modal.edit=b.dataset.id;modal.img=null;const sk=b.dataset.id?allJobSkills(modal.j).find(s=>s.id===b.dataset.id):null;
+    modal.draft=sk?{name:sk.name,tgt:sk.tgt||"",desc:sk.desc||"",img:sk.img||"",tiers:clone(tiersOf(sk)).map(t=>({...t,fx:t.fx||[]}))}:newDraft();modal.ti=0;renderModal();}
+  else if(a==="tsel"){modal.ti=+b.dataset.i;renderModal();}
+  else if(a==="tadd"){const D=modal.draft,c=clone(D.tiers[D.tiers.length-1]);c.lv="";D.tiers.push(c);modal.ti=D.tiers.length-1;renderModal();const el=document.querySelector('#modal [data-dt="lv"]');if(el)el.focus();}
+  else if(a==="tdel"){if(!armed(b,"再按一次刪除"))return;modal.draft.tiers.splice(modal.ti,1);modal.ti=0;renderModal();}
+  else if(a==="fxadd"){const D=modal.draft;D.tiers[modal.ti].fx=D.tiers[modal.ti].fx||[];D.tiers[modal.ti].fx.push({k:"mit",v:"",w:tgtOf(D)==="ally"?"target":tgtOf(D)==="enemy"?"enemy":"self",t:"all"});renderModal();const ins=document.querySelectorAll('#modal [data-fx="v"]');if(ins.length)ins[ins.length-1].focus();}
+  else if(a==="fxdel"){modal.draft.tiers[modal.ti].fx.splice(+b.dataset.i,1);renderModal();}
   else if(a==="text"){modal={k:"text"};renderModal();}
   else if(a==="io"){modal={k:"io"};renderModal();}
   else if(a==="copy")copyTA();
@@ -511,7 +533,7 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
 
 /* ===== 對話框 ===== */
 function renderModal(){
-  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("change",onModalChange);}
+  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("change",onModalChange);m.addEventListener("input",onModalInput);m.addEventListener("change",onModalInput);}
   let h='<div class="sheet" role="dialog" aria-modal="true">';
   if(modal.k==="img"){m.innerHTML='<div class="sheet img" role="dialog" aria-modal="true" aria-label="站位圖"><img src="'+esc(modal.src)+'" alt="站位圖放大"><div class="end"><button class="btn" data-a="mclose">關閉</button></div></div>';return;}
   if(modal.k==="skills"){
@@ -520,21 +542,9 @@ function renderModal(){
     h+=shown.map(j=>'<button class="tab'+(modal.j===j.k?" on":"")+'" data-a="skjob" data-j="'+j.k+'">'+esc(j.n)+(allJobSkills(j.k).length?" "+allJobSkills(j.k).length:"")+'</button>').join("")+'</div>';
     const l=allJobSkills(modal.j);
     if(!l.length)h+='<p class="hint" style="margin-top:10px">'+esc((JOB[modal.j]||{}).n||modal.j)+' 還沒有技能。</p>';
-    l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(s.minLv?'<span class="hint">　'+s.minLv+' 等以上</span>':'')+(tgtOf(s)?'<span class="hint">　'+(tgtOf(s)==="ally"?"對隊友":"對敵人")+'</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
+    l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(tiersOf(s).length>1||(+tiersOf(s)[0].lv||1)>1?'<span class="hint">　'+tiersOf(s).map(t=>(+t.lv||1)>1?t.lv+"級":"初始").join("／")+'</span>':'')+(fxText(s)?'<br><span class="hint">'+esc(fxText(s))+'</span>':'')+(tgtOf(s)?'<span class="hint">　'+(tgtOf(s)==="ally"?"對隊友":"對敵人")+'</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
       (isOwner?'<button class="ib" aria-label="編輯 '+esc(s.name)+'" data-a="skedit" data-id="'+s.id+'">✎</button><button class="ib" aria-label="上移" data-a="skup" data-i="'+i+'">'+IC.up+'</button><button class="ib" aria-label="刪除 '+esc(s.name)+'" data-a="skdel" data-i="'+i+'">'+IC.x+'</button>':'')+'</div>';});
-    if(isOwner){const ed=modal.edit?allJobSkills(modal.j).find(s=>s.id===modal.edit):null,v=ed||{},l100=((v.lv||{})[100])||{};
-      h+='<h2 style="margin-top:16px;font-size:15px">'+(ed?"編輯「"+esc(ed.name)+"」":"新增技能")+'</h2><div class="addsk">'+
-        '<input id="skn" class="f w" placeholder="技能名稱" aria-label="技能名稱" value="'+esc(v.name||"")+'">'+
-        '<input id="skc" class="f" placeholder="CD 秒" inputmode="numeric" aria-label="CD 秒數" value="'+esc(v.cd||"")+'">'+
-        '<input id="skd" class="f" placeholder="持續 秒" inputmode="numeric" aria-label="持續秒數" value="'+esc(v.dur||"")+'">'+
-        '<input id="skm" class="f" placeholder="最低等級" inputmode="numeric" aria-label="幾等以上才有" value="'+esc(v.minLv||"")+'">'+
-        '<input id="skc1" class="f" placeholder="100等 CD" inputmode="numeric" aria-label="100 等 CD" value="'+esc(l100.cd!=null?l100.cd:"")+'">'+
-        '<input id="skd1" class="f" placeholder="100等 持續" inputmode="numeric" aria-label="100 等持續秒數" value="'+esc(l100.dur!=null?l100.dur:"")+'">'+
-        '<label class="btn" style="text-align:center">圖示<input type="file" accept="image/*" id="skimg" hidden></label>'+
-        '<select id="sktg" class="f w" aria-label="施放目標">'+[["","自動（白牛清汁、昏亂等常見技能會自動判斷）"],["none","無（自身或範圍）"],["ally","隊友（排軸時選給哪個位置）"],["enemy","敵人（排軸時可填目標）"]].map(([k,n])=>'<option value="'+k+'"'+((v.tgt||"")===k?" selected":"")+'>施放目標：'+n+'</option>').join("")+'</select>'+
-        '<input id="skdesc" class="f w" placeholder="效果說明（可不填）" aria-label="效果說明" value="'+esc(v.desc||"")+'"></div>'+
-        '<p class="hint" style="margin-top:6px">CD／持續填 90 等的數值；100 等不一樣時再填右邊兩格。副本是幾等就自動套用對應數值。'+(modal.img?" 已選好圖示。":"")+'</p>'+
-        '<div class="end">'+(ed?'<button class="btn" data-a="skedit" data-id="">取消編輯</button>':'')+'<button class="btn primary" data-a="skadd">'+(ed?"儲存":"新增")+'</button></div>';}
+    if(isOwner)h+=skEditorHTML();
     h+='<div class="end"><button class="btn" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="text"){
     h+='<h2>文字小抄</h2><textarea class="f ta" readonly id="ta">'+esc(textSheet())+'</textarea><div class="end"><button class="btn" data-a="copy">複製</button><button class="btn primary" data-a="mclose">關閉</button></div>';
@@ -569,15 +579,39 @@ function onModalChange(e){const t=e.target;
 }
 function closeModal(){modal=null;const m=$("#modal");if(m)m.remove();}
 function readIcon(f){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=c.height=40;const x=c.getContext("2d"),s=Math.min(img.width,img.height);x.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,40,40);res(c.toDataURL("image/png"));URL.revokeObjectURL(img.src);};img.onerror=rej;img.src=URL.createObjectURL(f);});}
-function skAdd(){if(!isOwner)return;const n=$("#skn").value.trim();if(!n){toast("請輸入技能名稱");return;}
-  const num=id=>{const v=parseInt($(id).value,10);return isNaN(v)?"":v;};
+function newDraft(){return{name:"",tgt:"",desc:"",tiers:[{lv:"",cd:"",dur:"",fx:[]}]};}
+function skEditorHTML(){const D=modal.draft=modal.draft||newDraft(),ed=!!modal.edit;if(modal.ti==null||modal.ti>=D.tiers.length)modal.ti=0;const T=D.tiers[modal.ti];
+  let h='<h2 style="margin-top:16px;font-size:15px">'+(ed?"編輯「"+esc(D.name)+"」":"新增技能")+'</h2><div class="addsk">'+
+    '<input class="f w" data-d="name" placeholder="技能名稱" aria-label="技能名稱" value="'+esc(D.name)+'">'+
+    '<select class="f" data-d="tgt" aria-label="施放目標" style="grid-column:span 2">'+[["","施放目標：自動判斷"],["none","施放目標：無（自身或範圍）"],["ally","施放目標：隊友"],["enemy","施放目標：敵人"]].map(([k,n])=>'<option value="'+k+'"'+((D.tgt||"")===k?" selected":"")+'>'+n+'</option>').join("")+'</select>'+
+    '<label class="btn" style="text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">'+((modal.img||D.img)?'<img class="ico" style="width:24px;height:24px" src="'+esc(modal.img||D.img)+'" alt="">':'')+'圖示<input type="file" accept="image/*" id="skimg" hidden></label>'+
+    '<input class="f w" data-d="desc" placeholder="簡短說明（可不填）" aria-label="簡短說明" value="'+esc(D.desc||"")+'"></div>';
+  h+='<div class="scrollx" style="margin-top:12px">'+D.tiers.map((t,i)=>'<button class="tab'+(i===modal.ti?" on":"")+'" data-a="tsel" data-i="'+i+'">'+((+t.lv||1)>1?esc(t.lv)+" 級":"初始")+'</button>').join("")+'<button class="tab" data-a="tadd">＋ 新增等級</button></div>';
+  h+='<div class="tier"><div class="addsk"><label class="fld"><span>從幾級開始</span><input class="f" data-dt="lv" inputmode="numeric" placeholder="1" value="'+esc(T.lv)+'"></label><label class="fld"><span>CD 秒</span><input class="f" data-dt="cd" inputmode="numeric" value="'+esc(T.cd)+'"></label><label class="fld"><span>持續 秒</span><input class="f" data-dt="dur" inputmode="numeric" value="'+esc(T.dur)+'"></label></div>';
+  h+='<div class="fld" style="margin-top:10px"><span>效果</span>'+(T.fx||[]).map((f,i)=>'<div class="fxb"><div class="fx1"><select class="f" data-fx="k" data-i="'+i+'" aria-label="效果類型">'+Object.entries(FXK).map(([k,n])=>'<option value="'+k+'"'+(f.k===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="v" data-i="'+i+'" value="'+esc(f.v||"")+'" placeholder="'+(f.k==="mit"?"10（%）":f.k==="heal"?"250（恢復力）":"數值")+'" aria-label="數值"><input class="f" data-fx="d" data-i="'+i+'" value="'+esc(f.d||"")+'" placeholder="秒" inputmode="numeric" aria-label="效果秒數"><button class="ib" aria-label="刪除這個效果" data-a="fxdel" data-i="'+i+'">'+IC.x+'</button></div>'+
+    '<div class="fx2"><select class="f" data-fx="w" data-i="'+i+'" aria-label="對象">'+Object.entries(FXW).map(([k,n])=>'<option value="'+k+'"'+((f.w||"self")===k?" selected":"")+'>對象：'+n+'</option>').join("")+'</select><select class="f" data-fx="t" data-i="'+i+'" aria-label="適用傷害"'+(f.k==="mit"?"":" hidden")+'>'+Object.entries(FXT).map(([k,n])=>'<option value="'+k+'"'+((f.t||"all")===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="c" data-i="'+i+'" value="'+esc(f.c||"")+'" placeholder="條件（可不填），例：自身有鐵壁或預警" aria-label="條件"></div></div>').join("")+
+    '<button class="btn" data-a="fxadd">＋ 新增效果</button></div>';
+  h+='<p class="hint" style="margin-top:8px">每個等級分頁填那個等級的完整數值。新增等級時會複製目前分頁，只要改有變動的地方。副本是幾等，就套用不超過那個等級的最後一頁；比第一頁等級還低的副本，不會出現這個技能。</p>'+
+    (D.tiers.length>1?'<div class="end" style="justify-content:flex-start"><button class="btn danger" data-a="tdel">刪除這個等級分頁</button></div>':'')+'</div>';
+  h+='<div class="end">'+(ed?'<button class="btn" data-a="skedit" data-id="">取消編輯</button>':'')+'<button class="btn primary" data-a="skadd">'+(ed?"儲存":"新增")+'</button></div>';return h;}
+function onModalInput(e){const t=e.target,D=modal&&modal.draft;if(!D)return;
+  if(t.dataset.d)D[t.dataset.d]=t.value;
+  else if(t.dataset.dt)D.tiers[modal.ti][t.dataset.dt]=t.value;
+  else if(t.dataset.fx){const f=D.tiers[modal.ti].fx[+t.dataset.i];f[t.dataset.fx]=t.value;
+    if(t.dataset.fx==="k"){const v=document.querySelector('#modal [data-fx="v"][data-i="'+t.dataset.i+'"]');if(v)v.placeholder=t.value==="mit"?"10（%）":t.value==="heal"?"250（恢復力）":"數值";
+      const ty=document.querySelector('#modal [data-fx="t"][data-i="'+t.dataset.i+'"]');if(ty){ty.hidden=t.value!=="mit";if(t.value!=="mit"){ty.value="all";f.t="all";}}}}
+  if(t.dataset.dt==="lv"){const tb=document.querySelector('#modal [data-a="tsel"][data-i="'+modal.ti+'"]');if(tb)tb.textContent=(+t.value||1)>1?t.value+" 級":"初始";}}
+function skAdd(){if(!isOwner)return;const D=modal.draft;if(!D||!D.name.trim()){toast("請輸入技能名稱");return;}
+  const ti=D.tiers.map((t,i)=>{const lv=parseInt(t.lv,10);return{lv:isNaN(lv)?(i===0?1:NaN):lv,cd:parseInt(t.cd,10)||0,dur:parseInt(t.dur,10)||0,
+    fx:(t.fx||[]).filter(f=>String(f.v||"").trim()||String(f.c||"").trim()).map(f=>{const o={k:f.k||"mit",v:String(f.v||"").trim(),w:f.w||"self",t:f.t||"all"};const d=parseInt(f.d,10);if(d)o.d=d;if(String(f.c||"").trim())o.c=String(f.c).trim();return o;})};});
+  if(ti.some(t=>isNaN(t.lv))){toast("每個等級分頁都要填「從幾級開始」");return;}
+  if(new Set(ti.map(t=>t.lv)).size!==ti.length){toast("等級分頁的等級重複了");return;}
+  ti.sort((a,b)=>a.lv-b.lv);
   lib.jobs=lib.jobs||{};const J=lib.jobs[modal.j]=lib.jobs[modal.j]||{skills:[]};
   const ed=modal.edit?J.skills.find(s=>s.id===modal.edit):null,s=ed||{id:modal.j.toLowerCase()+uid()};
-  s.name=n;s.cd=num("#skc")||0;s.dur=num("#skd")||0;s.desc=$("#skdesc").value.trim();const tv=$("#sktg").value;if(tv)s.tgt=tv;else delete s.tgt;
-  const m=num("#skm");if(m)s.minLv=m;else delete s.minLv;
-  const c1=num("#skc1"),d1=num("#skd1");if(c1!==""||d1!==""){s.lv={100:{}};if(c1!=="")s.lv[100].cd=c1;if(d1!=="")s.lv[100].dur=d1;}else delete s.lv;
+  s.name=D.name.trim();s.desc=(D.desc||"").trim();if(D.tgt)s.tgt=D.tgt;else delete s.tgt;s.tiers=ti;["cd","dur","minLv","lv"].forEach(k=>delete s[k]);
   if(modal.img)s.img=modal.img;if(!ed)J.skills.push(s);
-  modal.edit="";modal.img=null;saveLibSoon();renderModal();render();toast(ed?"已更新":"已新增");}
+  modal.edit="";modal.img=null;modal.draft=null;modal.ti=0;saveLibSoon();renderModal();render();toast(ed?"已更新":"已新增");}
 function compSave(){if(!canAll())return;const c={};document.querySelectorAll("[data-comp]").forEach(el=>{if(el.value)c[el.dataset.comp]=el.value;});plan.comp=c;savePlanSoon();closeModal();render();toast("陣容已更新");}
 async function dutySave(){if(!isOwner)return;const name=$("#dn").value.trim(),level=parseInt($("#dl").value,10)||100;document.querySelectorAll("[data-stn]").forEach(el=>{modal.stages[+el.dataset.stn].name=el.value.trim()||"未命名";});
   if(!name){toast("請輸入副本名稱");return;}if(!modal.slots.length){toast("至少選一個位置");return;}
