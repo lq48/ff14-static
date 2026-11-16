@@ -550,7 +550,8 @@ function renderModal(){
     h+='<h2>文字小抄</h2><textarea class="f ta" readonly id="ta">'+esc(textSheet())+'</textarea><div class="end"><button class="btn" data-a="copy">複製</button><button class="btn primary" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="io"){
     h+='<h2>匯出／匯入</h2><p class="hint">匯出的資料包含這個副本的機制'+(tid?"和本團的分工":"")+'，可以備份。'+(isOwner?"匯入會依資料內容寫入技能庫、副本機制"+(tid?"和本團分工":"")+"。":"只有網站管理員可以匯入。")+'</p>'+
-      '<textarea class="f ta" id="ta" style="margin-top:8px">'+esc(JSON.stringify(exportData()))+'</textarea>'+
+      '<textarea class="f ta" id="ta" style="margin-top:8px">'+esc(modal.raw!=null?modal.raw:JSON.stringify(exportData()))+'</textarea>'+
+      (modal.stageAsk?'<p class="hint" style="margin-top:8px;color:var(--warn)">「'+esc(modal.stageAsk.name)+'」目前已經有 '+modal.stageAsk.n+' 個機制，要怎麼匯入？其他階段都不會變動。</p><div class="end" style="justify-content:flex-start"><button class="btn" data-a="import" data-m="append">加在後面</button><button class="btn danger" data-a="import" data-m="replace">取代這個階段</button></div>':'')+
       (isOwner?'<label class="btn" style="display:inline-block;margin-top:8px">選擇檔案<input type="file" accept=".json,application/json" id="iofile" hidden></label>':'')+
       '<div class="end"><button class="btn" data-a="copy">複製</button>'+(isOwner?'<button class="btn" data-a="import">匯入</button>':'')+'<button class="btn primary" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="comp"){
@@ -573,7 +574,7 @@ function renderModal(){
 }
 function onModalChange(e){const t=e.target;
   if(t.id==="skimg"&&t.files[0])readIcon(t.files[0]).then(u=>{modal.img=u;renderModal();toast("圖示已選好");}).catch(()=>toast("圖片讀取失敗"));
-  else if(t.id==="iofile"&&t.files[0])t.files[0].text().then(x=>{$("#ta").value=x;toast("已讀入檔案，按「匯入」");});
+  else if(t.id==="iofile"&&t.files[0])t.files[0].text().then(x=>{$("#ta").value=x;modal.raw=x;modal.stageAsk=null;toast("已讀入檔案，按「匯入」");});
   else if(t.dataset.slot){const s=t.dataset.slot;modal.name=$("#dn").value;modal.level=$("#dl").value;if($("#did"))modal.id=$("#did").value;document.querySelectorAll("[data-stn]").forEach(el=>{modal.stages[+el.dataset.stn].name=el.value;});
     modal.slots=t.checked?SLOTS.filter(x=>x===s||modal.slots.includes(x)):modal.slots.filter(x=>x!==s);renderModal();}
 }
@@ -626,7 +627,18 @@ function textSheet(){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.lengt
   if(r.desc)out.push("    說明："+r.desc.replace(/\n/g," "));if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||"還沒有內容";}
 function copyTA(){const ta=$("#ta");ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast("已複製"),()=>toast("請長按文字手動複製"));else toast(ok?"已複製":"請長按文字手動複製");}
 function exportData(){const o={type:"mit-seed",v:1};if(duty){const d=clone(duty);o.duty=d;}if(tid&&duty){o.plan={comp:plan.comp||{},rows:plan.rows||{},slots:Object.fromEntries(dSlots().map(s=>[s,{a:(slotDocs[s]||{}).a||{}}]))};}return o;}
+async function importStage(o,b){
+  if(!duty||o.duty!==duty.id){toast("請先切換到「"+(o.dutyName||o.duty)+"」再匯入");return;}
+  const st=(duty.stages||[]).find(s=>s.id===o.stage)||(duty.stages||[]).find(s=>s.name===o.stageName);
+  if(!st){toast("找不到「"+(o.stageName||o.stage)+"」這個階段");return;}
+  const mode=b.dataset.m||"";
+  if(st.rows.length&&!mode){modal.raw=$("#ta").value;modal.stageAsk={n:st.rows.length,name:st.name};renderModal();return;}
+  if(!armed(b,mode==="replace"?"再按一次取代":"再按一次匯入"))return;
+  const used=new Set(mode==="append"?st.rows.map(r=>r.id):[]),add=(o.rows||[]).map(r=>{const x=normRow(clone(r));if(!x.id||used.has(x.id))x.id=uid();used.add(x.id);return x;});
+  st.rows=mode==="append"?st.rows.concat(add):add;
+  try{await saveDuty();closeModal();cur=duty.stages.indexOf(st);sel=null;renderDrawer();render();toast("已匯入「"+st.name+"」"+add.length+" 個機制");}catch(e){console.error(e);toast("匯入失敗："+(e.code||e.message));}}
 async function doImport(b){if(!isOwner)return;let o;try{o=JSON.parse($("#ta").value);}catch(e){toast("資料格式不對");return;}
+  if(o&&o.type==="mit-stage"){importStage(o,b);return;}
   if(!o||o.type!=="mit-seed"){toast("這不是減傷軸的匯入檔");return;}
   if(!armed(b,"再按一次匯入"))return;
   try{
