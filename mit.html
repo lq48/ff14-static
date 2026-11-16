@@ -636,7 +636,7 @@ async function importStage(o,b){
   if(!armed(b,mode==="replace"?"再按一次取代":"再按一次匯入"))return;
   const used=new Set(mode==="append"?st.rows.map(r=>r.id):[]),add=(o.rows||[]).map(r=>{const x=normRow(clone(r));if(!x.id||used.has(x.id))x.id=uid();used.add(x.id);return x;});
   st.rows=mode==="append"?st.rows.concat(add):add;
-  try{await saveDuty();closeModal();cur=duty.stages.indexOf(st);sel=null;renderDrawer();render();toast("已匯入「"+st.name+"」"+add.length+" 個機制");}catch(e){console.error(e);toast("匯入失敗："+(e.code||e.message));}}
+  const si=duty.stages.indexOf(st);try{await saveDuty();closeModal();cur=Math.max(0,si);sel=null;renderDrawer();render();toast("已匯入「"+st.name+"」"+add.length+" 個機制");}catch(e){console.error(e);toast("匯入失敗："+(e.code||e.message));}}
 async function doImport(b){if(!isOwner)return;let o;try{o=JSON.parse($("#ta").value);}catch(e){toast("資料格式不對");return;}
   if(o&&o.type==="mit-stage"){importStage(o,b);return;}
   if(!o||o.type!=="mit-seed"){toast("這不是減傷軸的匯入檔");return;}
