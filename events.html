@@ -133,7 +133,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* Discord 大頭貼失效時改用預設頭像 */
 document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
@@ -175,7 +175,8 @@ const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c);}
 const whenTxt=s=>{if(!s||!s.d)return "時間未定";const d=parse(s.d);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）"+(s.t?" "+s.t:"");};
 const today=()=>ymd(new Date());
 function nextDow(dow){const d=new Date();d.setHours(0,0,0,0);while(d.getDay()!==dow)d.setDate(d.getDate()+1);return ymd(d);}
-const canProxy=()=>!!me&&(isOwner||!!((ecfg.helpers||{})[me.uid]));
+const canFillFor=t=>!!me&&(t===me.uid||isOwner||!!(((ecfg.proxies||{})[t]||{})[me.uid]));
+const canProxy=()=>!!me&&(isOwner||Object.values(ecfg.proxies||{}).some(h=>h&&h[me.uid]));
 const canManage=e=>!!me&&(isOwner||e.by===me.uid);
 const jt=k=>{const j=JOB[k];return j?'<span class="jt '+j.r+'" title="'+esc(j.n)+'">'+esc(j.n)+'</span>':'';};
 function lastDay(e){const ds=(e.slots||[]).map(s=>s.d).filter(Boolean).sort();if(e.status==="fixed"){const f=(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;}return ds[ds.length-1]||"";}
@@ -231,7 +232,7 @@ function listHTML(){
 const statusPill=e=>e.status==="fixed"?'<span class="pill fixed">已定案</span>':e.status==="closed"?'<span class="pill closed">已結束</span>':'<span class="pill open">調查中</span>';
 
 function detailHTML(id,e){
-  if(!who||!canProxy()||(draft&&draft.eid!==id))who=me.uid;
+  if(!who||!canFillFor(who)||(draft&&draft.eid!==id))who=me.uid;
   const R=rsvp,mine=R[who]||null,slots=e.slots||[],mg=canManage(e),self=who===me.uid,wn=self?"你":nameOf(users[who]);
   if(!draft||draft.eid!==id||draft.who!==who)draft={eid:id,who,go:mine?mine.go:"",slots:{...((mine||{}).slots||{})},jobs:[...((mine||{}).jobs||[])],note:(mine||{}).note||"",dirty:false};
   const fx=e.status==="fixed"?slots.find(s=>s.id===e.fixed):null;
@@ -247,7 +248,7 @@ function detailHTML(id,e){
   // 我的回覆
   if(e.status!=="closed"){
     h+='<div class="panel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">'+(self?(mine?"你的回覆（可以隨時修改）":"填寫你的意願"):"幫 "+esc(wn)+" 填寫"+(mine?"（已回覆過，可修改）":""))+'</h2>'+
-      (canProxy()?'<label class="row" style="font-size:13px">幫誰填：<select class="f" id="who" style="width:auto;min-height:32px">'+[me.uid].concat(Object.keys(users).filter(u=>u!==me.uid&&users[u].dc).sort((a,b)=>(!!R[a])-(!!R[b])||nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"))).map(u=>'<option value="'+esc(u)+'"'+(u===who?" selected":"")+'>'+(u===me.uid?"自己":esc(nameOf(users[u]))+(R[u]?"（已回覆）":"（還沒回）"))+'</option>').join("")+'</select></label>':'')+'</div>'+
+      (canProxy()?'<label class="row" style="font-size:13px">幫誰填：<select class="f" id="who" style="width:auto;min-height:32px">'+[me.uid].concat(Object.keys(users).filter(u=>u!==me.uid&&users[u].dc&&canFillFor(u)).sort((a,b)=>(!!R[a])-(!!R[b])||nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"))).map(u=>'<option value="'+esc(u)+'"'+(u===who?" selected":"")+'>'+(u===me.uid?"自己":esc(nameOf(users[u]))+(R[u]?"（已回覆）":"（還沒回）"))+'</option>').join("")+'</select></label>':'')+'</div>'+
       (!self&&mine&&mine.by&&mine.by!==who?'<p class="hint" style="margin:-4px 0 10px">上次由 '+esc(nameOf(users[mine.by]))+' 代填</p>':'')+
       '<div class="fld"><span>要參加嗎？</span><div class="seg">'+[["y","想參加"],["m","看時間"],["n","這次不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="go" data-v="'+v+'" aria-pressed="'+(draft.go===v)+'">'+t+'</button>').join("")+'</div></div>';
     if(draft.go!=="n"){
@@ -345,17 +346,24 @@ function openShare(){const id=view.e,e=events[id];const m=document.createElement
   });
 }
 
-/* ===== 代填權限（只有總團長能設定）===== */
-function openHelpers(){const m=document.createElement("div");const H={...(ecfg.helpers||{})};
+/* ===== 代填權限（只有總團長能設定）：一對一開放，例如 A 可以幫 B 填 ===== */
+function openHelpers(){const m=document.createElement("div");
+  const P=JSON.parse(JSON.stringify(ecfg.proxies||{}));
   m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px";
-  const ids=Object.keys(users).filter(u=>users[u].dc&&u!==me.uid).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"));
-  m.innerHTML='<div class="panel" role="dialog" aria-modal="true" style="max-width:420px;width:100%;margin:0;max-height:90vh;overflow:auto"><h2>代填權限</h2><p class="hint" style="margin:0 0 10px">勾選的人可以在任何揪團幫別人填意願。你自己一直都有這個權限。</p>'+
-    ids.map(u=>'<label class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><input type="checkbox" data-h="'+esc(u)+'"'+(H[u]?" checked":"")+'> '+esc(nameOf(users[u]))+'</label>').join("")+
-    '<div class="end"><button class="btn" data-x="close">取消</button><button class="btn primary" data-x="save">儲存</button></div></div>';
-  document.body.appendChild(m);
-  m.addEventListener("change",ev=>{const u=ev.target.dataset.h;if(u){if(ev.target.checked)H[u]=true;else delete H[u];}});
-  m.addEventListener("click",async ev=>{const x=ev.target.closest("[data-x]");if(ev.target===m||(x&&x.dataset.x==="close")){m.remove();return;}
-    if(x&&x.dataset.x==="save"){try{await setDoc(doc(db,"eventsCfg","main"),{helpers:H,updatedAt:Date.now()});toast("已儲存");m.remove();}catch(err){toast("儲存失敗："+(err.code==="permission-denied"?"Firestore 規則還沒更新":err.code||err.message));}}});
+  const ids=Object.keys(users).filter(u=>users[u].dc).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"));
+  const draw=()=>{m.innerHTML='<div class="panel" role="dialog" aria-modal="true" style="max-width:520px;width:100%;margin:0;max-height:90vh;overflow:auto"><h2>代填權限</h2><p class="hint" style="margin:0 0 10px">每個人可以指定誰能幫他填揪團，例如情侶互相代填。你自己本來就能幫所有人填。</p>'+
+    '<div class="row" style="margin-bottom:8px"><button class="btn sm" data-x="copyaway">沿用請假行事曆的代填設定</button></div>'+
+    ids.map(t=>{const hs=Object.keys(P[t]||{}).filter(h=>P[t][h]);return '<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div class="row"><b style="min-width:72px">'+esc(nameOf(users[t]))+'</b><span class="muted" style="font-size:12.5px">可以幫他填的人：</span>'+
+      hs.map(h=>'<span class="pill y" style="display:inline-flex;gap:4px;align-items:center">'+esc(nameOf(users[h]))+'<button type="button" data-x="rm" data-t="'+esc(t)+'" data-h="'+esc(h)+'" aria-label="移除 '+esc(nameOf(users[h]))+'" style="border:0;background:none;color:inherit;padding:0 2px">×</button></span>').join("")+
+      '<select class="f" data-add="'+esc(t)+'" style="width:auto;min-height:30px;font-size:12.5px"><option value="">＋ 加入…</option>'+ids.filter(h=>h!==t&&!hs.includes(h)&&h!==me.uid).map(h=>'<option value="'+esc(h)+'">'+esc(nameOf(users[h]))+'</option>').join("")+'</select></div></div>';}).join("")+
+    '<div class="end"><button class="btn" data-x="close">取消</button><button class="btn primary" data-x="save">儲存</button></div></div>';};
+  draw();document.body.appendChild(m);
+  m.addEventListener("change",ev=>{const t=ev.target.dataset.add;if(t&&ev.target.value){(P[t]=P[t]||{})[ev.target.value]=true;draw();}});
+  m.addEventListener("click",async ev=>{const x=ev.target.closest("[data-x]");if(ev.target===m||(x&&x.dataset.x==="close")){m.remove();return;}if(!x)return;
+    if(x.dataset.x==="rm"){delete (P[x.dataset.t]||{})[x.dataset.h];draw();}
+    else if(x.dataset.x==="copyaway"){try{const sn=await getDoc(doc(db,"awayCfg","main"));const ap=(sn.exists()&&sn.data().proxies)||{};Object.keys(ap).forEach(t=>Object.keys(ap[t]||{}).forEach(h=>{if(ap[t][h])(P[t]=P[t]||{})[h]=true;}));draw();toast("已帶入，記得按儲存");}catch(err){toast("讀取失敗："+(err.code||err.message));}}
+    else if(x.dataset.x==="save"){Object.keys(P).forEach(t=>{Object.keys(P[t]).forEach(h=>{if(!P[t][h])delete P[t][h];});if(!Object.keys(P[t]).length)delete P[t];});
+      try{await setDoc(doc(db,"eventsCfg","main"),{proxies:P,updatedAt:Date.now()});toast("已儲存");m.remove();}catch(err){toast("儲存失敗："+(err.code==="permission-denied"?"Firestore 規則還沒更新":err.code||err.message));}}});
 }
 
 /* ===== 存檔 ===== */
