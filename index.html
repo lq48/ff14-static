@@ -379,6 +379,8 @@ function jobOptions(sel,blank){
 }
 
 /* ---------- 狀態 ---------- */
+/* Discord 大頭貼失效（對方換了頭像、網站還存舊的）時，自動換成 Discord 預設頭像 */
+document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
 let app,db,auth,me=null,claims={},isOwner=false,awayMini=null;
 let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};

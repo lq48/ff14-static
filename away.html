@@ -138,6 +138,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+/* Discord 大頭貼失效（對方換了頭像、網站還存舊的）時，自動換成 Discord 預設頭像 */
+document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
 const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
 
 /* ===== 狀態 ===== */
