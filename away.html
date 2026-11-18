@@ -88,6 +88,9 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .cal td.day{height:32px;position:relative}
 .cal .we{background:var(--weekend)}
 .cal .hol{background:var(--hol)}
+.cal td.day .evd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#B8860B;font-size:13px;font-weight:900;pointer-events:none}
+.cal td.day .evd.mb{opacity:.55}
+.cal td.day .evd.cf{color:#FFD36B}
 .cal .evm{display:block;text-decoration:none;color:#B8860B;font-size:13px;line-height:20px;opacity:.75}
 .cal .evm.fx{opacity:1;font-weight:900}
 .cal .evm:hover{color:var(--accent)}
@@ -137,7 +140,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 <div class="wrap" id="app"><div class="empty">載入中…</div></div>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
-import { HOLI, sortIdsBy, eventMarks, markTip } from "./away-core.js?v=2";
+import { HOLI, sortIdsBy, eventMarks, markTip, fixedEvents, attendMap } from "./away-core.js?v=3";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -147,7 +150,7 @@ document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"|
 const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
 
 /* ===== 狀態 ===== */
-let evs={},me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
+let evs={},rs={},me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
 const QS=new URLSearchParams(location.search);let pendingOpen=QS.has("new")||QS.has("u")?{u:QS.get("u"),d:QS.get("d")}:null,cfgLoaded=false,usersLoaded=false;
 let sel=new Set(),onlyAway=false,months=3,modal=null,toastT=null,started=false,canList=false,canPriv=false;
 try{const s=JSON.parse(localStorage.getItem("awayFilter")||"null");if(s){sel=new Set(s.sel||[]);onlyAway=!!s.only;months=s.m||3;}}catch(e){}
@@ -214,7 +217,7 @@ function render(){
   h+='<div class="panel"><h2>近期請假（'+up.length+'）</h2>'+(up.length?'<ul class="up">'+up.map(({id,e})=>{const l=labelOf(id,e);
     return '<li><span class="who">'+esc(nameOf(users[id]))+'</span><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock" title="只有本人、代填的人和團長看得到">僅團長可見</span>':'')+(canEdit(id)?'<button class="btn sm" data-a="edit" data-u="'+id+'">編輯</button>':'')+'</li>';}).join("")+'</ul>':'<p class="note" style="margin:0">這段期間沒有人請假。</p>')+'</div>';
   // 行事曆
-  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span><span class="sw hol"></span>國定假日（含補假）</span><span style="color:#B8860B">★</span><span style="margin-left:-10px">已定案的揪團　○ 調查中的候選日</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
+  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span><span class="sw hol"></span>國定假日（含補假）</span><span style="color:#B8860B">★</span><span style="margin-left:-10px">已定案的揪團（成員格子裡的 ★ 是會參加的人）　○ 調查中的候選日</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
   if(!ids.length){h+='<div class="panel empty">沒有符合條件的成員。</div>';app.innerHTML=h;return;}
   const EM=eventMarks(evs),hasEv=D.some(d=>EM[d]);
   const months0=[];D.forEach((d,i)=>{const m=d.slice(0,7);if(!months0.length||months0[months0.length-1].m!==m)months0.push({m,n:0,i});months0[months0.length-1].n++;});
@@ -226,11 +229,12 @@ function render(){
     t+='<th class="day cnt'+(ok+mb===ids.length&&!mb?" full":ok+mb<ids.length?" low":"")+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+'" title="'+md(d)+hn(d)+'：確定能到 '+ok+' 人'+(mb?'，可能不在 '+mb+' 人':'')+'，請假 '+(ids.length-ok-mb)+' 人">'+ok+(mb?'<small>+'+mb+'?</small>':'')+'</th>';});
   if(hasEv){t+='</tr><tr class="ev">';D.forEach((d,i)=>{const a=EM[d],x=parse(d);t+='<th class="day'+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+'">'+(a?'<a class="evm'+(a.some(z=>z.fixed)?" fx":"")+'" href="events.html'+(a.length===1?'?e='+encodeURIComponent(a[0].id):'')+'" title="'+esc(md(d)+"\n"+markTip(a))+'">'+(a.some(z=>z.fixed)?"★":"○")+'</a>':'')+'</th>';});}
   t+='</tr></thead><tbody>';
-  ids.forEach(id=>{const u=users[id],ed=canEdit(id);
+  const AT=attendMap(evs,rs);
+  ids.forEach(id=>{const u=users[id],ed=canEdit(id),at=AT[id]||{};
     t+='<tr><th class="nm" scope="row">'+(ed?'<button class="in" data-a="edit" data-u="'+id+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'<div class="in">')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span class="t">'+esc(nameOf(u))+'</span>'+(id===me.uid?'<span class="me">你</span>':'')+(ed?'</button>':'</div>')+'</th>';
-    D.forEach((d,i)=>{const s=dayState(id,d),x=parse(d);let tip=nameOf(u)+" "+md(d)+hn(d);
+    D.forEach((d,i)=>{const s=dayState(id,d),x=parse(d),ev=at[d];let tip=nameOf(u)+" "+md(d)+hn(d);
       if(s){const e=entriesOf(id).find(e=>e.from<=d&&d<=e.to&&(s==="off"?e.kind==="off":true)),l=labelOf(id,e);tip+="："+(s==="off"?"請假":"可能不在")+(l.t?"（"+l.t+"）":"");}
-      t+='<td class="day'+(s?" "+s:bg(d,x))+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(tip)+'"></td>';});
+      t+='<td class="day'+(s?" "+s:bg(d,x))+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(tip+(ev?"\n揪團："+ev.map(z=>(z.t?z.t+" ":"")+z.title+(z.sure?"":"（勉強）")).join("、")+(s==="off"?"（但這天請假了！）":""):""))+'">'+(ev?'<span class="evd'+(ev.some(z=>z.sure)?"":" mb")+(s==="off"?" cf":"")+'">★</span>':'')+'</td>';});
     t+='</tr>';});
   h+=t+'</tbody></table></div>';
   if(isOwner||editableIds().length)h+='<p class="hint">點自己那一列的格子，可以從那天開始新增請假。</p>';
@@ -341,11 +345,14 @@ function applyAccess(){
   if(canPriv)sub("priv*",collection(db,"awayPriv"),s=>{priv={};s.forEach(d=>{priv[d.id]=d.data();});render();},e=>{console.error(e);canPriv=false;unsub("priv*");applyAccess();});
   else{unsub("priv*");editableIds().concat(me.uid).forEach(id=>watchDoc("awayPriv",id,priv));}
 }
+function syncRs(){const td=ymd(new Date()),want=new Set(fixedEvents(evs).filter(x=>x.s.d>=td).map(x=>x.id));
+  Object.keys(subs).filter(k=>k.startsWith("rs/")&&!want.has(k.slice(3))).forEach(k=>{unsub(k);delete rs[k.slice(3)];});
+  want.forEach(id=>sub("rs/"+id,collection(db,"events",id,"rsvp"),s=>{rs[id]={};s.forEach(d=>{rs[id][d.id]=d.data();});render();},()=>{}));}
 function start(){
   sub("users",collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});usersLoaded=true;if(!users[me.uid])users[me.uid]={nick:me.displayName||"我"};applyAccess();render();});
   sub("statics",collection(db,"statics"),s=>{statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","zh-Hant"));sel=new Set([...sel].filter(t=>statics.some(s=>s.id===t)));render();});
   sub("members",collectionGroup(db,"members"),s=>{mem={};s.forEach(d=>{const p=d.ref.parent.parent;if(!p||(d.data().status!=="active"))return;(mem[p.id]=mem[p.id]||{})[d.id]=true;});render();});
-  sub("ev",collection(db,"events"),s=>{evs={};s.forEach(d=>{evs[d.id]=d.data();});render();},()=>{evs={};});
+  sub("ev",collection(db,"events"),s=>{evs={};s.forEach(d=>{evs[d.id]=d.data();});syncRs();render();},()=>{evs={};});
   sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{access:{},proxies:{}};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};cfgLoaded=true;applyAccess();render();},e=>{console.error(e);cfgLoaded=true;render();});
 }
 onAuthStateChanged(auth,async u=>{

@@ -37,3 +37,20 @@ export function eventMarks(events){
   return m;
 }
 export const markTip=a=>a.map(x=>(x.fixed?"【已定案】":"【調查中】")+(x.t?x.t+" ":"")+x.title).join("\n");
+
+/* 已定案揪團的參加者：uid → 日期 → [活動]
+   想參加或看時間、而且確定時段回答可以／勉強的人；定案後才回覆（沒答時段）且想參加的也算 */
+export function fixedEvents(events){
+  return Object.entries(events||{}).filter(([,e])=>e&&e.status==="fixed"&&(e.slots||[]).some(s=>s.id===e.fixed)).map(([id,e])=>({id,e,s:e.slots.find(s=>s.id===e.fixed)}));
+}
+export function attendMap(events,rsvps){
+  const m={};
+  fixedEvents(events).forEach(({id,e,s})=>{
+    Object.entries((rsvps||{})[id]||{}).forEach(([u,r])=>{
+      if(!r||r.go==="n")return;const a=(r.slots||{})[e.fixed];
+      const sure=a==="y"||(!a&&r.go==="y");if(!(sure||a==="m"))return;
+      ((m[u]=m[u]||{})[s.d]=m[u][s.d]||[]).push({id,title:e.title||"",t:s.t||"",sure});
+    });
+  });
+  return m;
+}

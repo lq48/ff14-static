@@ -1,6 +1,6 @@
 /* 飛地大廳：請假行事曆近 30 天預覽（可展開／收起） */
 import { collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { HOLI, sortIdsBy, eventMarks, markTip } from "./away-core.js?v=2";
+import { HOLI, sortIdsBy, eventMarks, markTip, fixedEvents, attendMap } from "./away-core.js?v=3";
 
 const DAYS=30,WK="日一二三四五六";
 const pad=n=>String(n).padStart(2,"0");
@@ -52,6 +52,10 @@ const CSS=`
 .am-g .evm{display:block;text-decoration:none;color:var(--gold,#B8860B);font-size:13px;line-height:20px;opacity:.75}
 .am-g .evm.fx{opacity:1;font-weight:900}
 .am-g .evm:hover{color:var(--accent)}
+.am-g td.evp{text-align:center}
+.am-g .evd{color:#B8860B;font-size:12px;font-weight:900;line-height:1}
+.am-g .evd.mb{opacity:.55}
+.am-g .evd.cf{color:#FFD36B}
 .am-g .ms{border-left:1px solid var(--line)}
 .am-g .cn{font-weight:800;color:var(--am-good);font-size:11.5px}
 .am-g .cn.low{color:var(--am-off)}
@@ -66,7 +70,7 @@ const CSS=`
 
 export function initAwayMini({db,getCtx}){
   if(!document.getElementById("amCss")){const st=document.createElement("style");st.id="amCss";st.textContent=CSS;document.head.appendChild(st);}
-  let cfg={access:{},proxies:{}},away={},subs={},canList=false,nDays=30,evs={};
+  let cfg={access:{},proxies:{}},away={},subs={},canList=false,nDays=30,evs={},rs={};
   const sub=(k,ref,fn,err)=>{if(subs[k])return;subs[k]=onSnapshot(ref,fn,err||(e=>console.warn("awayMini",k,e&&e.code)));};
   const unsub=k=>{if(subs[k]){subs[k]();delete subs[k];}};
 
@@ -78,7 +82,10 @@ export function initAwayMini({db,getCtx}){
   }
   function mine(){const {me,isOwner,users}=getCtx();if(!me)return[];
     const P=cfg.proxies||{};return Object.keys(users).filter(t=>t===me.uid||isOwner||(P[t]||{})[me.uid]).concat(me.uid);}
-  sub("ev",collection(db,"events"),s=>{evs={};s.forEach(d=>{evs[d.id]=d.data();});paint();},()=>{evs={};});
+  function syncRs(){const td=ymd(new Date()),want=new Set(fixedEvents(evs).filter(x=>x.s.d>=td).map(x=>x.id));
+    Object.keys(subs).filter(k=>k.startsWith("rs/")&&!want.has(k.slice(3))).forEach(k=>{unsub(k);delete rs[k.slice(3)];});
+    want.forEach(id=>sub("rs/"+id,collection(db,"events",id,"rsvp"),s=>{rs[id]={};s.forEach(d=>{rs[id][d.id]=d.data();});paint();},()=>{}));}
+  sub("ev",collection(db,"events"),s=>{evs={};s.forEach(d=>{evs[d.id]=d.data();});syncRs();paint();},()=>{evs={};});
   sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};access();paint();},()=>{access();paint();});
 
   const entriesOf=u=>((away[u]||{}).entries)||[];
@@ -120,10 +127,11 @@ export function initAwayMini({db,getCtx}){
           return '<th class="dy cn'+(off.length?" low":mb.length?" mbx":"")+cls(d)+(x.getDate()===1&&i?" ms":"")+'" title="'+esc(tip)+'">'+(off.length?'−'+off.length:mb.length?'?':'✓')+'</th>';}).join("")+'</tr>';});
       tb+='</thead><tbody>';
       const P=cfg.proxies||{},canEd=id=>isOwner||id===me.uid||!!(P[id]||{})[me.uid];
-      ids.forEach(id=>{const u=users[id],ce=canEd(id);tb+='<tr'+(ce?' class="ce"':'')+'><th class="nm" scope="row">'+(ce?'<a href="away.html?u='+encodeURIComponent(id)+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+(id===me.uid?'<span class="me">你</span>':'')+(ce?'</a>':'')+'</th>'+
-        D.map((d,i)=>{const s=dayState(id,d),x=parse(d);return '<td class="'+(s||cls(d).trim())+(x.getDate()===1&&i?" ms":"")+'"'+(ce?' data-am="go" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(nameOf(u)+" "+md(d)+(s?"："+(s==="off"?"請假":"可能不在"):"")+(ce?"（點一下從這天請假）":""))+'"></td>';}).join("")+'</tr>';});
+      const AT=attendMap(evs,rs);
+      ids.forEach(id=>{const u=users[id],ce=canEd(id),at=AT[id]||{};tb+='<tr'+(ce?' class="ce"':'')+'><th class="nm" scope="row">'+(ce?'<a href="away.html?u='+encodeURIComponent(id)+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+(id===me.uid?'<span class="me">你</span>':'')+(ce?'</a>':'')+'</th>'+
+        D.map((d,i)=>{const s=dayState(id,d),x=parse(d),ev=at[d];return '<td class="'+(s||cls(d).trim())+(x.getDate()===1&&i?" ms":"")+(ev?" evp":"")+'"'+(ce?' data-am="go" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(nameOf(u)+" "+md(d)+(s?"："+(s==="off"?"請假":"可能不在"):"")+(ev?"\n揪團："+ev.map(z=>(z.t?z.t+" ":"")+z.title+(z.sure?"":"（勉強）")).join("、")+(s==="off"?"（但這天請假了！）":""):"")+(ce?"（點一下從這天請假）":""))+'">'+(ev?'<span class="evd'+(ev.some(z=>z.sure)?"":" mb")+(s==="off"?" cf":"")+'">★</span>':'')+'</td>';}).join("")+'</tr>';});
       h+=tb+'</tbody></table></div>';
-    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團列：✓ 全員到齊、−2 有 2 人請假</span>'+(Object.keys(evs).length?'<span>揪團列：★ 已定案、○ 調查中的候選日</span>':'')+'<span style="margin-left:auto;color:var(--accent)">點自己那一列的格子就能請假</span></div>';
+    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團列：✓ 全員到齊、−2 有 2 人請假</span>'+(Object.keys(evs).length?'<span>揪團：★ 已定案（成員格子裡的 ★ 是會參加的人）、○ 調查中</span>':'')+'<span style="margin-left:auto;color:var(--accent)">點自己那一列的格子就能請假</span></div>';
     const gw=el.querySelector(".am-gw"),sx=gw?gw.scrollLeft:0;
     el.innerHTML=h;const ng=el.querySelector(".am-gw");if(ng)ng.scrollLeft=sx;
   }
