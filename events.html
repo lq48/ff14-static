@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>揪團活動｜光之戰士飛地</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🙋</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#E8ECF3; --surface:#F7F9FC; --surface2:#EDF1F7; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
+  --accent:#2F63C9; --accent-ink:#FFFFFF; --danger:#C23A4F; --gold:#B8860B;
+  --yes:#2E8B57; --yes-bg:#DDF0E4; --mb:#B7791F; --mb-bg:#F8EBD3; --no:#5F6B7D; --no-bg:#E3E7EE;
+  --tank:#2F63C9; --heal:#2E8B57; --dps:#B5452F;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111622; --surface:#192031; --surface2:#202940; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+    --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --gold:#E9BE4B;
+    --yes:#5FCB8E; --yes-bg:#1C3328; --mb:#F0B04A; --mb-bg:#3A2E18; --no:#97A0B3; --no-bg:#262E40;
+    --tank:#6E9BFF; --heal:#5FCB8E; --dps:#FF8F75;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111622; --surface:#192031; --surface2:#202940; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+  --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --gold:#E9BE4B;
+  --yes:#5FCB8E; --yes-bg:#1C3328; --mb:#F0B04A; --mb-bg:#3A2E18; --no:#97A0B3; --no-bg:#262E40;
+  --tank:#6E9BFF; --heal:#5FCB8E; --dps:#FF8F75;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+.back{font-size:13px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--accent)}
+h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:26px;margin:4px 0 2px;line-height:1.25}
+h2{font-size:16px;margin:0 0 10px}
+.sub{font-size:13px;color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger)}
+.btn.sm{min-height:30px;padding:3px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 14px}
+.f{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:36px;width:100%}
+textarea.f{min-height:110px;resize:vertical;line-height:1.6}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fld>span{font-size:12.5px;color:var(--muted);font-weight:700}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:12.5px;margin:4px 0 0}
+.muted{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;min-height:32px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:76px;border:1px solid var(--line);background:var(--surface2);border-radius:8px;min-height:38px;padding:4px 8px}
+.seg button[aria-pressed="true"].y{background:var(--yes);border-color:var(--yes);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"].m{background:var(--mb);border-color:var(--mb);color:#fff;font-weight:700}
+.seg button[aria-pressed="true"].n{background:var(--no);border-color:var(--no);color:#fff;font-weight:700}
+.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;font-weight:700;white-space:nowrap}
+.pill.y{background:var(--yes-bg);color:var(--yes)}
+.pill.m{background:var(--mb-bg);color:var(--mb)}
+.pill.n{background:var(--no-bg);color:var(--no)}
+.pill.open{background:var(--yes-bg);color:var(--yes)}
+.pill.fixed{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.pill.closed{background:var(--no-bg);color:var(--no)}
+.pill.kind{background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;border-left:4px solid var(--gold)}
+.card:hover{border-color:var(--accent);border-left-color:var(--accent)}
+.card h3{margin:6px 0 4px;font-size:16px}
+.card .meta{font-size:12.5px;color:var(--muted)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.desc{white-space:pre-wrap;word-break:break-word;line-height:1.7;margin:0}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+.fact{background:var(--surface2);border-radius:8px;padding:4px 10px;font-size:13px}
+.fact b{color:var(--muted);font-weight:500;margin-right:4px}
+.banner{border-radius:12px;padding:14px 16px;margin:0 0 14px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line))}
+.banner b{font-size:18px}
+.slot{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.slot:last-child{border-bottom:0}
+.slot .when{font-weight:700;font-variant-numeric:tabular-nums}
+.jobs{display:flex;flex-direction:column;gap:8px}
+.jobs .grp{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.jobs .grp>span{width:30px;font-size:12px;color:var(--muted);font-weight:700}
+.jb{position:relative;border:1px solid var(--line);background:var(--surface2);border-radius:8px;min-height:34px;min-width:52px;padding:2px 8px;font-size:13px}
+.jb[aria-pressed="true"]{color:#fff;font-weight:700}
+.jb.tank[aria-pressed="true"]{background:var(--tank);border-color:var(--tank)}
+.jb.heal[aria-pressed="true"]{background:var(--heal);border-color:var(--heal)}
+.jb.dps[aria-pressed="true"]{background:var(--dps);border-color:var(--dps)}
+.jb i{position:absolute;top:-7px;right:-6px;font-style:normal;font-size:10px;background:var(--ink);color:var(--bg);border-radius:999px;min-width:16px;height:16px;line-height:16px;text-align:center}
+.jt{display:inline-block;font-size:11.5px;font-weight:700;border-radius:5px;padding:0 5px;margin:1px 2px 1px 0;color:#fff}
+.jt.tank{background:var(--tank)}.jt.heal{background:var(--heal)}.jt.dps{background:var(--dps)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:middle}
+.tbl th{font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+.tbl td.c,.tbl th.c{text-align:center}
+.tw{overflow-x:auto}
+.who{display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:700}
+.who img{width:22px;height:22px;border-radius:50%}
+.mk{font-weight:900}.mk.y{color:var(--yes)}.mk.m{color:var(--mb)}.mk.n{color:var(--no)}
+.res{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.res:last-child{border-bottom:0}
+.res.best .when::after{content:"最多人";margin-left:6px;font-size:11px;background:var(--gold);color:#fff;border-radius:999px;padding:1px 7px;vertical-align:2px}
+.bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--surface2);margin-bottom:4px}
+.bar i{display:block}
+.bar .y{background:var(--yes)}.bar .m{background:var(--mb)}
+.comp{font-size:12.5px;color:var(--muted)}
+.comp b{color:var(--ink)}
+.comp .ok{color:var(--yes)}.comp .lack{color:var(--danger)}
+.srow{display:grid;grid-template-columns:1fr 120px 40px;gap:6px;align-items:center;margin-bottom:6px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
+.arm{background:var(--danger)!important;color:#fff!important;border-color:var(--danger)!important}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
+@media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr 100px 40px}.three{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">載入中…</div></div>
+<script type="module">
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* Discord 大頭貼失效時改用預設頭像 */
+document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
+
+const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
+
+/* ===== 常數 ===== */
+const JOBS=[["PLD","騎士","tank"],["WAR","戰士","tank"],["DRK","暗騎","tank"],["GNB","絕槍","tank"],
+  ["WHM","白魔","heal"],["SCH","學者","heal"],["AST","占星","heal"],["SGE","賢者","heal"],
+  ["MNK","武僧","dps"],["DRG","龍騎","dps"],["NIN","忍者","dps"],["SAM","武士","dps"],["RPR","鐮刀","dps"],["VPR","蛇","dps"],
+  ["BRD","詩人","dps"],["MCH","機工","dps"],["DNC","舞者","dps"],["BLM","黑魔","dps"],["SMN","召喚","dps"],["RDM","赤魔","dps"],["PCT","繪靈","dps"]]
+  .map(([k,n,r])=>({k,n,r}));
+const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
+const ROLE_N={tank:"坦",heal:"補",dps:"輸出"};
+const KINDS=["高難度","一般副本","藏寶圖","死宮","節慶活動","聚會","其他"];
+const TPL={
+  raid:{n:"高難度初見",kind:"高難度",size:8,roles:true,t:2,h:2,d:4,desc:"初見團，大家一起摸機制！\n\n裝等：\n攻略：\n備註：每個人先看過攻略影片～"},
+  map:{n:"藏寶圖",kind:"藏寶圖",size:8,roles:false,desc:"一起挖寶！請先準備好地圖。"},
+  dungeon:{n:"死宮",kind:"死宮",size:4,roles:true,t:1,h:1,d:2,desc:""},
+  party:{n:"節慶／聚會",kind:"節慶活動",size:0,roles:false,desc:"主題：\n地點：\n服裝："},
+  free:{n:"自訂",kind:"其他",size:0,roles:false,desc:""}};
+const WK="日一二三四五六";
+
+/* ===== 狀態 ===== */
+let me=null,isOwner=false,users={},events={},rsvp={},view={},form=null,draft=null,toastT=null,started=false,rsvpUnsub=null,rsvpFor=null;
+
+/* ===== 小工具 ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const linkify=s=>esc(s).replace(/(https?:\/\/[^\s<]+)/g,u=>'<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>');
+const rid=()=>Math.random().toString(36).slice(2,8);
+const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"未知成員";
+function avatarUrl(u){if(!u||!u.dc)return "https://cdn.discordapp.com/embed/avatars/0.png";if(u.avatar)return "https://cdn.discordapp.com/avatars/"+u.dc+"/"+u.avatar+".png?size=64";let i=0;try{i=Number((BigInt(u.dc)>>22n)%6n);}catch(_){}return "https://cdn.discordapp.com/embed/avatars/"+i+".png";}
+function toast(m){let el=$("#toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{el.hidden=true;},2600);}
+function armed(b,label){if(b.dataset.armed)return true;b.dataset.armed="1";const o=b.textContent;b.textContent=label;b.classList.add("arm");setTimeout(()=>{if(b.isConnected&&b.dataset.armed){delete b.dataset.armed;b.textContent=o;b.classList.remove("arm");}},3000);return false;}
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c);};
+const whenTxt=s=>{if(!s||!s.d)return "時間未定";const d=parse(s.d);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）"+(s.t?" "+s.t:"");};
+const today=()=>ymd(new Date());
+function nextDow(dow){const d=new Date();d.setHours(0,0,0,0);while(d.getDay()!==dow)d.setDate(d.getDate()+1);return ymd(d);}
+const canManage=e=>!!me&&(isOwner||e.by===me.uid);
+const jt=k=>{const j=JOB[k];return j?'<span class="jt '+j.r+'" title="'+esc(j.n)+'">'+esc(j.n)+'</span>':'';};
+function lastDay(e){const ds=(e.slots||[]).map(s=>s.d).filter(Boolean).sort();if(e.status==="fixed"){const f=(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;}return ds[ds.length-1]||"";}
+const isPast=e=>e.status==="closed"||(lastDay(e)&&lastDay(e)<today());
+
+/* ===== 排位：有空的人能不能湊滿 坦/補/輸出 =====
+   每個人只能占一個位置，用二分圖匹配算最多能填滿幾格 */
+function fillComp(e,people){
+  const seats=[];[["tank",e.t||0],["heal",e.h||0],["dps",e.d||0]].forEach(([r,n])=>{for(let i=0;i<n;i++)seats.push(r);});
+  const roles=people.map(p=>new Set((p.jobs||[]).map(k=>(JOB[k]||{}).r).filter(Boolean)));
+  const owner=new Array(seats.length).fill(-1);
+  function aug(pi,seen){for(let s=0;s<seats.length;s++){if(seen[s]||!roles[pi].has(seats[s]))continue;seen[s]=true;if(owner[s]<0||aug(owner[s],seen)){owner[s]=pi;return true;}}return false;}
+  people.forEach((_,pi)=>aug(pi,[]));
+  const got={tank:0,heal:0,dps:0};owner.forEach((o,s)=>{if(o>=0)got[seats[s]]++;});
+  return got;
+}
+
+/* ===== 畫面 ===== */
+function render(){
+  const app=$("#app");
+  if(!me){app.innerHTML='<div class="empty"><p>請先到飛地首頁用 Discord 登入，再回來這一頁。</p><p><a class="btn primary" href="index.html">前往首頁登入</a></p></div>';return;}
+  if(form){app.innerHTML=formHTML();return;}
+  const id=view.e;
+  if(id){const e=events[id];if(!e){app.innerHTML='<a class="back" href="events.html">← 揪團列表</a><div class="empty">'+(events.__loaded?"找不到這個活動，可能已經被刪除。":"載入中…")+'</div>';return;}
+    watchRsvp(id);app.innerHTML=detailHTML(id,e);return;}
+  app.innerHTML=listHTML();
+}
+
+function listHTML(){
+  const all=Object.entries(events).filter(([k])=>k!=="__loaded");
+  const act=all.filter(([,e])=>!isPast(e)).sort((a,b)=>(lastDay(a[1])||"9").localeCompare(lastDay(b[1])||"9")||(b[1].createdAt||0)-(a[1].createdAt||0));
+  const past=all.filter(([,e])=>isPast(e)).sort((a,b)=>(lastDay(b[1])||"").localeCompare(lastDay(a[1])||""));
+  const card=([id,e])=>{const f=e.status==="fixed"?(e.slots||[]).find(s=>s.id===e.fixed):null;
+    return '<a class="card" href="events.html?e='+encodeURIComponent(id)+'"><div class="row"><span class="pill kind">'+esc(e.kind||"其他")+'</span>'+statusPill(e)+'</div><h3>'+esc(e.title)+'</h3><div class="meta">'+
+      (f?'確定時間：'+esc(whenTxt(f)):(e.slots||[]).length?'候選時間：'+esc((e.slots||[]).slice(0,3).map(whenTxt).join("、"))+((e.slots||[]).length>3?" 等":""):"只問參加意願")+
+      '<br>發起人：'+esc(nameOf(users[e.by]))+'</div></a>';};
+  return '<a class="back" href="index.html">← 回飛地大廳</a><div class="top"><div><h1>揪團活動</h1><div class="sub">任何人都能發起，問大家要不要參加、哪個時間可以</div></div><button class="btn primary" data-a="new">＋ 發起揪團</button></div>'+
+    (act.length?'<div class="cards">'+act.map(card).join("")+'</div>':'<div class="panel empty">目前沒有進行中的揪團，來發起一個吧！</div>')+
+    (past.length?'<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">已結束的活動（'+past.length+'）</summary><div class="cards" style="margin-top:12px">'+past.map(card).join("")+'</div></details>':'');
+}
+const statusPill=e=>e.status==="fixed"?'<span class="pill fixed">已定案</span>':e.status==="closed"?'<span class="pill closed">已結束</span>':'<span class="pill open">調查中</span>';
+
+function detailHTML(id,e){
+  const R=rsvp,mine=R[me.uid]||null,slots=e.slots||[],mg=canManage(e);
+  if(!draft||draft.eid!==id)draft={eid:id,go:mine?mine.go:"",slots:{...((mine||{}).slots||{})},jobs:[...((mine||{}).jobs||[])],note:(mine||{}).note||"",dirty:false};
+  const fx=e.status==="fixed"?slots.find(s=>s.id===e.fixed):null;
+  let h='<a class="back" href="events.html">← 揪團列表</a><div class="top"><div><div class="row" style="margin-bottom:4px"><span class="pill kind">'+esc(e.kind||"其他")+'</span>'+statusPill(e)+'</div><h1>'+esc(e.title)+'</h1><div class="sub">發起人：'+esc(nameOf(users[e.by]))+'</div></div>'+
+    (mg?'<div class="row"><button class="btn sm" data-a="edit">編輯活動</button>'+(e.status==="closed"?'<button class="btn sm" data-a="reopen">重新開放</button>':'<button class="btn sm" data-a="close">結束活動</button>')+'<button class="btn sm danger" data-a="del">刪除</button></div>':'')+'</div>';
+  if(fx)h+='<div class="banner">確定時間　<b>'+esc(whenTxt(fx))+'</b>'+(mg?'　<button class="btn sm" data-a="unfix">取消定案</button>':'')+'</div>';
+  // 活動說明
+  const facts=[];if(e.size)facts.push('<span class="fact"><b>人數</b>'+e.size+' 人</span>');
+  if(e.roles)facts.push('<span class="fact"><b>職能</b>坦 '+(e.t||0)+'　補 '+(e.h||0)+'　輸出 '+(e.d||0)+'</span>');
+  if(e.ilvl)facts.push('<span class="fact"><b>裝等</b>'+esc(e.ilvl)+'</span>');
+  h+='<div class="panel">'+(e.desc?'<p class="desc">'+linkify(e.desc)+'</p>':'<p class="muted" style="margin:0">（發起人沒有寫說明）</p>')+(facts.length?'<div class="facts">'+facts.join("")+'</div>':'')+'</div>';
+  // 我的回覆
+  if(e.status!=="closed"){
+    h+='<div class="panel"><h2>'+(mine?"你的回覆（可以隨時修改）":"填寫你的意願")+'</h2>'+
+      '<div class="fld"><span>要參加嗎？</span><div class="seg">'+[["y","想參加"],["m","看時間"],["n","這次不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="go" data-v="'+v+'" aria-pressed="'+(draft.go===v)+'">'+t+'</button>').join("")+'</div></div>';
+    if(draft.go!=="n"){
+      if(slots.length&&!fx)h+='<div class="fld"><span>每個時間可不可以？</span>'+slots.map(s=>'<div class="slot"><span class="when">'+esc(whenTxt(s))+(s.note?' <small class="muted">'+esc(s.note)+'</small>':'')+'</span><div class="seg">'+[["y","可以"],["m","勉強"],["n","不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="sl" data-s="'+s.id+'" data-v="'+v+'" aria-pressed="'+(draft.slots[s.id]===v)+'">'+t+'</button>').join("")+'</div></div>').join("")+'</div>';
+      if(e.roles)h+='<div class="fld"><span>你可以打的職業（依想打的順序點，第一個是主職）</span><div class="jobs">'+["tank","heal","dps"].map(r=>'<div class="grp"><span>'+ROLE_N[r]+'</span>'+JOBS.filter(j=>j.r===r).map(j=>{const i=draft.jobs.indexOf(j.k);return '<button type="button" class="jb '+r+'" data-a="job" data-k="'+j.k+'" aria-pressed="'+(i>=0)+'">'+esc(j.n)+(i>=0?'<i>'+(i+1)+'</i>':'')+'</button>';}).join("")+'</div>').join("")+'</div></div>';
+    }
+    h+='<label class="fld"><span>備註（可不填）</span><input class="f" id="note" maxlength="60" value="'+esc(draft.note)+'" placeholder="例如：週六要 22 點後才能上線"></label>'+
+      '<div class="end" style="margin-top:4px">'+(mine?'<button class="btn" data-a="unrsvp">撤回回覆</button>':'')+'<button class="btn primary" data-a="save"'+(draft.go?'':' disabled')+'>'+(mine?"更新回覆":"送出")+'</button></div></div>';
+  }
+  // 統計
+  const list=Object.entries(R).map(([u,r])=>({u,...r}));
+  const yes=list.filter(r=>r.go==="y"),may=list.filter(r=>r.go==="m"),no=list.filter(r=>r.go==="n");
+  h+='<div class="panel"><h2>大家的回覆　<span class="pill y">想參加 '+yes.length+'</span> <span class="pill m">看時間 '+may.length+'</span> <span class="pill n">不行 '+no.length+'</span></h2>';
+  if(slots.length){
+    const stat=slots.map(s=>{const ok=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="y"),mb=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="m");return {s,ok,mb,score:ok.length*2+mb.length};});
+    const best=Math.max(0,...stat.map(x=>x.score)),mx=Math.max(1,e.size||0,...stat.map(x=>x.ok.length+x.mb.length));
+    h+='<div style="margin-bottom:10px">'+stat.map(x=>{let comp='';
+      if(e.roles){const gA=fillComp(e,x.ok),gB=fillComp(e,x.ok.concat(x.mb));
+        comp='<div class="comp">'+[["tank",e.t],["heal",e.h],["dps",e.d]].filter(([,n])=>n).map(([r,n])=>'<span class="'+(gA[r]>=n?"ok":"lack")+'">'+ROLE_N[r]+' <b>'+gA[r]+'/'+n+'</b></span>'+(gB[r]>gA[r]?'<span class="muted">（含勉強 '+gB[r]+'）</span>':'')).join("　")+'</div>';}
+      const names=x.ok.map(r=>nameOf(users[r.u])).join("、")+(x.mb.length?'；勉強：'+x.mb.map(r=>nameOf(users[r.u])).join("、"):'');
+      return '<div class="res'+(best&&x.score===best&&!fx?" best":"")+'"><span class="when">'+esc(whenTxt(x.s))+'</span><div title="'+esc(names)+'"><div class="bar"><i class="y" style="width:'+(x.ok.length/mx*100)+'%"></i><i class="m" style="width:'+(x.mb.length/mx*100)+'%"></i></div><div class="comp">可以 <b>'+x.ok.length+'</b>　勉強 <b>'+x.mb.length+'</b>'+(e.size?'　／ 需要 '+e.size+' 人':'')+'</div>'+comp+'</div>'+
+        (mg?(e.fixed===x.s.id&&e.status==="fixed"?'<span class="pill fixed">已定案</span>':'<button class="btn sm" data-a="fix" data-s="'+x.s.id+'">定案這個時間</button>'):'<span></span>')+'</div>';}).join("")+'</div>';
+  }
+  if(list.length){
+    const ord={y:0,m:1,n:2};list.sort((a,b)=>(ord[a.go]??3)-(ord[b.go]??3)||(a.at||0)-(b.at||0));
+    h+='<div class="tw"><table class="tbl"><thead><tr><th>成員</th><th>意願</th>'+(e.roles?'<th>職業</th>':'')+slots.map(s=>'<th class="c">'+esc(whenTxt(s))+'</th>').join("")+'<th>備註</th></tr></thead><tbody>'+
+      list.map(r=>{const u=users[r.u];return '<tr><td><span class="who"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+'</span></td><td><span class="pill '+r.go+'">'+({y:"想參加",m:"看時間",n:"不行"}[r.go]||"")+'</span></td>'+
+        (e.roles?'<td>'+(r.jobs||[]).map(jt).join("")+'</td>':'')+slots.map(s=>{const v=r.go==="n"?"n":(r.slots||{})[s.id];return '<td class="c"><span class="mk '+(v||"")+'">'+({y:"✓",m:"△",n:"✕"}[v]||"—")+'</span></td>';}).join("")+'<td class="muted">'+esc(r.note||"")+'</td></tr>';}).join("")+'</tbody></table></div>';
+  }else h+='<p class="muted" style="margin:0">還沒有人回覆。</p>';
+  const notYet=Object.keys(users).filter(u=>!R[u]&&users[u].dc);
+  if(notYet.length&&e.status!=="closed")h+='<p class="hint" style="margin-top:10px">還沒回覆：'+esc(notYet.map(u=>nameOf(users[u])).join("、"))+'</p>';
+  h+='</div>';
+  return h;
+}
+
+/* ===== 發起／編輯表單 ===== */
+function newForm(){const sat=nextDow(6),sun=nextDow(0);return {id:"",tpl:"raid",...structuredClone(TPL.raid),title:"",ilvl:"",slots:[{id:rid(),d:sat,t:"21:00",note:""},{id:rid(),d:sun,t:"21:00",note:""}]};}
+function formHTML(){const F=form;
+  let h='<a class="back" href="#" data-a="fcancel">← 取消</a><div class="top"><div><h1>'+(F.id?"編輯揪團":"發起揪團")+'</h1><div class="sub">只要填名稱和候選時間就能發起，其他都可以之後再補</div></div></div><div class="panel">';
+  if(!F.id)h+='<div class="fld"><span>從範本開始</span><div class="chips">'+Object.entries(TPL).map(([k,t])=>'<button type="button" class="chip" data-a="tpl" data-k="'+k+'" aria-pressed="'+(F.tpl===k)+'">'+t.n+'</button>').join("")+'</div><p class="hint">範本只是幫你先填好常用設定，選完都還能改。</p></div>';
+  h+='<label class="fld"><span>活動名稱</span><input class="f" data-ff="title" maxlength="40" value="'+esc(F.title)+'" placeholder="例如：幻青龍初見團"></label>'+
+    '<div class="row" style="align-items:flex-start"><label class="fld" style="flex:1;min-width:140px"><span>類型</span><select class="f" data-ff="kind">'+KINDS.map(k=>'<option'+(k===F.kind?" selected":"")+'>'+k+'</option>').join("")+'</select></label>'+
+    '<label class="fld" style="width:120px"><span>人數（0＝不限）</span><input class="f" type="number" min="0" max="48" data-ff="size" value="'+(F.size||0)+'"></label>'+
+    '<label class="fld" style="flex:1;min-width:140px"><span>裝等需求（可不填）</span><input class="f" data-ff="ilvl" maxlength="20" value="'+esc(F.ilvl||"")+'" placeholder="例如：730 以上"></label></div>'+
+    '<div class="fld"><label class="row" style="font-weight:700;font-size:13px"><input type="checkbox" data-ff="roles"'+(F.roles?" checked":"")+'> 需要大家填職業（戰鬥內容建議打開）</label>'+
+    (F.roles?'<div class="three" style="margin-top:6px;max-width:360px">'+[["t","坦"],["h","補"],["d","輸出"]].map(([k,n])=>'<label class="fld" style="margin:0"><span>'+n+'</span><input class="f" type="number" min="0" max="24" data-ff="'+k+'" value="'+(F[k]||0)+'"></label>').join("")+'</div>':'')+'</div>'+
+    '<label class="fld"><span>說明（攻略連結、集合地點、要準備什麼都寫這裡，網址會自動變成連結）</span><textarea class="f" data-ff="desc" maxlength="1500">'+esc(F.desc||"")+'</textarea></label>'+
+    '<div class="fld"><span>候選時間（大家會一個一個回答可不可以；不加就只問參加意願）</span>'+
+    F.slots.map((s,i)=>'<div class="srow"><input class="f" type="date" data-sd="'+i+'" value="'+esc(s.d)+'" aria-label="日期"><input class="f" type="time" data-st="'+i+'" value="'+esc(s.t)+'" aria-label="時間"><button type="button" class="btn sm" data-a="srm" data-i="'+i+'" aria-label="移除這個時間">✕</button></div>').join("")+
+    '<div class="row"><button type="button" class="btn sm" data-a="sadd">＋ 新增時間</button>'+[[6,"21:00","本週六晚上"],[0,"14:00","本週日下午"],[0,"21:00","本週日晚上"]].map(([w,t,n])=>'<button type="button" class="btn sm" data-a="squick" data-w="'+w+'" data-t="'+t+'">＋ '+n+'</button>').join("")+'</div></div>'+
+    '<div class="end"><button class="btn" data-a="fcancel">取消</button><button class="btn primary" data-a="fsave">'+(F.id?"儲存":"發起")+'</button></div></div>';
+  return h;
+}
+
+/* ===== 存檔 ===== */
+async function saveForm(){const F=form;
+  const title=(F.title||"").trim();if(!title){toast("請填活動名稱");return;}
+  const slots=F.slots.filter(s=>s.d).map(s=>({id:s.id||rid(),d:s.d,t:s.t||"",note:s.note||""})).sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
+  const data={title:title.slice(0,40),kind:F.kind||"其他",desc:(F.desc||"").slice(0,1500),ilvl:(F.ilvl||"").trim().slice(0,20),size:Math.max(0,Math.min(48,+F.size||0)),
+    roles:!!F.roles,t:F.roles?+F.t||0:0,h:F.roles?+F.h||0:0,d:F.roles?+F.d||0:0,slots,updatedAt:Date.now()};
+  try{
+    if(F.id){const old=events[F.id];if(old.status==="fixed"&&!slots.some(s=>s.id===old.fixed)){data.status="open";data.fixed="";}
+      await updateDoc(doc(db,"events",F.id),data);form=null;toast("已儲存");go({e:F.id});}
+    else{const ref=await addDoc(collection(db,"events"),{...data,by:me.uid,status:"open",fixed:"",createdAt:Date.now()});form=null;toast("揪團已發起，把網址貼到 Discord 給大家填吧！");go({e:ref.id});}
+  }catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限（Firestore 規則可能還沒更新）":e.code||e.message));}
+}
+async function saveRsvp(){const e=events[view.e];if(!draft.go){toast("先選要不要參加");return;}
+  if(draft.go!=="n"&&e.roles&&!draft.jobs.length){toast("請至少選一個職業");return;}
+  const slots={};(e.slots||[]).forEach(s=>{if(draft.slots[s.id])slots[s.id]=draft.slots[s.id];});
+  if(draft.go!=="n"&&(e.slots||[]).length&&e.status!=="fixed"&&!Object.keys(slots).length){toast("請回答每個時間可不可以");return;}
+  const old=rsvp[me.uid];
+  try{await setDoc(doc(db,"events",view.e,"rsvp",me.uid),{go:draft.go,slots:draft.go==="n"?{}:slots,jobs:draft.go==="n"?[]:draft.jobs.slice(0,8),note:(draft.note||"").slice(0,60),at:old&&old.at||Date.now(),updatedAt:Date.now()});
+    draft.dirty=false;toast(old?"已更新":"已送出，謝謝！");}
+  catch(err){console.error(err);toast("送出失敗："+(err.code==="permission-denied"?"沒有權限（Firestore 規則可能還沒更新）":err.code||err.message));}
+}
+
+/* ===== 操作 ===== */
+function go(v){view=v;history.pushState(null,"",v.e?"events.html?e="+encodeURIComponent(v.e):"events.html");draft=null;render();window.scrollTo(0,0);}
+document.addEventListener("click",async ev=>{const b=ev.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,e=events[view.e];
+  if(a==="new"){form=newForm();render();}
+  else if(a==="tpl"){const t=TPL[b.dataset.k];form={...form,tpl:b.dataset.k,kind:t.kind,size:t.size,roles:t.roles,t:t.t||0,h:t.h||0,d:t.d||0,desc:form.desc&&form.desc!==TPL[form.tpl].desc?form.desc:t.desc};render();}
+  else if(a==="sadd"){const last=form.slots[form.slots.length-1];form.slots.push({id:rid(),d:last?last.d:today(),t:last?last.t:"21:00",note:""});render();}
+  else if(a==="squick"){form.slots.push({id:rid(),d:nextDow(+b.dataset.w),t:b.dataset.t,note:""});render();}
+  else if(a==="srm"){form.slots.splice(+b.dataset.i,1);render();}
+  else if(a==="fcancel"){ev.preventDefault();form=null;render();}
+  else if(a==="fsave")saveForm();
+  else if(a==="edit"){form={id:view.e,tpl:"",title:e.title,kind:e.kind,desc:e.desc||"",ilvl:e.ilvl||"",size:e.size||0,roles:!!e.roles,t:e.t||0,h:e.h||0,d:e.d||0,slots:structuredClone(e.slots||[])};render();}
+  else if(a==="go"){draft.go=b.dataset.v;draft.dirty=true;render();}
+  else if(a==="sl"){draft.slots[b.dataset.s]=b.dataset.v;draft.dirty=true;render();}
+  else if(a==="job"){const k=b.dataset.k,i=draft.jobs.indexOf(k);if(i>=0)draft.jobs.splice(i,1);else draft.jobs.push(k);draft.dirty=true;render();}
+  else if(a==="save")saveRsvp();
+  else if(a==="unrsvp"){if(!armed(b,"再按一次撤回"))return;try{await deleteDoc(doc(db,"events",view.e,"rsvp",me.uid));draft=null;toast("已撤回");}catch(err){toast("撤回失敗");}}
+  else if(a==="fix"){try{await updateDoc(doc(db,"events",view.e),{status:"fixed",fixed:b.dataset.s,updatedAt:Date.now()});toast("已定案");}catch(err){toast("失敗："+(err.code||err.message));}}
+  else if(a==="unfix"){await updateDoc(doc(db,"events",view.e),{status:"open",fixed:"",updatedAt:Date.now()});}
+  else if(a==="close"){await updateDoc(doc(db,"events",view.e),{status:"closed",updatedAt:Date.now()});toast("活動已結束");}
+  else if(a==="reopen"){await updateDoc(doc(db,"events",view.e),{status:e.fixed?"fixed":"open",updatedAt:Date.now()});}
+  else if(a==="del"){if(!armed(b,"再按一次刪除"))return;const id=view.e;try{const rs=await getDocs(collection(db,"events",id,"rsvp"));await Promise.all(rs.docs.map(d=>deleteDoc(d.ref)));await deleteDoc(doc(db,"events",id));toast("已刪除");go({});}catch(err){toast("刪除失敗："+(err.code||err.message));}}
+});
+document.addEventListener("input",ev=>{const t=ev.target;
+  if(form&&t.dataset.ff){const k=t.dataset.ff;form[k]=t.type==="checkbox"?t.checked:t.value;if(k==="roles"){if(t.checked&&!(form.t||form.h||form.d)){form.t=2;form.h=2;form.d=4;}render();}}
+  else if(form&&t.dataset.sd!=null)form.slots[+t.dataset.sd].d=t.value;
+  else if(form&&t.dataset.st!=null)form.slots[+t.dataset.st].t=t.value;
+  else if(t.id==="note"&&draft){draft.note=t.value;draft.dirty=true;}
+});
+window.addEventListener("popstate",()=>{form=null;draft=null;view=readView();render();});
+window.addEventListener("beforeunload",ev=>{if(form||(draft&&draft.dirty)){ev.preventDefault();ev.returnValue="";}});
+function readView(){const q=new URLSearchParams(location.search);return q.get("e")?{e:q.get("e")}:{};}
+
+/* ===== 讀取 ===== */
+function watchRsvp(id){if(rsvpFor===id)return;if(rsvpUnsub)rsvpUnsub();rsvp={};rsvpFor=id;
+  rsvpUnsub=onSnapshot(collection(db,"events",id,"rsvp"),s=>{rsvp={};s.forEach(d=>{rsvp[d.id]=d.data();});if(!(draft&&draft.dirty))draft=null;if(!form)render();},err=>{console.error(err);toast("讀取回覆失敗："+(err.code==="permission-denied"?"Firestore 規則可能還沒更新":err.code));});}
+function start(){
+  onSnapshot(collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});if(!form)render();},()=>{});
+  onSnapshot(collection(db,"events"),s=>{events={__loaded:true};s.forEach(d=>{events[d.id]=d.data();});if(!form&&!(draft&&draft.dirty))render();},err=>{console.error(err);events={__loaded:true};$("#app").innerHTML='<div class="panel empty">讀取揪團資料失敗：'+(err.code==="permission-denied"?"Firestore 規則還沒加上揪團的部分。":esc(err.code||err.message))+'</div>';});
+}
+view=readView();if(new URLSearchParams(location.search).has("new")){history.replaceState(null,"","events.html");form="pending";}
+onAuthStateChanged(auth,async u=>{
+  if(!u){me=null;render();return;}
+  me=u;try{const tr=await u.getIdTokenResult();isOwner=tr.claims.dc===OWNER_DISCORD_ID||(u.email===OWNER_EMAIL&&u.emailVerified);}catch(e){isOwner=false;}
+  if(form==="pending")form=newForm();
+  if(!started){started=true;start();}render();
+});
+</script>
+</body>
+</html>
