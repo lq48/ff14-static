@@ -130,7 +130,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 <body>
 <div class="wrap" id="app"><div class="empty">載入中…</div></div>
 <script type="module">
-import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -320,14 +320,23 @@ function shareText(id,e,tag){
 function openShare(){const id=view.e,e=events[id];const m=document.createElement("div");m.id="shareM";
   m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px";
   let tag=false;
-  const draw=()=>{m.innerHTML='<div class="panel" role="dialog" aria-modal="true" style="max-width:560px;width:100%;margin:0;max-height:90vh;overflow:auto"><h2>分享到 Discord</h2><p class="hint" style="margin:0 0 8px">按「複製」後，到 Discord 頻道貼上送出就好。誰都可以分享，會帶上目前參加的人和填表連結。</p>'+
+  const draw=()=>{m.innerHTML='<div class="panel" role="dialog" aria-modal="true" style="max-width:560px;width:100%;margin:0;max-height:90vh;overflow:auto"><h2>分享到 Discord</h2><p class="hint" style="margin:0 0 8px">按「發到 Discord 頻道」會由提醒機器人直接貼到頻道；也可以按「複製」自己貼。誰都可以分享，會帶上目前參加的人和填表連結。</p>'+
     '<label class="row" style="font-size:13px;margin-bottom:8px"><input type="checkbox" id="stag"'+(tag?" checked":"")+'> 順便 tag 還沒回覆的人</label>'+
     '<textarea class="f" id="stxt" readonly style="min-height:220px;font-size:13px">'+esc(shareText(id,e,tag))+'</textarea>'+
-    '<div class="end"><button class="btn" data-x="close">關閉</button><button class="btn primary" data-x="copy">複製</button></div></div>';};
+    '<div class="end"><button class="btn" data-x="close">關閉</button><button class="btn" data-x="copy">複製</button><button class="btn primary" data-x="post">發到 Discord 頻道</button></div></div>';};
   draw();document.body.appendChild(m);
   m.addEventListener("change",ev=>{if(ev.target.id==="stag"){tag=ev.target.checked;draw();}});
   m.addEventListener("click",async ev=>{const x=ev.target.closest("[data-x]");if(ev.target===m||(x&&x.dataset.x==="close")){m.remove();return;}
-    if(x&&x.dataset.x==="copy"){const t=m.querySelector("#stxt");try{await navigator.clipboard.writeText(t.value);}catch(_){t.select();document.execCommand("copy");}toast("已複製，到 Discord 貼上就好");m.remove();}});
+    if(x&&x.dataset.x==="copy"){const t=m.querySelector("#stxt");try{await navigator.clipboard.writeText(t.value);}catch(_){t.select();document.execCommand("copy");}toast("已複製，到 Discord 貼上就好");m.remove();}
+    if(x&&x.dataset.x==="post"){if(x.disabled)return;x.disabled=true;x.textContent="發送中…";
+      try{const idToken=await auth.currentUser.getIdToken();
+        const r=await fetch(WORKER_URL.replace(/\/+$/,"")+"/event",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({eid:id,idToken,tag})});
+        let j={};try{j=await r.json();}catch(_){}
+        if(r.ok&&j.ok){toast("已發到 Discord 頻道"+(j.tagged?"，tag 了 "+j.tagged+" 人":""));m.remove();return;}
+        toast(j.error||"機器人還沒更新這個功能，先用「複製」吧");}
+      catch(err){toast("發送失敗，先用「複製」吧");}
+      x.disabled=false;x.textContent="發到 Discord 頻道";}
+  });
 }
 
 /* ===== 存檔 ===== */
