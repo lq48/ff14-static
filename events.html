@@ -234,7 +234,8 @@ function detailHTML(id,e){
   if(!draft||draft.eid!==id)draft={eid:id,go:mine?mine.go:"",slots:{...((mine||{}).slots||{})},jobs:[...((mine||{}).jobs||[])],note:(mine||{}).note||"",dirty:false};
   const fx=e.status==="fixed"?slots.find(s=>s.id===e.fixed):null;
   let h='<a class="back" href="events.html">← 揪團列表</a><div class="top"><div><div class="row" style="margin-bottom:4px"><span class="pill kind">'+esc(e.kind||"其他")+'</span>'+statusPill(e)+'</div><h1>'+esc(e.title)+'</h1><div class="sub">發起人：'+esc(nameOf(users[e.by]))+'</div></div>'+
-    (mg?'<div class="row"><button class="btn sm" data-a="edit">編輯活動</button>'+(e.status==="closed"?'<button class="btn sm" data-a="reopen">重新開放</button>':'<button class="btn sm" data-a="close">結束活動</button>')+'<button class="btn sm danger" data-a="del">刪除</button></div>':'')+'</div>';
+    '<div class="row"><button class="btn sm primary" data-a="share">分享到 Discord</button>'+
+    (mg?'<button class="btn sm" data-a="edit">編輯活動</button>'+(e.status==="closed"?'<button class="btn sm" data-a="reopen">重新開放</button>':'<button class="btn sm" data-a="close">結束活動</button>')+'<button class="btn sm danger" data-a="del">刪除</button>':'')+'</div></div>';
   if(fx)h+='<div class="banner">確定時間　<b>'+esc(whenTxt(fx))+'</b>'+(mg?'　<button class="btn sm" data-a="unfix">取消定案</button>':'')+'</div>';
   // 活動說明
   const facts=[];if(sizeTxt(e))facts.push('<span class="fact"><b>人數</b>'+sizeTxt(e)+(e.minSize&&e.size&&e.minSize<e.size?'（'+e.minSize+' 人就能出發）':'')+'</span>');
@@ -298,6 +299,37 @@ function formHTML(){const F=form;
   return h;
 }
 
+/* ===== 分享到 Discord：產生一段訊息，複製後貼到頻道 ===== */
+function shareText(id,e,tag){
+  const slots=e.slots||[],list=Object.entries(rsvp).map(([u,r])=>({u,...r})),url=location.origin+location.pathname+"?e="+encodeURIComponent(id);
+  const nm=r=>nameOf(users[r.u])+(e.roles&&(r.jobs||[]).length?"（"+r.jobs.slice(0,3).map(k=>(JOB[k]||{}).n||k).join("/")+"）":"");
+  const fx=e.status==="fixed"?slots.find(s=>s.id===e.fixed):null,L=[];
+  L.push("📣 **揪團｜"+e.title+"**（"+(e.kind||"其他")+"）");
+  if(fx)L.push("🗓️ 確定時間：**"+whenTxt(fx)+"**");
+  else if(slots.length){L.push("🗓️ 候選時間：");slots.forEach(s=>{const ok=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="y").length,mb=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="m").length;L.push("　・"+whenTxt(s)+"　可以 "+ok+(mb?"／勉強 "+mb:""));});}
+  const info=[];if(sizeTxt(e))info.push("人數 "+sizeTxt(e));if(e.roles)info.push("坦 "+(e.t||0)+"／補 "+(e.h||0)+"／輸出 "+(e.d||0));if(e.ilvl)info.push("裝等 "+e.ilvl);
+  if(info.length)L.push("👥 "+info.join("｜"));
+  if(e.desc){const d=e.desc.trim();L.push("📝 "+(d.length>220?d.slice(0,220)+"…":d).replace(/\n+/g,"\n　"));}
+  const yes=list.filter(r=>r.go==="y"),may=list.filter(r=>r.go==="m");
+  L.push("✋ 想參加（"+yes.length+"）："+(yes.length?yes.map(nm).join("、"):"還沒有人"));
+  if(may.length)L.push("🤔 看時間（"+may.length+"）："+may.map(nm).join("、"));
+  L.push("👉 點這裡填寫意願："+url);
+  if(tag){const ny=Object.keys(users).filter(u=>!rsvp[u]&&users[u].dc);if(ny.length)L.push("🔔 還沒回覆："+ny.map(u=>"<@"+users[u].dc+">").join(" "));}
+  return L.join("\n");
+}
+function openShare(){const id=view.e,e=events[id];const m=document.createElement("div");m.id="shareM";
+  m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px";
+  let tag=false;
+  const draw=()=>{m.innerHTML='<div class="panel" role="dialog" aria-modal="true" style="max-width:560px;width:100%;margin:0;max-height:90vh;overflow:auto"><h2>分享到 Discord</h2><p class="hint" style="margin:0 0 8px">按「複製」後，到 Discord 頻道貼上送出就好。誰都可以分享，會帶上目前參加的人和填表連結。</p>'+
+    '<label class="row" style="font-size:13px;margin-bottom:8px"><input type="checkbox" id="stag"'+(tag?" checked":"")+'> 順便 tag 還沒回覆的人</label>'+
+    '<textarea class="f" id="stxt" readonly style="min-height:220px;font-size:13px">'+esc(shareText(id,e,tag))+'</textarea>'+
+    '<div class="end"><button class="btn" data-x="close">關閉</button><button class="btn primary" data-x="copy">複製</button></div></div>';};
+  draw();document.body.appendChild(m);
+  m.addEventListener("change",ev=>{if(ev.target.id==="stag"){tag=ev.target.checked;draw();}});
+  m.addEventListener("click",async ev=>{const x=ev.target.closest("[data-x]");if(ev.target===m||(x&&x.dataset.x==="close")){m.remove();return;}
+    if(x&&x.dataset.x==="copy"){const t=m.querySelector("#stxt");try{await navigator.clipboard.writeText(t.value);}catch(_){t.select();document.execCommand("copy");}toast("已複製，到 Discord 貼上就好");m.remove();}});
+}
+
 /* ===== 存檔 ===== */
 async function saveForm(){const F=form;
   const title=(F.title||"").trim();if(!title){toast("請填活動名稱");return;}
@@ -336,6 +368,7 @@ document.addEventListener("click",async ev=>{const b=ev.target.closest("[data-a]
   else if(a==="sl"){draft.slots[b.dataset.s]=b.dataset.v;draft.dirty=true;render();}
   else if(a==="job"){const k=b.dataset.k,i=draft.jobs.indexOf(k);if(i>=0)draft.jobs.splice(i,1);else draft.jobs.push(k);draft.dirty=true;render();}
   else if(a==="save")saveRsvp();
+  else if(a==="share")openShare();
   else if(a==="unrsvp"){if(!armed(b,"再按一次撤回"))return;try{await deleteDoc(doc(db,"events",view.e,"rsvp",me.uid));draft=null;toast("已撤回");}catch(err){toast("撤回失敗");}}
   else if(a==="fix"){try{await updateDoc(doc(db,"events",view.e),{status:"fixed",fixed:b.dataset.s,updatedAt:Date.now()});toast("已定案");}catch(err){toast("失敗："+(err.code||err.message));}}
   else if(a==="unfix"){await updateDoc(doc(db,"events",view.e),{status:"open",fixed:"",updatedAt:Date.now()});}
