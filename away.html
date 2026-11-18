@@ -144,6 +144,7 @@ const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
 
 /* ===== 狀態 ===== */
 let me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
+const QS=new URLSearchParams(location.search);let pendingOpen=QS.has("new")||QS.has("u")?{u:QS.get("u"),d:QS.get("d")}:null,cfgLoaded=false,usersLoaded=false;
 let sel=new Set(),onlyAway=false,months=3,modal=null,toastT=null,started=false,canList=false,canPriv=false;
 try{const s=JSON.parse(localStorage.getItem("awayFilter")||"null");if(s){sel=new Set(s.sel||[]);onlyAway=!!s.only;months=s.m||3;}}catch(e){}
 const subs={};
@@ -191,6 +192,8 @@ function days(){const t=new Date();t.setHours(0,0,0,0);const end=new Date(t);end
 function render(){
   const app=$("#app");
   if(!me){app.innerHTML='<div class="empty"><p>請先到飛地首頁登入，再回來這一頁。</p><p><a class="btn primary" href="index.html">前往首頁登入</a></p></div>';return;}
+  if(pendingOpen&&cfgLoaded&&usersLoaded){const P=pendingOpen;pendingOpen=null;history.replaceState(null,"",location.pathname);
+    const u=P.u&&canEdit(P.u)?P.u:(canEdit(me.uid)?me.uid:editableIds()[0]),d=/^\d{4}-\d{2}-\d{2}$/.test(P.d||"")?P.d:ymd(new Date());if(u)setTimeout(()=>openEdit(u,d),0);}
   const D=days(),ids=rowIds(),today=D[0];
   let h='<a class="back" href="index.html">← 回飛地大廳</a><div class="top"><div><h1>請假行事曆</h1><div class="sub">飛地成員接下來 '+months+' 個月的請假與可能不在的日子</div></div><div class="tools">'+
     (editableIds().length?'<button class="btn primary" data-a="new">＋ 我要請假</button>':'')+
@@ -333,10 +336,10 @@ function applyAccess(){
   else{unsub("priv*");editableIds().concat(me.uid).forEach(id=>watchDoc("awayPriv",id,priv));}
 }
 function start(){
-  sub("users",collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});if(!users[me.uid])users[me.uid]={nick:me.displayName||"我"};applyAccess();render();});
+  sub("users",collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});usersLoaded=true;if(!users[me.uid])users[me.uid]={nick:me.displayName||"我"};applyAccess();render();});
   sub("statics",collection(db,"statics"),s=>{statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","zh-Hant"));sel=new Set([...sel].filter(t=>statics.some(s=>s.id===t)));render();});
   sub("members",collectionGroup(db,"members"),s=>{mem={};s.forEach(d=>{const p=d.ref.parent.parent;if(!p||(d.data().status!=="active"))return;(mem[p.id]=mem[p.id]||{})[d.id]=true;});render();});
-  sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{access:{},proxies:{}};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};applyAccess();render();});
+  sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{access:{},proxies:{}};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};cfgLoaded=true;applyAccess();render();},e=>{console.error(e);cfgLoaded=true;render();});
 }
 onAuthStateChanged(auth,async u=>{
   if(!u){me=null;render();return;}

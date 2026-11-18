@@ -43,6 +43,12 @@ const CSS=`
 .am-g td.maybe{background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .am{--am-off:#8A96AB}}
 :root[data-theme="dark"] .am{--am-off:#8A96AB}
+.am-g tr.ce td{cursor:pointer}
+.am-g tr.ce td:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.am-g tr.ce .nm a{color:inherit;text-decoration:none}
+.am-g tr.ce .nm a:hover{color:var(--accent)}
+.am-g .nm .me{font-size:10px;color:var(--accent);margin-left:4px}
+.am-hint{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
 .am-g .ms{border-left:1px solid var(--line)}
 .am-g .cn{font-weight:800;color:var(--am-good);font-size:11.5px}
 .am-g .cn.low{color:var(--am-off)}
@@ -89,7 +95,7 @@ export function initAwayMini({db,getCtx}){
       const n=Math.max(14,Math.min(184,nDays+add));if(n===nDays)break;nDays=n;draw();}}
   function draw(){
     const el=document.getElementById("awayMini");if(!el)return;
-    const {me,users,statics,mem,avatarUrl,nameOf}=getCtx();if(!me)return;
+    const {me,isOwner,users,statics,mem,avatarUrl,nameOf}=getCtx();if(!me)return;
     const t=new Date();t.setHours(0,0,0,0);const D=[];for(let i=0;i<nDays;i++){const x=new Date(t);x.setDate(t.getDate()+i);D.push(ymd(x));}
     const {ids,sel}=rowIds(),N=ids.length,first=D[0],last=D[D.length-1];
         const cls=d=>{const x=parse(d);return HOLI[d]?" hol":(x.getDay()===0||x.getDay()===6)?" we":"";};
@@ -105,14 +111,15 @@ export function initAwayMini({db,getCtx}){
           const tip=md(d)+(HOLI[d]?" "+HOLI[d]:"")+"："+(off.length||mb.length?(off.length?"請假 "+off.map(id=>nameOf(users[id])).join("、"):"")+(mb.length?(off.length?"；":"")+"可能不在 "+mb.map(id=>nameOf(users[id])).join("、"):""):"全員到齊（"+ms.length+" 人）");
           return '<th class="dy cn'+(off.length?" low":mb.length?" mbx":"")+cls(d)+(x.getDate()===1&&i?" ms":"")+'" title="'+esc(tip)+'">'+(off.length?'−'+off.length:mb.length?'?':'✓')+'</th>';}).join("")+'</tr>';});
       tb+='</thead><tbody>';
-      ids.forEach(id=>{const u=users[id];tb+='<tr><th class="nm" scope="row"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+'</th>'+
-        D.map((d,i)=>{const s=dayState(id,d),x=parse(d);return '<td class="'+(s||cls(d).trim())+(x.getDate()===1&&i?" ms":"")+'" title="'+esc(nameOf(u)+" "+md(d)+(s?"："+(s==="off"?"請假":"可能不在"):""))+'"></td>';}).join("")+'</tr>';});
+      const P=cfg.proxies||{},canEd=id=>isOwner||id===me.uid||!!(P[id]||{})[me.uid];
+      ids.forEach(id=>{const u=users[id],ce=canEd(id);tb+='<tr'+(ce?' class="ce"':'')+'><th class="nm" scope="row">'+(ce?'<a href="away.html?u='+encodeURIComponent(id)+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+(id===me.uid?'<span class="me">你</span>':'')+(ce?'</a>':'')+'</th>'+
+        D.map((d,i)=>{const s=dayState(id,d),x=parse(d);return '<td class="'+(s||cls(d).trim())+(x.getDate()===1&&i?" ms":"")+'"'+(ce?' data-am="go" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(nameOf(u)+" "+md(d)+(s?"："+(s==="off"?"請假":"可能不在"):"")+(ce?"（點一下從這天請假）":""))+'"></td>';}).join("")+'</tr>';});
       h+=tb+'</tbody></table></div>';
-    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團那列：✓ 全員到齊、−2 是有 2 人請假、? 是有人可能不在（滑鼠移上去看是誰）</span></div>';
-    h+='<p class="muted" style="margin:6px 0 0;font-size:12.5px;text-align:right">顯示到 '+md(last)+'，要請假或看更久，請按右上「打開行事曆」</p>';
+    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團列：✓ 全員到齊、−2 有 2 人請假</span><span style="margin-left:auto;color:var(--accent)">點自己那一列的格子就能請假</span></div>';
     const gw=el.querySelector(".am-gw"),sx=gw?gw.scrollLeft:0;
     el.innerHTML=h;const ng=el.querySelector(".am-gw");if(ng)ng.scrollLeft=sx;
   }
+  document.addEventListener("click",e=>{const t=e.target.closest('[data-am="go"]');if(t)location.href="away.html?u="+encodeURIComponent(t.dataset.u)+"&d="+t.dataset.d;});
   let rt=null;const onR=()=>{clearTimeout(rt);rt=setTimeout(()=>{nDays=30;paint();},150);};window.addEventListener("resize",onR);
   return {paint,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
 }
