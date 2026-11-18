@@ -568,6 +568,7 @@ function lobbyHTML(){
   return'<section class="hero"><h1>光之戰士飛地</h1><p class="slogan">'+(p?'歡迎回來，'+esc(nameOf(p))+'。':'歡迎來到光之戰士飛地。')+'</p></section>'+
     '<div class="panel"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
       (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
+    '<div class="panel"><div class="phead"><h2>請假行事曆</h2><a class="btn sm" href="away.html">打開行事曆</a></div><p class="muted" style="margin:0">登記出國、請假或可能不在的日子，方便大家排團。</p></div>'+
     '<div class="panel"><h2>飛地成員（'+ids.length+'）</h2>'+
       (ids.length?'<div class="crystals">'+ids.map(crystalHTML).join("")+'</div>':'<p class="muted">還沒有人建立靈魂水晶。</p>')+'</div>'+
     linksPanelHTML();

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>請假行事曆｜光之戰士飛地</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
+  --accent:#2F63C9; --accent-ink:#FFFFFF; --danger:#C23A4F; --surface2:#EDF1F7;
+  --off:#D9485F; --off-ink:#FFFFFF; --maybe:#E19A2B; --weekend:#E2E7F0; --today:#2F63C9; --good:#2E8B57;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+    --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --surface2:#202940;
+    --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --today:#6E9BFF; --good:#5FCB8E;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+  --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --surface2:#202940;
+  --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --today:#6E9BFF; --good:#5FCB8E;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+.back{font-size:13px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--accent)}
+h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:24px;margin:4px 0 2px}
+h2{font-size:16px;margin:0 0 10px}
+.sub{font-size:13px;color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;min-height:36px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger)}
+.btn.sm{min-height:30px;padding:3px 9px;font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin:0 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;min-height:32px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.lbl{font-size:12px;color:var(--muted);margin-right:2px}
+.f{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:36px;width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);align-items:center}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.sw.off{background:var(--off)}
+.sw.maybe{background:repeating-linear-gradient(135deg,var(--maybe) 0 3px,transparent 3px 6px);border:1px solid var(--maybe)}
+.up{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.up li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.up li:last-child{border-bottom:0}
+.up .who{font-weight:700;min-width:84px}
+.up .d{font-variant-numeric:tabular-nums}
+.pill{font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;line-height:18px}
+.pill.off{background:var(--off);color:var(--off-ink)}
+.pill.maybe{border:1px dashed var(--maybe);color:var(--maybe)}
+.pill.lock{background:var(--surface2);color:var(--muted)}
+.note{color:var(--muted)}
+.gw{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);max-height:70vh}
+table.cal{border-collapse:separate;border-spacing:0;width:max-content}
+.cal th,.cal td{padding:0;border-bottom:1px solid var(--line)}
+.cal thead th{position:sticky;background:var(--surface);z-index:2}
+.cal thead tr.m th{top:0;height:24px;font-size:12px;font-weight:700;text-align:left;padding-left:6px;border-left:1px solid var(--line)}
+.cal thead tr.d th{top:24px;height:38px;font-size:11px;font-weight:500;color:var(--muted);text-align:center;line-height:1.15}
+.cal thead tr.c th{top:62px;height:28px;font-size:11.5px;font-weight:700;text-align:center}
+.cal .nm{position:sticky;left:0;background:var(--surface);z-index:1;min-width:150px;max-width:150px;border-right:1px solid var(--line);text-align:left}
+.cal thead .nm{z-index:3}
+.cal .nm .in{display:flex;align-items:center;gap:6px;padding:4px 8px;width:100%;border:0;background:transparent;text-align:left;min-height:32px}
+.cal .nm img{width:22px;height:22px;border-radius:50%;flex:none}
+.cal .nm .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.cal .nm .me{font-size:10px;font-weight:700;color:var(--accent);margin-left:2px}
+.cal .nm button.in:hover .t{color:var(--accent)}
+.cal td.day,.cal thead th.day{width:24px;min-width:24px;max-width:24px}
+.cal td.day{height:32px;position:relative}
+.cal .we{background:var(--weekend)}
+.cal .mstart{border-left:1px solid var(--line)}
+.cal thead th.today{color:var(--today);font-weight:900;box-shadow:inset 0 -3px 0 var(--today)}
+.cal td.today{box-shadow:inset 1px 0 0 var(--today),inset -1px 0 0 var(--today)}
+.cal td.off{background:var(--off)}
+.cal td.maybe{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--maybe) 70%,transparent) 0 3px,transparent 3px 6px)}
+.cal td.ed{cursor:pointer}
+.cal td.ed:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.cnt.full{color:var(--good)}
+.cnt.low{color:var(--off)}
+.cnt small{display:block;font-size:9.5px;font-weight:500;color:var(--maybe);line-height:1}
+.empty{padding:30px 16px;text-align:center;color:var(--muted)}
+.hint{color:var(--muted);font-size:12.5px;margin:6px 0 0}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px}
+.sheet{background:var(--surface);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;padding:18px}
+.sheet h2{font-size:17px}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.fld>span{font-size:12px;color:var(--muted);font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1px solid var(--line);background:var(--surface2);border-radius:8px;min-height:38px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.ent{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ent .d{font-variant-numeric:tabular-nums;font-weight:700}
+.ent .sp{flex:1}
+.end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
+.srow{display:grid;grid-template-columns:1fr 180px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.prow{padding:8px 0;border-bottom:1px solid var(--line)}
+.prow .hl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 4px 1px 9px;display:inline-flex;align-items:center;gap:2px}
+.tag button{border:0;background:transparent;width:22px;height:22px;padding:0;color:var(--muted)}
+.arm{background:var(--danger)!important;color:#FFFFFF!important;border-color:var(--danger)!important}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
+@media (max-width:640px){.two{grid-template-columns:1fr}.srow{grid-template-columns:1fr}.cal .nm{min-width:108px;max-width:108px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">載入中…</div></div>
+<script type="module">
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, collectionGroup, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
+
+/* ===== 狀態 ===== */
+let me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
+let sel=new Set(),onlyAway=false,months=3,modal=null,toastT=null,started=false,canList=false,canPriv=false;
+try{const s=JSON.parse(localStorage.getItem("awayFilter")||"null");if(s){sel=new Set(s.sel||[]);onlyAway=!!s.only;months=s.m||3;}}catch(e){}
+const subs={};
+
+/* ===== 小工具 ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"未知成員";
+function avatarUrl(u){if(!u||!u.dc)return "https://cdn.discordapp.com/embed/avatars/0.png";if(u.avatar)return "https://cdn.discordapp.com/avatars/"+u.dc+"/"+u.avatar+".png?size=64";let i=0;try{i=Number((BigInt(u.dc)>>22n)%6n);}catch(_){}return "https://cdn.discordapp.com/embed/avatars/"+i+".png";}
+function toast(m){let el=$("#toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{el.hidden=true;},2600);}
+function armed(b,label){if(b.dataset.armed)return true;b.dataset.armed="1";const o=b.textContent;b.textContent=label;b.classList.add("arm");setTimeout(()=>{if(b.isConnected&&b.dataset.armed){delete b.dataset.armed;b.textContent=o;b.classList.remove("arm");}},3000);return false;}
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c);};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const WK="日一二三四五六";
+const md=s=>{const d=parse(s);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）";};
+const saveFilter=()=>{try{localStorage.setItem("awayFilter",JSON.stringify({sel:[...sel],only:onlyAway,m:months}));}catch(e){}};
+
+/* ===== 權限（要和 firestore.rules 一致） ===== */
+const acc=u=>(cfg.access||{})[u]||"";
+const helpersOf=t=>Object.keys(((cfg.proxies||{})[t])||{});
+const canEdit=t=>!!me&&(isOwner||t===me.uid||helpersOf(t).includes(me.uid));
+const editableIds=()=>Object.keys(users).filter(canEdit);
+
+/* ===== 資料 ===== */
+const entriesOf=u=>(((away[u]||{}).entries)||[]);
+function labelOf(u,e){if(e.label)return {t:e.label,lock:false};const p=((priv[u]||{}).labels||{})[e.id];if(p)return {t:p,lock:true};return {t:"",lock:false};}
+function dayState(u,day){let st="";entriesOf(u).forEach(e=>{if(e.from<=day&&day<=e.to){if(e.kind==="off")st="off";else if(!st)st="maybe";}});return st;}
+function rowIds(){let ids=Object.keys(users);
+  if(sel.size)ids=ids.filter(id=>[...sel].some(t=>(mem[t]||{})[id]));
+  if(!canList)ids=ids.filter(id=>id===me.uid||canEdit(id));
+  const range=days();const a=range[0],b=range[range.length-1];
+  if(onlyAway)ids=ids.filter(id=>entriesOf(id).some(e=>e.to>=a&&e.from<=b));
+  return ids.sort((x,y)=>(x===me.uid?-1:y===me.uid?1:nameOf(users[x]).localeCompare(nameOf(users[y]),"zh-Hant")));}
+function days(){const t=new Date();t.setHours(0,0,0,0);const end=new Date(t);end.setMonth(end.getMonth()+months);const out=[];for(let d=new Date(t);d<end;d=addDays(d,1))out.push(ymd(d));return out;}
+
+/* ===== 畫面 ===== */
+function render(){
+  const app=$("#app");
+  if(!me){app.innerHTML='<div class="empty"><p>請先到飛地首頁登入，再回來這一頁。</p><p><a class="btn primary" href="index.html">前往首頁登入</a></p></div>';return;}
+  const D=days(),ids=rowIds(),today=D[0];
+  let h='<a class="back" href="index.html">← 回飛地大廳</a><div class="top"><div><h1>請假行事曆</h1><div class="sub">飛地成員接下來 '+months+' 個月的請假與可能不在的日子</div></div><div class="tools">'+
+    (editableIds().length?'<button class="btn primary" data-a="new">＋ 我要請假</button>':'')+
+    '<select class="f" style="width:auto" id="months" aria-label="顯示範圍">'+[1,3,6].map(m=>'<option value="'+m+'"'+(m===months?" selected":"")+'>'+m+' 個月</option>').join("")+'</select>'+
+    (isOwner?'<button class="btn" data-a="settings">權限設定</button>':'')+'</div></div>';
+  if(!canList)h+='<div class="panel"><p style="margin:0">你目前只看得到自己'+(editableIds().length>1?'和你負責代填的人':'')+'的請假。需要看全部成員時，請找網站管理員開權限。</p></div>';
+  // 篩選
+  if(canList)h+='<div class="panel"><div class="chips"><span class="lbl">只看</span><button class="chip" data-a="selall" aria-pressed="'+(!sel.size)+'">全部飛地成員</button>'+
+    statics.map(s=>'<button class="chip" data-a="selst" data-t="'+esc(s.id)+'" aria-pressed="'+sel.has(s.id)+'">'+esc(s.name)+'</button>').join("")+
+    '<label class="chip" style="display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="onlyAway"'+(onlyAway?" checked":"")+'> 只列出有請假的人</label></div>'+
+    '<p class="hint">可以同時選好幾個固定團。</p></div>';
+  // 近期清單
+  const up=[];ids.forEach(id=>entriesOf(id).forEach(e=>{if(e.to>=today&&e.from<=D[D.length-1])up.push({id,e});}));up.sort((a,b)=>a.e.from.localeCompare(b.e.from)||a.e.to.localeCompare(b.e.to));
+  h+='<div class="panel"><h2>近期請假（'+up.length+'）</h2>'+(up.length?'<ul class="up">'+up.map(({id,e})=>{const l=labelOf(id,e);
+    return '<li><span class="who">'+esc(nameOf(users[id]))+'</span><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock" title="只有本人、代填的人和團長看得到">僅團長可見</span>':'')+(canEdit(id)?'<button class="btn sm" data-a="edit" data-u="'+id+'">編輯</button>':'')+'</li>';}).join("")+'</ul>':'<p class="note" style="margin:0">這段期間沒有人請假。</p>')+'</div>';
+  // 行事曆
+  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
+  if(!ids.length){h+='<div class="panel empty">沒有符合條件的成員。</div>';app.innerHTML=h;return;}
+  const months0=[];D.forEach((d,i)=>{const m=d.slice(0,7);if(!months0.length||months0[months0.length-1].m!==m)months0.push({m,n:0,i});months0[months0.length-1].n++;});
+  let t='<div class="gw" id="gw"><table class="cal"><thead><tr class="m"><th class="nm" rowspan="3" style="vertical-align:bottom;padding:6px 8px;font-size:12px;color:var(--muted)">成員（'+ids.length+'）</th>'+
+    months0.map(x=>{const d=parse(x.m+"-01");return '<th colspan="'+x.n+'">'+d.getFullYear()+' 年 '+(d.getMonth()+1)+' 月</th>';}).join("")+'</tr><tr class="d">';
+  D.forEach((d,i)=>{const x=parse(d),we=x.getDay()===0||x.getDay()===6;t+='<th class="day'+(we?" we":"")+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+'" title="'+md(d)+'">'+x.getDate()+'<br>'+WK[x.getDay()]+'</th>';});
+  t+='</tr><tr class="c">';
+  D.forEach((d,i)=>{let ok=0,mb=0;ids.forEach(id=>{const s=dayState(id,d);if(!s)ok++;else if(s==="maybe"){mb++;}});const x=parse(d),we=x.getDay()===0||x.getDay()===6;
+    t+='<th class="day cnt'+(ok+mb===ids.length&&!mb?" full":ok+mb<ids.length?" low":"")+(we?" we":"")+(x.getDate()===1&&i?" mstart":"")+'" title="'+md(d)+'：確定能到 '+ok+' 人'+(mb?'，可能不在 '+mb+' 人':'')+'，請假 '+(ids.length-ok-mb)+' 人">'+ok+(mb?'<small>+'+mb+'?</small>':'')+'</th>';});
+  t+='</tr></thead><tbody>';
+  ids.forEach(id=>{const u=users[id],ed=canEdit(id);
+    t+='<tr><th class="nm" scope="row">'+(ed?'<button class="in" data-a="edit" data-u="'+id+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'<div class="in">')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span class="t">'+esc(nameOf(u))+'</span>'+(id===me.uid?'<span class="me">你</span>':'')+(ed?'</button>':'</div>')+'</th>';
+    D.forEach((d,i)=>{const s=dayState(id,d),x=parse(d),we=x.getDay()===0||x.getDay()===6;let tip=nameOf(u)+" "+md(d);
+      if(s){const e=entriesOf(id).find(e=>e.from<=d&&d<=e.to&&(s==="off"?e.kind==="off":true)),l=labelOf(id,e);tip+="："+(s==="off"?"請假":"可能不在")+(l.t?"（"+l.t+"）":"");}
+      t+='<td class="day'+(s?" "+s:we?" we":"")+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(tip)+'"></td>';});
+    t+='</tr>';});
+  h+=t+'</tbody></table></div>';
+  if(isOwner||editableIds().length)h+='<p class="hint">點自己那一列的格子，可以從那天開始新增請假。</p>';
+  const og=$("#gw"),sx=og?og.scrollLeft:0,sy=og?og.scrollTop:0;
+  app.innerHTML=h;const ng=$("#gw");if(ng){ng.scrollLeft=sx;ng.scrollTop=sy;}
+  if(modal)renderModal();
+}
+
+/* ===== 編輯 ===== */
+function openEdit(u,day){modal={k:"edit",u,form:day?{id:"",from:day,to:day,kind:"off",label:"",pub:true}:null};renderModal();}
+function renderModal(){
+  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("input",onModalInput);}
+  let h='<div class="sheet" role="dialog" aria-modal="true">';
+  if(modal.k==="edit"){const u=modal.u,list=entriesOf(u).slice().sort((a,b)=>a.from.localeCompare(b.from)),today=ymd(new Date());
+    const eds=editableIds();
+    h+='<h2>'+esc(nameOf(users[u]))+' 的請假</h2>';
+    if(eds.length>1)h+='<label class="fld"><span>幫誰填</span><select class="f" id="who">'+eds.sort((a,b)=>a===me.uid?-1:b===me.uid?1:0).map(id=>'<option value="'+id+'"'+(id===u?" selected":"")+'>'+esc(nameOf(users[id]))+(id===me.uid?"（我）":"")+'</option>').join("")+'</select></label>';
+    const cur=list.filter(e=>e.to>=today),past=list.length-cur.length;
+    h+=cur.length?cur.map(e=>{const l=labelOf(u,e);return '<div class="ent"><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock">僅團長可見</span>':'')+'<span class="sp"></span><button class="btn sm" data-a="fedit" data-id="'+e.id+'">修改</button><button class="btn sm danger" data-a="fdel" data-id="'+e.id+'">刪除</button></div>';}).join(""):'<p class="note">目前沒有請假。</p>';
+    if(past)h+='<p class="hint">另外有 '+past+' 筆已經過去的紀錄，結束超過 30 天會自動清除。</p>';
+    const F=modal.form;
+    if(!F)h+='<div class="end" style="justify-content:flex-start"><button class="btn primary" data-a="fnew">＋ 新增請假</button></div>';
+    else{h+='<div class="panel" style="margin-top:12px;background:var(--surface2)"><h2>'+(F.id?"修改請假":"新增請假")+'</h2>'+
+      '<div class="two"><label class="fld"><span>開始日期</span><input class="f" type="date" data-ff="from" value="'+esc(F.from)+'"></label><label class="fld"><span>結束日期</span><input class="f" type="date" data-ff="to" value="'+esc(F.to)+'"></label></div>'+
+      '<div class="fld"><span>狀態</span><div class="seg"><button type="button" data-a="fkind" data-v="off" aria-pressed="'+(F.kind==="off")+'">確定請假</button><button type="button" data-a="fkind" data-v="maybe" aria-pressed="'+(F.kind==="maybe")+'">可能不在</button></div></div>'+
+      '<label class="fld"><span>理由（可不填）</span><input class="f" data-ff="label" maxlength="30" value="'+esc(F.label)+'" placeholder="不填就顯示「'+(F.kind==="off"?"請假":"可能不在")+'」，也可以寫出國、結婚等"></label>'+
+      '<div class="fld"><span>理由給誰看</span><div class="seg"><button type="button" data-a="fpub" data-v="1" aria-pressed="'+!!F.pub+'">全員可見</button><button type="button" data-a="fpub" data-v="0" aria-pressed="'+!F.pub+'">只有團長看得到</button></div><p class="hint" style="margin-top:4px">選「只有團長看得到」時，其他人只會看到「'+(F.kind==="off"?"請假":"可能不在")+'」。</p></div>'+
+      '<div class="end"><button class="btn" data-a="fcancel">取消</button><button class="btn primary" data-a="fsave">'+(F.id?"儲存修改":"新增")+'</button></div></div>';}
+    h+='<div class="end"><button class="btn" data-a="mclose">關閉</button></div>';
+  }else if(modal.k==="settings"){
+    const ids=Object.keys(users).filter(id=>!isOwnerUid(id)).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")),A=modal.access,P=modal.proxies;
+    h+='<h2>權限設定</h2><p class="hint" style="margin-top:0">每個人都能看到、編輯自己的請假。這裡設定誰能看到全部成員，以及誰可以幫誰代填。</p>';
+    h+='<div class="panel" style="margin-top:12px"><h2>誰可以看整個行事曆</h2><div class="end" style="justify-content:flex-start;margin:0 0 6px"><button class="btn sm" data-a="leadall">把所有固定團的團長設為「團長」</button></div>'+
+      ids.map(id=>'<div class="srow"><span>'+esc(nameOf(users[id]))+'</span><select class="f" data-acc="'+id+'" aria-label="'+esc(nameOf(users[id]))+' 的權限"><option value="">只看得到自己</option><option value="view"'+(A[id]==="view"?" selected":"")+'>可檢視全部</option><option value="lead"'+(A[id]==="lead"?" selected":"")+'>團長（也看得到私人理由）</option></select></div>').join("")+'</div>';
+    h+='<div class="panel"><h2>代填</h2><p class="hint" style="margin-top:0">被設定的人可以幫對方新增、修改請假，也看得到對方的私人理由。</p>'+
+      Object.keys(users).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")).map(t=>{const hs=Object.keys(P[t]||{});
+        return '<div class="prow"><b>'+esc(nameOf(users[t]))+'</b> 可以由這些人代填：<div class="hl">'+hs.map(x=>'<span class="tag">'+esc(nameOf(users[x]))+'<button aria-label="移除 '+esc(nameOf(users[x]))+'" data-a="prm" data-t="'+t+'" data-h="'+x+'">×</button></span>').join("")+
+        '<select class="f" style="width:auto;min-height:30px;padding:2px 6px" data-padd="'+t+'" aria-label="新增代填的人"><option value="">＋ 新增</option>'+Object.keys(users).filter(x=>x!==t&&!hs.includes(x)).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")).map(x=>'<option value="'+x+'">'+esc(nameOf(users[x]))+'</option>').join("")+'</select></div></div>';}).join("")+'</div>';
+    h+='<div class="end"><button class="btn" data-a="mclose">取消</button><button class="btn primary" data-a="ssave">儲存</button></div>';
+  }
+  const sc=m.querySelector(".sheet")?m.querySelector(".sheet").scrollTop:0;
+  m.innerHTML=h+'</div>';m.querySelector(".sheet").scrollTop=sc;
+}
+function closeModal(){modal=null;const m=$("#modal");if(m)m.remove();}
+function onModalInput(e){const t=e.target;
+  if(t.dataset.ff&&modal&&modal.form){modal.form[t.dataset.ff]=t.value;if(t.dataset.ff==="from"&&modal.form.to<t.value){modal.form.to=t.value;const x=$('[data-ff="to"]');if(x)x.value=t.value;}}
+  else if(t.id==="who"){modal.u=t.value;modal.form=null;renderModal();}
+  else if(t.dataset.acc!=null&&modal.k==="settings"){if(t.value)modal.access[t.dataset.acc]=t.value;else delete modal.access[t.dataset.acc];}
+  else if(t.dataset.padd&&t.value){const tg=t.dataset.padd;modal.proxies[tg]=modal.proxies[tg]||{};modal.proxies[tg][t.value]=true;renderModal();}
+}
+function isOwnerUid(id){const u=users[id];return !!u&&u.dc===OWNER_DISCORD_ID;}
+
+async function saveEntries(u,entries,labels){
+  const cut=ymd(addDays(new Date(),-30));entries=entries.filter(e=>e.to>=cut).sort((a,b)=>a.from.localeCompare(b.from));
+  const ids=new Set(entries.map(e=>e.id));Object.keys(labels).forEach(k=>{if(!ids.has(k))delete labels[k];});
+  try{await setDoc(doc(db,"away",u),{entries,updatedAt:Date.now(),by:me.uid});await setDoc(doc(db,"awayPriv",u),{labels,updatedAt:Date.now(),by:me.uid});
+    away[u]={entries};priv[u]={labels};return true;}
+  catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限":e.code||e.message));return false;}}
+async function saveForm(){const F=modal.form,u=modal.u;
+  if(!F.from||!F.to){toast("請選開始和結束日期");return;}if(F.to<F.from){toast("結束日期不能早於開始日期");return;}
+  const label=(F.label||"").trim().slice(0,30),list=entriesOf(u).filter(e=>e.id!==F.id).map(e=>({...e})),labels={...(((priv[u]||{}).labels)||{})};
+  const e={id:F.id||uid(),from:F.from,to:F.to,kind:F.kind==="maybe"?"maybe":"off"};
+  if(label&&F.pub)e.label=label;delete labels[e.id];if(label&&!F.pub)labels[e.id]=label;
+  list.push(e);if(await saveEntries(u,list,labels)){modal.form=null;render();renderModal();toast(F.id?"已修改":"已新增");}}
+
+/* ===== 點擊 ===== */
+function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="new"){openEdit(canEdit(me.uid)?me.uid:editableIds()[0],ymd(new Date()));}
+  else if(a==="edit"){openEdit(b.dataset.u,b.dataset.d||null);}
+  else if(a==="fnew"){modal.form={id:"",from:ymd(new Date()),to:ymd(new Date()),kind:"off",label:"",pub:true};renderModal();}
+  else if(a==="fedit"){const x=entriesOf(modal.u).find(z=>z.id===b.dataset.id),l=labelOf(modal.u,x);modal.form={id:x.id,from:x.from,to:x.to,kind:x.kind,label:l.t,pub:!l.lock};renderModal();}
+  else if(a==="fdel"){if(!armed(b,"再按一次刪除"))return;const u=modal.u,labels={...(((priv[u]||{}).labels)||{})};saveEntries(u,entriesOf(u).filter(z=>z.id!==b.dataset.id),labels).then(ok=>{if(ok){render();renderModal();toast("已刪除");}});}
+  else if(a==="fkind"){modal.form.kind=b.dataset.v;renderModal();}
+  else if(a==="fpub"){modal.form.pub=b.dataset.v==="1";renderModal();}
+  else if(a==="fcancel"){modal.form=null;renderModal();}
+  else if(a==="fsave")saveForm();
+  else if(a==="mclose")closeModal();
+  else if(a==="selall"){sel.clear();saveFilter();render();}
+  else if(a==="selst"){const t=b.dataset.t;if(sel.has(t))sel.delete(t);else sel.add(t);saveFilter();render();}
+  else if(a==="settings"){modal={k:"settings",access:{...(cfg.access||{})},proxies:JSON.parse(JSON.stringify(cfg.proxies||{}))};renderModal();}
+  else if(a==="leadall"){statics.forEach(s=>Object.keys(s.leaders||{}).forEach(id=>{if(users[id])modal.access[id]="lead";}));renderModal();toast("已套用，記得按儲存");}
+  else if(a==="prm"){delete (modal.proxies[b.dataset.t]||{})[b.dataset.h];renderModal();}
+  else if(a==="ssave"){const P={};Object.keys(modal.proxies).forEach(t=>{const k=Object.keys(modal.proxies[t]||{});if(k.length)P[t]=Object.fromEntries(k.map(x=>[x,true]));});
+    setDoc(doc(db,"awayCfg","main"),{access:modal.access,proxies:P,updatedAt:Date.now()}).then(()=>{closeModal();toast("權限已儲存");}).catch(e=>{console.error(e);toast("儲存失敗："+(e.code||e.message));});}
+}
+document.getElementById("app").addEventListener("click",onClick);
+document.addEventListener("change",e=>{if(e.target.id==="months"){months=+e.target.value;saveFilter();render();}else if(e.target.id==="onlyAway"){onlyAway=e.target.checked;saveFilter();render();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal)closeModal();});
+
+/* ===== 讀取 ===== */
+function sub(key,ref,fn,err){if(subs[key])return;subs[key]=onSnapshot(ref,fn,err||(e=>console.error(key,e)));}
+function unsub(key){if(subs[key]){subs[key]();delete subs[key];}}
+function watchDoc(col,id,store){sub(col+"/"+id,doc(db,col,id),s=>{if(s.exists())store[id]=s.data();else delete store[id];render();if(modal&&modal.k==="edit")renderModal();},()=>{});}
+function applyAccess(){
+  const a=acc(me.uid);canList=isOwner||a==="view"||a==="lead";canPriv=isOwner||a==="lead";
+  if(canList)sub("away*",collection(db,"away"),s=>{away={};s.forEach(d=>{away[d.id]=d.data();});render();if(modal&&modal.k==="edit")renderModal();},e=>{console.error(e);canList=false;unsub("away*");applyAccess();render();});
+  else{unsub("away*");editableIds().concat(me.uid).forEach(id=>watchDoc("away",id,away));}
+  if(canPriv)sub("priv*",collection(db,"awayPriv"),s=>{priv={};s.forEach(d=>{priv[d.id]=d.data();});render();},e=>{console.error(e);canPriv=false;unsub("priv*");applyAccess();});
+  else{unsub("priv*");editableIds().concat(me.uid).forEach(id=>watchDoc("awayPriv",id,priv));}
+}
+function start(){
+  sub("users",collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});if(!users[me.uid])users[me.uid]={nick:me.displayName||"我"};applyAccess();render();});
+  sub("statics",collection(db,"statics"),s=>{statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","zh-Hant"));sel=new Set([...sel].filter(t=>statics.some(s=>s.id===t)));render();});
+  sub("members",collectionGroup(db,"members"),s=>{mem={};s.forEach(d=>{const p=d.ref.parent.parent;if(!p||(d.data().status!=="active"))return;(mem[p.id]=mem[p.id]||{})[d.id]=true;});render();});
+  sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{access:{},proxies:{}};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};applyAccess();render();});
+}
+onAuthStateChanged(auth,async u=>{
+  if(!u){me=null;render();return;}
+  me=u;try{const tr=await u.getIdTokenResult();isOwner=tr.claims.dc===OWNER_DISCORD_ID||(u.email===OWNER_EMAIL&&u.emailVerified);}catch(e){isOwner=false;}
+  if(!started){started=true;start();}render();
+});
+</script>
+</body>
+</html>
