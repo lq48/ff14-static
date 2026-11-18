@@ -1,6 +1,6 @@
 /* 飛地大廳：請假行事曆近 30 天預覽（可展開／收起） */
 import { collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { HOLI, sortIdsBy } from "./away-core.js";
+import { HOLI, sortIdsBy } from "./away-core.js?v=1";
 
 const DAYS=30,WK="日一二三四五六";
 const pad=n=>String(n).padStart(2,"0");
