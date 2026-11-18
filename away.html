@@ -13,7 +13,7 @@
   color-scheme:light;
   --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
   --accent:#2F63C9; --accent-ink:#FFFFFF; --danger:#C23A4F; --surface2:#EDF1F7;
-  --off:#D9485F; --off-ink:#FFFFFF; --maybe:#E19A2B; --weekend:#E2E7F0; --hol:#F6DDE1; --hol-ink:#B8323F; --today:#2F63C9; --good:#2E8B57;
+  --off:#5F6B7D; --off-ink:#FFFFFF; --maybe:#E19A2B; --weekend:#E2E7F0; --hol:#F6DDE1; --hol-ink:#B8323F; --today:#2F63C9; --good:#2E8B57;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
@@ -21,14 +21,14 @@
     color-scheme:dark;
     --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
     --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --surface2:#202940;
-    --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --hol:#3A2027; --hol-ink:#FF8C9C; --today:#6E9BFF; --good:#5FCB8E;
+    --off:#8A96AB; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --hol:#3A2027; --hol-ink:#FF8C9C; --today:#6E9BFF; --good:#5FCB8E;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
   --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --surface2:#202940;
-  --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --hol:#3A2027; --hol-ink:#FF8C9C; --today:#6E9BFF; --good:#5FCB8E;
+  --off:#8A96AB; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --hol:#3A2027; --hol-ink:#FF8C9C; --today:#6E9BFF; --good:#5FCB8E;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
@@ -58,7 +58,7 @@ h2{font-size:16px;margin:0 0 10px}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);align-items:center}
 .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
 .sw.off{background:var(--off)}
-.sw.maybe{background:repeating-linear-gradient(135deg,var(--maybe) 0 3px,transparent 3px 6px);border:1px solid var(--maybe)}
+.sw.maybe{background:color-mix(in srgb,var(--maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--maybe)}
 .up{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .up li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .up li:last-child{border-bottom:0}
@@ -98,7 +98,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .cal thead th.today{color:var(--today);font-weight:900;box-shadow:inset 0 -3px 0 var(--today)}
 .cal td.today{box-shadow:inset 1px 0 0 var(--today),inset -1px 0 0 var(--today)}
 .cal td.off{background:var(--off)}
-.cal td.maybe{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--maybe) 70%,transparent) 0 3px,transparent 3px 6px)}
+.cal td.maybe{background:color-mix(in srgb,var(--maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px)}
 .cal td.ed{cursor:pointer}
 .cal td.ed:hover{outline:2px solid var(--accent);outline-offset:-2px}
 .cnt.full{color:var(--good)}

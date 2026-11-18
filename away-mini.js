@@ -10,7 +10,7 @@ const md=s=>{const d=parse(s);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 const CSS=`
-.am{--am-off:#D9485F;--am-maybe:#E19A2B;--am-we:color-mix(in srgb,var(--line) 40%,transparent);--am-hol:color-mix(in srgb,#E0566C 16%,transparent);--am-holink:#D9485F;--am-good:#2E8B57}
+.am{--am-off:#5F6B7D;--am-maybe:#E19A2B;--am-we:color-mix(in srgb,var(--line) 40%,transparent);--am-hol:color-mix(in srgb,#E0566C 16%,transparent);--am-holink:#D9485F;--am-good:#2E8B57}
 .am-strip{display:grid;grid-template-columns:repeat(${DAYS},minmax(0,1fr));gap:2px;margin:2px 0 4px}
 .am-strip .c{border-radius:4px;text-align:center;font-size:11px;line-height:1.15;padding:3px 0;font-variant-numeric:tabular-nums;color:var(--muted);background:var(--am-we);min-width:0}
 .am-strip .c.wd{background:transparent;border:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
@@ -40,7 +40,9 @@ const CSS=`
 .am-g thead tr:first-child .hol{color:var(--am-holink);font-weight:800}
 .am-g td{height:26px}
 .am-g td.off{background:var(--am-off)}
-.am-g td.maybe{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 70%,transparent) 0 3px,transparent 3px 6px)}
+.am-g td.maybe{background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .am{--am-off:#8A96AB}}
+:root[data-theme="dark"] .am{--am-off:#8A96AB}
 .am-g .ms{border-left:1px solid var(--line)}
 .am-g .cn{font-weight:800;color:var(--am-good);font-size:11.5px}
 .am-g .cn.low{color:var(--am-off)}
@@ -106,7 +108,7 @@ export function initAwayMini({db,getCtx}){
       ids.forEach(id=>{const u=users[id];tb+='<tr><th class="nm" scope="row"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+'</th>'+
         D.map((d,i)=>{const s=dayState(id,d),x=parse(d);return '<td class="'+(s||cls(d).trim())+(x.getDate()===1&&i?" ms":"")+'" title="'+esc(nameOf(u)+" "+md(d)+(s?"："+(s==="off"?"請假":"可能不在"):""))+'"></td>';}).join("")+'</tr>';});
       h+=tb+'</tbody></table></div>';
-    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:repeating-linear-gradient(135deg,var(--am-maybe) 0 2px,transparent 2px 4px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團那列：✓ 全員到齊、−2 是有 2 人請假、? 是有人可能不在（滑鼠移上去看是誰）</span></div>';
+    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團那列：✓ 全員到齊、−2 是有 2 人請假、? 是有人可能不在（滑鼠移上去看是誰）</span></div>';
     h+='<p class="muted" style="margin:6px 0 0;font-size:12.5px;text-align:right">顯示到 '+md(last)+'，要請假或看更久，請按右上「打開行事曆」</p>';
     const gw=el.querySelector(".am-gw"),sx=gw?gw.scrollLeft:0;
     el.innerHTML=h;const ng=el.querySelector(".am-gw");if(ng)ng.scrollLeft=sx;
