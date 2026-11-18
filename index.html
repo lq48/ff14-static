@@ -159,10 +159,22 @@ a{color:var(--accent)}
 .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .phead h2{margin:0}
 .evl{display:flex;flex-direction:column;gap:6px}
-.evi{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-decoration:none;color:inherit;border-left:3px solid var(--gold)}
+.evi{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-decoration:none;color:inherit;border-left:3px solid var(--gold)}
 .evi:hover{border-color:var(--accent)}
 .evi .evk{font-size:11.5px;font-weight:700;color:var(--gold)}
 .evi .muted{font-size:13px}
+.evt{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.evb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px}
+.eva{display:flex}
+.eva img{width:24px;height:24px;border-radius:50%;border:2px solid var(--surface);margin-left:-6px;background:var(--surface)}
+.eva img:first-child{margin-left:0}
+.eva img.mb{opacity:.45}
+.evn{color:var(--muted)}
+.evs{font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted)}
+.evs.ok{background:color-mix(in srgb,#2E8B57 16%,transparent);color:#2E8B57}
+.evs.me{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.evs.todo{background:var(--accent);color:#fff}
+.evb .sp{flex:1}
 .teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .teamcard{display:grid;gap:6px;text-align:left;padding:16px;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;background:var(--surface);color:var(--ink)}
 .teamcard:hover{border-color:var(--accent);border-left-color:var(--gold)}
@@ -393,7 +405,7 @@ function jobOptions(sel,blank){
 /* ---------- 狀態 ---------- */
 /* Discord 大頭貼失效（對方換了頭像、網站還存舊的）時，自動換成 Discord 預設頭像 */
 document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
-let app,db,auth,me=null,claims={},isOwner=false,awayMini=null,evs=[];
+let app,db,auth,me=null,claims={},isOwner=false,awayMini=null,evs=[],evRs={},evSubs={};
 let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null,phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
@@ -434,7 +446,8 @@ function subscribe(){
     unsub.push(onSnapshot(query(collection(db,"links"),where("status","==","approved")),onLinks("ok"),err));
     if(me)unsub.push(onSnapshot(query(collection(db,"links"),where("by","==",me.uid)),onLinks("mine"),err));
   }
-  unsub.push(onSnapshot(collection(db,"events"),s=>{evs=s.docs.map(d=>({id:d.id,...d.data()}));render(true);},()=>{evs=[];}));
+  unsub.push(onSnapshot(collection(db,"events"),s=>{evs=s.docs.map(d=>({id:d.id,...d.data()}));syncEvRs();render(true);},()=>{evs=[];}));
+  unsub.push(()=>{Object.values(evSubs).forEach(f=>f());evSubs={};evRs={};});
   unsub.push(onSnapshot(collectionGroup(db,"members"),s=>{
     mem={};s.docs.forEach(d=>{const p=d.ref.parent.parent;if(!p)return;(mem[p.id]||(mem[p.id]={}))[d.id]=d.data();});ready.mem=true;render(true);
   },err));
@@ -577,15 +590,27 @@ async function saveProfile(btn){
   }catch(e){console.error(e);toast("儲存失敗，請再試一次");btn.disabled=false;}
 }
 
+/* 揪團：只訂閱進行中活動的回覆 */
+function evActive(){const pd=n=>String(n).padStart(2,"0"),t=new Date(),td=t.getFullYear()+"-"+pd(t.getMonth()+1)+"-"+pd(t.getDate());
+  const last=e=>{const f=e.status==="fixed"&&(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;const ds=(e.slots||[]).map(s=>s.d).sort();return ds[ds.length-1]||"";};
+  return evs.filter(e=>e.status!=="closed"&&(!last(e)||last(e)>=td)).sort((a,b)=>(last(a)||"9").localeCompare(last(b)||"9"));}
+function syncEvRs(){const want=new Set(evActive().slice(0,6).map(e=>e.id));
+  Object.keys(evSubs).forEach(id=>{if(!want.has(id)){evSubs[id]();delete evSubs[id];delete evRs[id];}});
+  want.forEach(id=>{if(evSubs[id])return;evSubs[id]=onSnapshot(collection(db,"events",id,"rsvp"),s=>{evRs[id]={};s.forEach(d=>{evRs[id][d.id]=d.data();});render(true);},()=>{});});}
 /* 飛地大廳：揪團活動 */
 function eventsPanelHTML(){
   const WKD="日一二三四五六",pd=n=>String(n).padStart(2,"0"),t=new Date(),td=t.getFullYear()+"-"+pd(t.getMonth()+1)+"-"+pd(t.getDate());
   const wt=s=>{if(!s||!s.d)return"";const[a,b,c]=s.d.split("-").map(Number),d=new Date(a,b-1,c);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WKD[d.getDay()]+"）"+(s.t?" "+s.t:"");};
   const last=e=>{const f=e.status==="fixed"&&(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;const ds=(e.slots||[]).map(s=>s.d).sort();return ds[ds.length-1]||"";};
-  const act=evs.filter(e=>e.status!=="closed"&&(!last(e)||last(e)>=td)).sort((a,b)=>(last(a)||"9").localeCompare(last(b)||"9"));
+  const act=evActive();
   return '<div class="panel"><div class="phead"><h2>揪團活動</h2><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><a class="btn sm primary" href="events.html?new=1">＋ 發起揪團</a><a class="btn sm" href="events.html">全部活動</a></div></div>'+
     (act.length?'<div class="evl">'+act.slice(0,6).map(e=>{const f=e.status==="fixed"&&(e.slots||[]).find(s=>s.id===e.fixed);
-      return '<a class="evi" href="events.html?e='+encodeURIComponent(e.id)+'"><span class="evk">'+esc(e.kind||"其他")+'</span><b>'+esc(e.title)+'</b><span class="muted">'+(f?'確定 '+esc(wt(f)):(e.slots||[]).length?'調查中：'+esc((e.slots||[]).slice(0,2).map(wt).join("、"))+((e.slots||[]).length>2?" 等":""):'調查中')+'</span></a>';}).join("")+'</div>'
+      const R=evRs[e.id]||{},ys=Object.keys(R).filter(u=>R[u].go==="y"),ms=Object.keys(R).filter(u=>R[u].go==="m"),need=e.minSize||e.size||0;
+      const av=ys.concat(ms).slice(0,10).map(u=>'<img src="'+esc(avatarUrl(users[u]))+'" alt="" title="'+esc(nameOf(users[u])+(R[u].go==="m"?"（看時間）":""))+'"'+(R[u].go==="m"?' class="mb"':'')+' loading="lazy">').join("");
+      const st=need?(ys.length>=need?'<span class="evs ok">人數夠了</span>':'<span class="evs">還差 '+(need-ys.length)+' 人</span>'):'';
+      const mine=me&&R[me.uid]?'<span class="evs me">'+({y:"你要來",m:"你在看時間",n:"你這次不行"}[R[me.uid].go]||"已回覆")+'</span>':'<span class="evs todo">你還沒回</span>';
+      return '<a class="evi" href="events.html?e='+encodeURIComponent(e.id)+'"><div class="evt"><span class="evk">'+esc(e.kind||"其他")+'</span><b>'+esc(e.title)+'</b><span class="muted">'+(f?'確定 '+esc(wt(f)):(e.slots||[]).length?'調查中：'+esc((e.slots||[]).slice(0,2).map(wt).join("、"))+((e.slots||[]).length>2?" 等":""):'調查中')+'</span></div>'+
+        '<div class="evb"><span class="eva">'+av+'</span><span class="evn">'+(ys.length||ms.length?ys.length+' 人要來'+(ms.length?'・'+ms.length+' 人看時間':''):'還沒有人報名')+'</span>'+st+'<span class="sp"></span>'+mine+'</div></a>';}).join("")+'</div>'
       :'<p class="muted" style="margin:0">目前沒有揪團。想找人打本、挖寶或辦活動，按「發起揪團」問問大家！</p>')+'</div>';
 }
 /* 飛地大廳 */
