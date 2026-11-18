@@ -133,6 +133,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 <div class="wrap" id="app"><div class="empty">載入中…</div></div>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { HOLI, sortIdsBy } from "./away-core.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -161,21 +162,10 @@ const WK="日一二三四五六";
 const md=s=>{const d=parse(s);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）";};
 const saveFilter=()=>{try{localStorage.setItem("awayFilter",JSON.stringify({sel:[...sel],only:onlyAway,m:months}));}catch(e){}};
 
-/* ===== 國定假日（行政院人事行政總處 115、116 年辦公日曆表；含補假） ===== */
-const HOLI={"2026-12-25":"行憲紀念日",
-"2027-01-01":"元旦","2027-02-04":"小年夜","2027-02-05":"除夕","2027-02-06":"春節","2027-02-07":"春節","2027-02-08":"春節","2027-02-09":"春節補假","2027-02-10":"春節補假",
-"2027-02-28":"和平紀念日","2027-03-01":"和平紀念日補假","2027-04-04":"兒童節","2027-04-05":"清明節","2027-04-06":"兒童節補假","2027-04-30":"勞動節補假","2027-05-01":"勞動節",
-"2027-06-09":"端午節","2027-09-15":"中秋節","2027-09-28":"教師節","2027-10-10":"國慶日","2027-10-11":"國慶日補假","2027-10-25":"臺灣光復暨金門古寧頭大捷紀念日",
-"2027-12-24":"行憲紀念日補假","2027-12-25":"行憲紀念日","2027-12-31":"元旦補假（2028 年）"};
 /* 格子底色：國定假日 > 週末 */
 const bg=(d,x)=>HOLI[d]?" hol":(x.getDay()===0||x.getDay()===6)?" we":"";
 const hn=d=>HOLI[d]?" "+HOLI[d]:"";
-/* 預設排序（設定裡還沒存過順序時，用名字對照） */
-const DEFAULT_ORDER=["Satoru","Paku","Jman","草八刀","山壯","Cirtus","33","來來","楓之旋律","飛雷虛","Sealcy"];
-function orderList(){if(Array.isArray(cfg.order)&&cfg.order.length)return cfg.order;
-  const out=[];DEFAULT_ORDER.forEach(n=>{const k=n.toLowerCase();const id=Object.keys(users).find(i=>!out.includes(i)&&[users[i].nick,users[i].dcName].some(v=>v&&String(v).trim().toLowerCase()===k));if(id)out.push(id);});return out;}
-function sortIds(ids){const o=orderList(),ix=id=>{const i=o.indexOf(id);return i<0?1e9:i;};
-  return ids.slice().sort((x,y)=>ix(x)-ix(y)||nameOf(users[x]).localeCompare(nameOf(users[y]),"zh-Hant"));}
+function sortIds(ids){return sortIdsBy(users,cfg,ids);}
 
 /* ===== 權限（要和 firestore.rules 一致） ===== */
 const acc=u=>(cfg.access||{})[u]||"";

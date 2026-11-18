@@ -302,6 +302,7 @@ a{color:var(--accent)}
 </script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
+import { initAwayMini } from "./away-mini.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -378,7 +379,7 @@ function jobOptions(sel,blank){
 }
 
 /* ---------- 狀態 ---------- */
-let app,db,auth,me=null,claims={},isOwner=false;
+let app,db,auth,me=null,claims={},isOwner=false,awayMini=null;
 let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null,phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
@@ -397,11 +398,11 @@ app=initializeApp(FIREBASE_CONFIG);db=getFirestore(app);auth=getAuth(app);
 curTid=urlTeam();view=curTid?(urlMod()==="bis"?"mod":"team"):"lobby";
 onAuthStateChanged(auth,async u=>{
   me=u;claims={};
-  unsub.forEach(f=>f());unsub=[];
+  unsub.forEach(f=>f());unsub=[];if(awayMini){awayMini.stop();awayMini=null;}
   users={};statics=[];mem={};links={};linkSrc={};ready={users:false,statics:false,mem:false};
   if(u){try{claims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
   isOwner=!!(u&&((u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase())||claims.dc===OWNER_DISCORD_ID));
-  if(u&&(claims.dc||isOwner))subscribe();
+  if(u&&(claims.dc||isOwner)){subscribe();awayMini=initAwayMini({db,getCtx:()=>({me,isOwner,users,mem,statics,avatarUrl,nameOf})});}
   render();
 });
 function subscribe(){
@@ -493,7 +494,7 @@ function render(fromSnapshot){
     else if(view==="manage"&&canManage(st))return v.innerHTML=manageHTML(st),afterManage();
     else{view="team";return v.innerHTML=teamHTML(st);}
   }
-  view="lobby";v.innerHTML=lobbyHTML();
+  view="lobby";v.innerHTML=lobbyHTML();if(awayMini)awayMini.paint();
 }
 function isTyping(){const a=document.activeElement;return!!a&&$("#view").contains(a)&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&!/checkbox|radio/.test(a.type)));}
 document.addEventListener("focusout",()=>{if(!bisPending)return;setTimeout(()=>{if(bisPending&&!isTyping()&&!(view==="mod"&&bisTab==="settings")){bisPending=false;render();}},80);});
@@ -568,7 +569,7 @@ function lobbyHTML(){
   return'<section class="hero"><h1>光之戰士飛地</h1><p class="slogan">'+(p?'歡迎回來，'+esc(nameOf(p))+'。':'歡迎來到光之戰士飛地。')+'</p></section>'+
     '<div class="panel"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
       (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
-    '<div class="panel"><div class="phead"><h2>請假行事曆</h2><a class="btn sm" href="away.html">打開行事曆</a></div><p class="muted" style="margin:0">登記出國、請假或可能不在的日子，方便大家排團。</p></div>'+
+    '<div class="panel"><div class="phead"><h2>請假行事曆</h2><a class="btn sm" href="away.html">打開行事曆</a></div><div id="awayMini" class="am"><p class="muted" style="margin:0">載入中…</p></div></div>'+
     '<div class="panel"><h2>飛地成員（'+ids.length+'）</h2>'+
       (ids.length?'<div class="crystals">'+ids.map(crystalHTML).join("")+'</div>':'<p class="muted">還沒有人建立靈魂水晶。</p>')+'</div>'+
     linksPanelHTML();
