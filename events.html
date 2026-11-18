@@ -303,18 +303,20 @@ function formHTML(){const F=form;
 function shareText(id,e,tag){
   const slots=e.slots||[],list=Object.entries(rsvp).map(([u,r])=>({u,...r})),url=location.origin+location.pathname+"?e="+encodeURIComponent(id);
   const nm=r=>nameOf(users[r.u])+(e.roles&&(r.jobs||[]).length?"（"+r.jobs.slice(0,3).map(k=>(JOB[k]||{}).n||k).join("/")+"）":"");
+  const w=s=>whenTxt(s).replace("） ","）");
   const fx=e.status==="fixed"?slots.find(s=>s.id===e.fixed):null,L=[];
-  L.push("📣 **揪團｜"+e.title+"**（"+(e.kind||"其他")+"）");
-  if(fx)L.push("🗓️ 確定時間：**"+whenTxt(fx)+"**");
-  else if(slots.length){L.push("🗓️ 候選時間：");slots.forEach(s=>{const ok=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="y").length,mb=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="m").length;L.push("　・"+whenTxt(s)+"　可以 "+ok+(mb?"／勉強 "+mb:""));});}
-  const info=[];if(sizeTxt(e))info.push("人數 "+sizeTxt(e));if(e.roles)info.push("坦 "+(e.t||0)+"／補 "+(e.h||0)+"／輸出 "+(e.d||0));if(e.ilvl)info.push("裝等 "+e.ilvl);
-  if(info.length)L.push("👥 "+info.join("｜"));
-  if(e.desc){const d=e.desc.trim();L.push("📝 "+(d.length>220?d.slice(0,220)+"…":d).replace(/\n+/g,"\n　"));}
+  L.push("【揪團】**"+e.title+"**"+(e.status==="closed"?"（已結束）":""));
+  if(fx)L.push("時間確定：**"+w(fx)+"**");
+  else if(slots.length===1)L.push("時間："+w(slots[0])+"（還在調查，先看大家行不行）");
+  else if(slots.length){L.push("時間還沒定，目前大家的狀況：");slots.forEach(s=>{const ok=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="y").length,mb=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="m").length;L.push(w(s)+"　"+ok+" 人可以"+(mb?"、"+mb+" 人勉強":""));});}
+  const info=[];if(sizeTxt(e))info.push(sizeTxt(e));if(e.roles)info.push((e.t||0)+" 坦 "+(e.h||0)+" 補 "+(e.d||0)+" 輸出");if(e.ilvl)info.push("裝等 "+e.ilvl);
+  if(info.length)L.push(info.join("，"));
+  if(e.desc){const d=e.desc.trim();L.push("",d.length>300?d.slice(0,300)+"…":d);}
   const yes=list.filter(r=>r.go==="y"),may=list.filter(r=>r.go==="m");
-  L.push("✋ 想參加（"+yes.length+"）："+(yes.length?yes.map(nm).join("、"):"還沒有人"));
-  if(may.length)L.push("🤔 看時間（"+may.length+"）："+may.map(nm).join("、"));
-  L.push("👉 點這裡填寫意願："+url);
-  if(tag){const ny=Object.keys(users).filter(u=>!rsvp[u]&&users[u].dc);if(ny.length)L.push("🔔 還沒回覆："+ny.map(u=>"<@"+users[u].dc+">").join(" "));}
+  L.push("","目前要來："+(yes.length?yes.map(nm).join("、"):"還沒有人，快來當第一個"));
+  if(may.length)L.push("還在看時間："+may.map(nm).join("、"));
+  L.push("有興趣的點這裡填一下：<"+url+">");
+  if(tag&&e.status!=="closed"){const ny=Object.keys(users).filter(u=>!rsvp[u]&&users[u].dc);if(ny.length)L.push("還沒回的："+ny.map(u=>"<@"+users[u].dc+">").join(" "));}
   return L.join("\n");
 }
 function openShare(){const id=view.e,e=events[id];const m=document.createElement("div");m.id="shareM";
