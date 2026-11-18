@@ -13,7 +13,7 @@
   color-scheme:light;
   --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
   --accent:#2F63C9; --accent-ink:#FFFFFF; --danger:#C23A4F; --surface2:#EDF1F7;
-  --off:#D9485F; --off-ink:#FFFFFF; --maybe:#E19A2B; --weekend:#E2E7F0; --today:#2F63C9; --good:#2E8B57;
+  --off:#D9485F; --off-ink:#FFFFFF; --maybe:#E19A2B; --weekend:#E2E7F0; --hol:#F6DDE1; --hol-ink:#B8323F; --today:#2F63C9; --good:#2E8B57;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){
@@ -21,14 +21,14 @@
     color-scheme:dark;
     --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
     --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --surface2:#202940;
-    --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --today:#6E9BFF; --good:#5FCB8E;
+    --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --hol:#3A2027; --hol-ink:#FF8C9C; --today:#6E9BFF; --good:#5FCB8E;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
   --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --surface2:#202940;
-  --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --today:#6E9BFF; --good:#5FCB8E;
+  --off:#E0566C; --off-ink:#FFFFFF; --maybe:#F0B04A; --weekend:#1E2638; --hol:#3A2027; --hol-ink:#FF8C9C; --today:#6E9BFF; --good:#5FCB8E;
 }
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
@@ -86,6 +86,14 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .cal td.day,.cal thead th.day{width:24px;min-width:24px;max-width:24px}
 .cal td.day{height:32px;position:relative}
 .cal .we{background:var(--weekend)}
+.cal .hol{background:var(--hol)}
+.cal thead tr.d th.hol{color:var(--hol-ink);font-weight:800}
+.sw.hol{background:var(--hol);border:1px solid var(--hol-ink)}
+.ord{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.ord .n{width:22px;text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.ord .t{flex:1}
+.ord button{min-width:34px;min-height:30px}
+.cp{width:auto;min-height:30px;padding:2px 6px;font-size:12.5px}
 .cal .mstart{border-left:1px solid var(--line)}
 .cal thead th.today{color:var(--today);font-weight:900;box-shadow:inset 0 -3px 0 var(--today)}
 .cal td.today{box-shadow:inset 1px 0 0 var(--today),inset -1px 0 0 var(--today)}
@@ -153,6 +161,22 @@ const WK="日一二三四五六";
 const md=s=>{const d=parse(s);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）";};
 const saveFilter=()=>{try{localStorage.setItem("awayFilter",JSON.stringify({sel:[...sel],only:onlyAway,m:months}));}catch(e){}};
 
+/* ===== 國定假日（行政院人事行政總處 115、116 年辦公日曆表；含補假） ===== */
+const HOLI={"2026-12-25":"行憲紀念日",
+"2027-01-01":"元旦","2027-02-04":"小年夜","2027-02-05":"除夕","2027-02-06":"春節","2027-02-07":"春節","2027-02-08":"春節","2027-02-09":"春節補假","2027-02-10":"春節補假",
+"2027-02-28":"和平紀念日","2027-03-01":"和平紀念日補假","2027-04-04":"兒童節","2027-04-05":"清明節","2027-04-06":"兒童節補假","2027-04-30":"勞動節補假","2027-05-01":"勞動節",
+"2027-06-09":"端午節","2027-09-15":"中秋節","2027-09-28":"教師節","2027-10-10":"國慶日","2027-10-11":"國慶日補假","2027-10-25":"臺灣光復暨金門古寧頭大捷紀念日",
+"2027-12-24":"行憲紀念日補假","2027-12-25":"行憲紀念日","2027-12-31":"元旦補假（2028 年）"};
+/* 格子底色：國定假日 > 週末 */
+const bg=(d,x)=>HOLI[d]?" hol":(x.getDay()===0||x.getDay()===6)?" we":"";
+const hn=d=>HOLI[d]?" "+HOLI[d]:"";
+/* 預設排序（設定裡還沒存過順序時，用名字對照） */
+const DEFAULT_ORDER=["Satoru","Paku","Jman","草八刀","山壯","Cirtus","33","來來","楓之旋律","飛雷虛","Sealcy"];
+function orderList(){if(Array.isArray(cfg.order)&&cfg.order.length)return cfg.order;
+  const out=[];DEFAULT_ORDER.forEach(n=>{const k=n.toLowerCase();const id=Object.keys(users).find(i=>!out.includes(i)&&[users[i].nick,users[i].dcName].some(v=>v&&String(v).trim().toLowerCase()===k));if(id)out.push(id);});return out;}
+function sortIds(ids){const o=orderList(),ix=id=>{const i=o.indexOf(id);return i<0?1e9:i;};
+  return ids.slice().sort((x,y)=>ix(x)-ix(y)||nameOf(users[x]).localeCompare(nameOf(users[y]),"zh-Hant"));}
+
 /* ===== 權限（要和 firestore.rules 一致） ===== */
 const acc=u=>(cfg.access||{})[u]||"";
 const helpersOf=t=>Object.keys(((cfg.proxies||{})[t])||{});
@@ -168,7 +192,7 @@ function rowIds(){let ids=Object.keys(users);
   if(!canList)ids=ids.filter(id=>id===me.uid||canEdit(id));
   const range=days();const a=range[0],b=range[range.length-1];
   if(onlyAway)ids=ids.filter(id=>entriesOf(id).some(e=>e.to>=a&&e.from<=b));
-  return ids.sort((x,y)=>(x===me.uid?-1:y===me.uid?1:nameOf(users[x]).localeCompare(nameOf(users[y]),"zh-Hant")));}
+  return sortIds(ids);}
 function days(){const t=new Date();t.setHours(0,0,0,0);const end=new Date(t);end.setMonth(end.getMonth()+months);const out=[];for(let d=new Date(t);d<end;d=addDays(d,1))out.push(ymd(d));return out;}
 
 /* ===== 畫面 ===== */
@@ -179,7 +203,7 @@ function render(){
   let h='<a class="back" href="index.html">← 回飛地大廳</a><div class="top"><div><h1>請假行事曆</h1><div class="sub">飛地成員接下來 '+months+' 個月的請假與可能不在的日子</div></div><div class="tools">'+
     (editableIds().length?'<button class="btn primary" data-a="new">＋ 我要請假</button>':'')+
     '<select class="f" style="width:auto" id="months" aria-label="顯示範圍">'+[1,3,6].map(m=>'<option value="'+m+'"'+(m===months?" selected":"")+'>'+m+' 個月</option>').join("")+'</select>'+
-    (isOwner?'<button class="btn" data-a="settings">權限設定</button>':'')+'</div></div>';
+    (isOwner?'<button class="btn" data-a="settings">權限與順序</button>':'')+'</div></div>';
   if(!canList)h+='<div class="panel"><p style="margin:0">你目前只看得到自己'+(editableIds().length>1?'和你負責代填的人':'')+'的請假。需要看全部成員時，請找網站管理員開權限。</p></div>';
   // 篩選
   if(canList)h+='<div class="panel"><div class="chips"><span class="lbl">只看</span><button class="chip" data-a="selall" aria-pressed="'+(!sel.size)+'">全部飛地成員</button>'+
@@ -191,21 +215,21 @@ function render(){
   h+='<div class="panel"><h2>近期請假（'+up.length+'）</h2>'+(up.length?'<ul class="up">'+up.map(({id,e})=>{const l=labelOf(id,e);
     return '<li><span class="who">'+esc(nameOf(users[id]))+'</span><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock" title="只有本人、代填的人和團長看得到">僅團長可見</span>':'')+(canEdit(id)?'<button class="btn sm" data-a="edit" data-u="'+id+'">編輯</button>':'')+'</li>';}).join("")+'</ul>':'<p class="note" style="margin:0">這段期間沒有人請假。</p>')+'</div>';
   // 行事曆
-  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
+  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span><span class="sw hol"></span>國定假日（含補假）</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
   if(!ids.length){h+='<div class="panel empty">沒有符合條件的成員。</div>';app.innerHTML=h;return;}
   const months0=[];D.forEach((d,i)=>{const m=d.slice(0,7);if(!months0.length||months0[months0.length-1].m!==m)months0.push({m,n:0,i});months0[months0.length-1].n++;});
   let t='<div class="gw" id="gw"><table class="cal"><thead><tr class="m"><th class="nm" rowspan="3" style="vertical-align:bottom;padding:6px 8px;font-size:12px;color:var(--muted)">成員（'+ids.length+'）</th>'+
     months0.map(x=>{const d=parse(x.m+"-01");return '<th colspan="'+x.n+'">'+d.getFullYear()+' 年 '+(d.getMonth()+1)+' 月</th>';}).join("")+'</tr><tr class="d">';
-  D.forEach((d,i)=>{const x=parse(d),we=x.getDay()===0||x.getDay()===6;t+='<th class="day'+(we?" we":"")+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+'" title="'+md(d)+'">'+x.getDate()+'<br>'+WK[x.getDay()]+'</th>';});
+  D.forEach((d,i)=>{const x=parse(d);t+='<th class="day'+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+'" title="'+md(d)+hn(d)+'">'+x.getDate()+'<br>'+WK[x.getDay()]+'</th>';});
   t+='</tr><tr class="c">';
-  D.forEach((d,i)=>{let ok=0,mb=0;ids.forEach(id=>{const s=dayState(id,d);if(!s)ok++;else if(s==="maybe"){mb++;}});const x=parse(d),we=x.getDay()===0||x.getDay()===6;
-    t+='<th class="day cnt'+(ok+mb===ids.length&&!mb?" full":ok+mb<ids.length?" low":"")+(we?" we":"")+(x.getDate()===1&&i?" mstart":"")+'" title="'+md(d)+'：確定能到 '+ok+' 人'+(mb?'，可能不在 '+mb+' 人':'')+'，請假 '+(ids.length-ok-mb)+' 人">'+ok+(mb?'<small>+'+mb+'?</small>':'')+'</th>';});
+  D.forEach((d,i)=>{let ok=0,mb=0;ids.forEach(id=>{const s=dayState(id,d);if(!s)ok++;else if(s==="maybe"){mb++;}});const x=parse(d);
+    t+='<th class="day cnt'+(ok+mb===ids.length&&!mb?" full":ok+mb<ids.length?" low":"")+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+'" title="'+md(d)+hn(d)+'：確定能到 '+ok+' 人'+(mb?'，可能不在 '+mb+' 人':'')+'，請假 '+(ids.length-ok-mb)+' 人">'+ok+(mb?'<small>+'+mb+'?</small>':'')+'</th>';});
   t+='</tr></thead><tbody>';
   ids.forEach(id=>{const u=users[id],ed=canEdit(id);
     t+='<tr><th class="nm" scope="row">'+(ed?'<button class="in" data-a="edit" data-u="'+id+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'<div class="in">')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span class="t">'+esc(nameOf(u))+'</span>'+(id===me.uid?'<span class="me">你</span>':'')+(ed?'</button>':'</div>')+'</th>';
-    D.forEach((d,i)=>{const s=dayState(id,d),x=parse(d),we=x.getDay()===0||x.getDay()===6;let tip=nameOf(u)+" "+md(d);
+    D.forEach((d,i)=>{const s=dayState(id,d),x=parse(d);let tip=nameOf(u)+" "+md(d)+hn(d);
       if(s){const e=entriesOf(id).find(e=>e.from<=d&&d<=e.to&&(s==="off"?e.kind==="off":true)),l=labelOf(id,e);tip+="："+(s==="off"?"請假":"可能不在")+(l.t?"（"+l.t+"）":"");}
-      t+='<td class="day'+(s?" "+s:we?" we":"")+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(tip)+'"></td>';});
+      t+='<td class="day'+(s?" "+s:bg(d,x))+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(tip)+'"></td>';});
     t+='</tr>';});
   h+=t+'</tbody></table></div>';
   if(isOwner||editableIds().length)h+='<p class="hint">點自己那一列的格子，可以從那天開始新增請假。</p>';
@@ -222,9 +246,9 @@ function renderModal(){
   if(modal.k==="edit"){const u=modal.u,list=entriesOf(u).slice().sort((a,b)=>a.from.localeCompare(b.from)),today=ymd(new Date());
     const eds=editableIds();
     h+='<h2>'+esc(nameOf(users[u]))+' 的請假</h2>';
-    if(eds.length>1)h+='<label class="fld"><span>幫誰填</span><select class="f" id="who">'+eds.sort((a,b)=>a===me.uid?-1:b===me.uid?1:0).map(id=>'<option value="'+id+'"'+(id===u?" selected":"")+'>'+esc(nameOf(users[id]))+(id===me.uid?"（我）":"")+'</option>').join("")+'</select></label>';
-    const cur=list.filter(e=>e.to>=today),past=list.length-cur.length;
-    h+=cur.length?cur.map(e=>{const l=labelOf(u,e);return '<div class="ent"><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock">僅團長可見</span>':'')+'<span class="sp"></span><button class="btn sm" data-a="fedit" data-id="'+e.id+'">修改</button><button class="btn sm danger" data-a="fdel" data-id="'+e.id+'">刪除</button></div>';}).join(""):'<p class="note">目前沒有請假。</p>';
+    if(eds.length>1)h+='<label class="fld"><span>幫誰填</span><select class="f" id="who">'+sortIds(eds).sort((a,b)=>a===me.uid?-1:b===me.uid?1:0).map(id=>'<option value="'+id+'"'+(id===u?" selected":"")+'>'+esc(nameOf(users[id]))+(id===me.uid?"（我）":"")+'</option>').join("")+'</select></label>';
+    const cur=list.filter(e=>e.to>=today),past=list.length-cur.length,cpT=sortIds(eds.filter(x=>x!==u));
+    h+=cur.length?cur.map(e=>{const l=labelOf(u,e);return '<div class="ent"><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock">僅團長可見</span>':'')+'<span class="sp"></span>'+(cpT.length?'<select class="f cp" data-copy="'+e.id+'" aria-label="把這筆請假複製給別人"><option value="">複製給…</option>'+cpT.map(x=>'<option value="'+x+'">'+esc(nameOf(users[x]))+'</option>').join("")+'</select>':'')+'<button class="btn sm" data-a="fedit" data-id="'+e.id+'">修改</button><button class="btn sm danger" data-a="fdel" data-id="'+e.id+'">刪除</button></div>';}).join(""):'<p class="note">目前沒有請假。</p>';
     if(past)h+='<p class="hint">另外有 '+past+' 筆已經過去的紀錄，結束超過 30 天會自動清除。</p>';
     const F=modal.form;
     if(!F)h+='<div class="end" style="justify-content:flex-start"><button class="btn primary" data-a="fnew">＋ 新增請假</button></div>';
@@ -240,6 +264,8 @@ function renderModal(){
     h+='<h2>權限設定</h2><p class="hint" style="margin-top:0">每個人都能看到、編輯自己的請假。這裡設定誰能看到全部成員，以及誰可以幫誰代填。</p>';
     h+='<div class="panel" style="margin-top:12px"><h2>誰可以看整個行事曆</h2><div class="end" style="justify-content:flex-start;margin:0 0 6px"><button class="btn sm" data-a="leadall">把所有固定團的團長設為「團長」</button></div>'+
       ids.map(id=>'<div class="srow"><span>'+esc(nameOf(users[id]))+'</span><select class="f" data-acc="'+id+'" aria-label="'+esc(nameOf(users[id]))+' 的權限"><option value="">只看得到自己</option><option value="view"'+(A[id]==="view"?" selected":"")+'>可檢視全部</option><option value="lead"'+(A[id]==="lead"?" selected":"")+'>團長（也看得到私人理由）</option></select></div>').join("")+'</div>';
+    h+='<div class="panel"><h2>成員順序</h2><p class="hint" style="margin-top:0">行事曆和清單都照這個順序排，只有你可以調整。</p>'+
+      modal.order.map((id,i)=>'<div class="ord"><span class="n">'+(i+1)+'</span><span class="t">'+esc(nameOf(users[id]))+'</span><button class="btn sm" data-a="oup" data-i="'+i+'"'+(i?'':' disabled')+' aria-label="'+esc(nameOf(users[id]))+' 往上">↑</button><button class="btn sm" data-a="odn" data-i="'+i+'"'+(i<modal.order.length-1?'':' disabled')+' aria-label="'+esc(nameOf(users[id]))+' 往下">↓</button></div>').join("")+'</div>';
     h+='<div class="panel"><h2>代填</h2><p class="hint" style="margin-top:0">被設定的人可以幫對方新增、修改請假，也看得到對方的私人理由。</p>'+
       Object.keys(users).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")).map(t=>{const hs=Object.keys(P[t]||{});
         return '<div class="prow"><b>'+esc(nameOf(users[t]))+'</b> 可以由這些人代填：<div class="hl">'+hs.map(x=>'<span class="tag">'+esc(nameOf(users[x]))+'<button aria-label="移除 '+esc(nameOf(users[x]))+'" data-a="prm" data-t="'+t+'" data-h="'+x+'">×</button></span>').join("")+
@@ -253,6 +279,7 @@ function closeModal(){modal=null;const m=$("#modal");if(m)m.remove();}
 function onModalInput(e){const t=e.target;
   if(t.dataset.ff&&modal&&modal.form){modal.form[t.dataset.ff]=t.value;if(t.dataset.ff==="from"&&modal.form.to<t.value){modal.form.to=t.value;const x=$('[data-ff="to"]');if(x)x.value=t.value;}}
   else if(t.id==="who"){modal.u=t.value;modal.form=null;renderModal();}
+  else if(t.dataset.copy&&t.value&&modal.k==="edit"){copyEntry(modal.u,t.dataset.copy,t.value);t.value="";}
   else if(t.dataset.acc!=null&&modal.k==="settings"){if(t.value)modal.access[t.dataset.acc]=t.value;else delete modal.access[t.dataset.acc];}
   else if(t.dataset.padd&&t.value){const tg=t.dataset.padd;modal.proxies[tg]=modal.proxies[tg]||{};modal.proxies[tg][t.value]=true;renderModal();}
 }
@@ -264,6 +291,12 @@ async function saveEntries(u,entries,labels){
   try{await setDoc(doc(db,"away",u),{entries,updatedAt:Date.now(),by:me.uid});await setDoc(doc(db,"awayPriv",u),{labels,updatedAt:Date.now(),by:me.uid});
     away[u]={entries};priv[u]={labels};return true;}
   catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限":e.code||e.message));return false;}}
+async function copyEntry(from,eid,to){const src=entriesOf(from).find(e=>e.id===eid);if(!src||!canEdit(to))return;
+  const l=labelOf(from,src),list=entriesOf(to).map(e=>({...e}));
+  if(list.some(e=>e.from===src.from&&e.to===src.to&&e.kind===src.kind)){toast(nameOf(users[to])+" 已經有同一段請假了");return;}
+  const labels={...(((priv[to]||{}).labels)||{})},e={id:uid(),from:src.from,to:src.to,kind:src.kind};
+  if(l.t){if(l.lock)labels[e.id]=l.t;else e.label=l.t;}
+  list.push(e);if(await saveEntries(to,list,labels)){render();renderModal();toast("已複製給 "+nameOf(users[to]));}}
 async function saveForm(){const F=modal.form,u=modal.u;
   if(!F.from||!F.to){toast("請選開始和結束日期");return;}if(F.to<F.from){toast("結束日期不能早於開始日期");return;}
   const label=(F.label||"").trim().slice(0,30),list=entriesOf(u).filter(e=>e.id!==F.id).map(e=>({...e})),labels={...(((priv[u]||{}).labels)||{})};
@@ -285,11 +318,12 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="mclose")closeModal();
   else if(a==="selall"){sel.clear();saveFilter();render();}
   else if(a==="selst"){const t=b.dataset.t;if(sel.has(t))sel.delete(t);else sel.add(t);saveFilter();render();}
-  else if(a==="settings"){modal={k:"settings",access:{...(cfg.access||{})},proxies:JSON.parse(JSON.stringify(cfg.proxies||{}))};renderModal();}
+  else if(a==="settings"){modal={k:"settings",order:sortIds(Object.keys(users)),access:{...(cfg.access||{})},proxies:JSON.parse(JSON.stringify(cfg.proxies||{}))};renderModal();}
   else if(a==="leadall"){statics.forEach(s=>Object.keys(s.leaders||{}).forEach(id=>{if(users[id])modal.access[id]="lead";}));renderModal();toast("已套用，記得按儲存");}
+  else if(a==="oup"||a==="odn"){const i=+b.dataset.i,j=a==="oup"?i-1:i+1,o=modal.order;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];renderModal();const nb=document.querySelector('[data-a="'+a+'"][data-i="'+j+'"]');if(nb&&!nb.disabled)nb.focus();}
   else if(a==="prm"){delete (modal.proxies[b.dataset.t]||{})[b.dataset.h];renderModal();}
   else if(a==="ssave"){const P={};Object.keys(modal.proxies).forEach(t=>{const k=Object.keys(modal.proxies[t]||{});if(k.length)P[t]=Object.fromEntries(k.map(x=>[x,true]));});
-    setDoc(doc(db,"awayCfg","main"),{access:modal.access,proxies:P,updatedAt:Date.now()}).then(()=>{closeModal();toast("權限已儲存");}).catch(e=>{console.error(e);toast("儲存失敗："+(e.code||e.message));});}
+    setDoc(doc(db,"awayCfg","main"),{access:modal.access,proxies:P,order:modal.order,updatedAt:Date.now()}).then(()=>{closeModal();toast("權限已儲存");}).catch(e=>{console.error(e);toast("儲存失敗："+(e.code||e.message));});}
 }
 document.getElementById("app").addEventListener("click",onClick);
 document.addEventListener("change",e=>{if(e.target.id==="months"){months=+e.target.value;saveFilter();render();}else if(e.target.id==="onlyAway"){onlyAway=e.target.checked;saveFilter();render();}});
