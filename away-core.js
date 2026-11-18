@@ -23,3 +23,17 @@ export function sortIdsBy(users,cfg,ids){
   const o=orderList(users,cfg),ix=id=>{const i=o.indexOf(id);return i<0?1e9:i;};
   return ids.slice().sort((x,y)=>ix(x)-ix(y)||nm(users[x]).localeCompare(nm(users[y]),"zh-Hant"));
 }
+
+/* 揪團活動同步到行事曆：已定案的放確定日期，調查中的放候選日期 */
+export function eventMarks(events){
+  const m={};
+  Object.entries(events||{}).forEach(([id,e])=>{
+    if(!e||e.status==="closed")return;
+    const slots=e.slots||[];
+    const list=e.status==="fixed"?slots.filter(s=>s.id===e.fixed):slots;
+    list.forEach(s=>{if(!s.d)return;(m[s.d]=m[s.d]||[]).push({id,title:e.title||"",t:s.t||"",fixed:e.status==="fixed"});});
+  });
+  Object.values(m).forEach(a=>a.sort((x,y)=>(y.fixed-x.fixed)||x.t.localeCompare(y.t)));
+  return m;
+}
+export const markTip=a=>a.map(x=>(x.fixed?"【已定案】":"【調查中】")+(x.t?x.t+" ":"")+x.title).join("\n");

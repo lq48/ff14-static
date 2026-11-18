@@ -314,7 +314,7 @@ a{color:var(--accent)}
 </script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
-import { initAwayMini } from "./away-mini.js?v=go1";
+import { initAwayMini } from "./away-mini.js?v=ev1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -596,8 +596,8 @@ function lobbyHTML(){
     '<figure class="group"><img src="img/group-2026-halloween-1920.webp" srcset="img/group-2026-halloween-960.webp 960w, img/group-2026-halloween-1920.webp 1920w" sizes="(max-width:1100px) 100vw, 1100px" alt="光之戰士飛地的大家，在 2026 年萬聖節穿著各式服裝一起合照" width="1920" height="900"><figcaption><span class="cap">一起走過的每一場冒險</span><span class="gtag">2026 萬聖節 · 光之戰士飛地</span></figcaption></figure>'+
     '<div class="panel"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
       (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
-    '<div class="panel"><div class="phead"><h2>請假行事曆</h2><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><a class="btn sm primary" href="away.html?new=1">＋ 我要請假</a><a class="btn sm" href="away.html">完整行事曆</a></div></div><div id="awayMini" class="am"><p class="muted" style="margin:0">載入中…</p></div></div>'+
     eventsPanelHTML()+
+    '<div class="panel"><div class="phead"><h2>請假行事曆</h2><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><a class="btn sm primary" href="away.html?new=1">＋ 我要請假</a><a class="btn sm" href="away.html">完整行事曆</a></div></div><div id="awayMini" class="am"><p class="muted" style="margin:0">載入中…</p></div></div>'+
     '<div class="panel"><h2>飛地成員（'+ids.length+'）</h2>'+
       (ids.length?'<div class="crystals">'+ids.map(crystalHTML).join("")+'</div>':'<p class="muted">還沒有人建立靈魂水晶。</p>')+'</div>'+
     linksPanelHTML();

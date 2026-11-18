@@ -76,6 +76,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .cal thead tr.m th{top:0;height:24px;font-size:12px;font-weight:700;text-align:left;padding-left:6px;border-left:1px solid var(--line)}
 .cal thead tr.d th{top:24px;height:38px;font-size:11px;font-weight:500;color:var(--muted);text-align:center;line-height:1.15}
 .cal thead tr.c th{top:62px;height:28px;font-size:11.5px;font-weight:700;text-align:center}
+.cal thead tr.ev th{top:90px;height:22px;text-align:center}
 .cal .nm{position:sticky;left:0;background:var(--surface);z-index:1;min-width:150px;max-width:150px;border-right:1px solid var(--line);text-align:left}
 .cal thead .nm{z-index:3}
 .cal .nm .in{display:flex;align-items:center;gap:6px;padding:4px 8px;width:100%;border:0;background:transparent;text-align:left;min-height:32px}
@@ -87,6 +88,9 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .cal td.day{height:32px;position:relative}
 .cal .we{background:var(--weekend)}
 .cal .hol{background:var(--hol)}
+.cal .evm{display:block;text-decoration:none;color:#B8860B;font-size:13px;line-height:20px;opacity:.75}
+.cal .evm.fx{opacity:1;font-weight:900}
+.cal .evm:hover{color:var(--accent)}
 .cal thead tr.d th.hol{color:var(--hol-ink);font-weight:800}
 .sw.hol{background:var(--hol);border:1px solid var(--hol-ink)}
 .ord{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
@@ -133,7 +137,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 <div class="wrap" id="app"><div class="empty">載入中…</div></div>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
-import { HOLI, sortIdsBy } from "./away-core.js?v=1";
+import { HOLI, sortIdsBy, eventMarks, markTip } from "./away-core.js?v=2";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -143,7 +147,7 @@ document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"|
 const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
 
 /* ===== 狀態 ===== */
-let me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
+let evs={},me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
 const QS=new URLSearchParams(location.search);let pendingOpen=QS.has("new")||QS.has("u")?{u:QS.get("u"),d:QS.get("d")}:null,cfgLoaded=false,usersLoaded=false;
 let sel=new Set(),onlyAway=false,months=3,modal=null,toastT=null,started=false,canList=false,canPriv=false;
 try{const s=JSON.parse(localStorage.getItem("awayFilter")||"null");if(s){sel=new Set(s.sel||[]);onlyAway=!!s.only;months=s.m||3;}}catch(e){}
@@ -210,15 +214,17 @@ function render(){
   h+='<div class="panel"><h2>近期請假（'+up.length+'）</h2>'+(up.length?'<ul class="up">'+up.map(({id,e})=>{const l=labelOf(id,e);
     return '<li><span class="who">'+esc(nameOf(users[id]))+'</span><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock" title="只有本人、代填的人和團長看得到">僅團長可見</span>':'')+(canEdit(id)?'<button class="btn sm" data-a="edit" data-u="'+id+'">編輯</button>':'')+'</li>';}).join("")+'</ul>':'<p class="note" style="margin:0">這段期間沒有人請假。</p>')+'</div>';
   // 行事曆
-  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span><span class="sw hol"></span>國定假日（含補假）</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
+  h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span><span class="sw hol"></span>國定假日（含補假）</span><span style="color:#B8860B">★</span><span style="margin-left:-10px">已定案的揪團　○ 調查中的候選日</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
   if(!ids.length){h+='<div class="panel empty">沒有符合條件的成員。</div>';app.innerHTML=h;return;}
+  const EM=eventMarks(evs),hasEv=D.some(d=>EM[d]);
   const months0=[];D.forEach((d,i)=>{const m=d.slice(0,7);if(!months0.length||months0[months0.length-1].m!==m)months0.push({m,n:0,i});months0[months0.length-1].n++;});
-  let t='<div class="gw" id="gw"><table class="cal"><thead><tr class="m"><th class="nm" rowspan="3" style="vertical-align:bottom;padding:6px 8px;font-size:12px;color:var(--muted)">成員（'+ids.length+'）</th>'+
+  let t='<div class="gw" id="gw"><table class="cal"><thead><tr class="m"><th class="nm" rowspan="'+(hasEv?4:3)+'" style="vertical-align:bottom;padding:6px 8px;font-size:12px;color:var(--muted)">成員（'+ids.length+'）</th>'+
     months0.map(x=>{const d=parse(x.m+"-01");return '<th colspan="'+x.n+'">'+d.getFullYear()+' 年 '+(d.getMonth()+1)+' 月</th>';}).join("")+'</tr><tr class="d">';
   D.forEach((d,i)=>{const x=parse(d);t+='<th class="day'+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+'" title="'+md(d)+hn(d)+'">'+x.getDate()+'<br>'+WK[x.getDay()]+'</th>';});
   t+='</tr><tr class="c">';
   D.forEach((d,i)=>{let ok=0,mb=0;ids.forEach(id=>{const s=dayState(id,d);if(!s)ok++;else if(s==="maybe"){mb++;}});const x=parse(d);
     t+='<th class="day cnt'+(ok+mb===ids.length&&!mb?" full":ok+mb<ids.length?" low":"")+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+'" title="'+md(d)+hn(d)+'：確定能到 '+ok+' 人'+(mb?'，可能不在 '+mb+' 人':'')+'，請假 '+(ids.length-ok-mb)+' 人">'+ok+(mb?'<small>+'+mb+'?</small>':'')+'</th>';});
+  if(hasEv){t+='</tr><tr class="ev">';D.forEach((d,i)=>{const a=EM[d],x=parse(d);t+='<th class="day'+bg(d,x)+(x.getDate()===1&&i?" mstart":"")+'">'+(a?'<a class="evm'+(a.some(z=>z.fixed)?" fx":"")+'" href="events.html'+(a.length===1?'?e='+encodeURIComponent(a[0].id):'')+'" title="'+esc(md(d)+"\n"+markTip(a))+'">'+(a.some(z=>z.fixed)?"★":"○")+'</a>':'')+'</th>';});}
   t+='</tr></thead><tbody>';
   ids.forEach(id=>{const u=users[id],ed=canEdit(id);
     t+='<tr><th class="nm" scope="row">'+(ed?'<button class="in" data-a="edit" data-u="'+id+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'<div class="in">')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span class="t">'+esc(nameOf(u))+'</span>'+(id===me.uid?'<span class="me">你</span>':'')+(ed?'</button>':'</div>')+'</th>';
@@ -339,6 +345,7 @@ function start(){
   sub("users",collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});usersLoaded=true;if(!users[me.uid])users[me.uid]={nick:me.displayName||"我"};applyAccess();render();});
   sub("statics",collection(db,"statics"),s=>{statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||"","zh-Hant"));sel=new Set([...sel].filter(t=>statics.some(s=>s.id===t)));render();});
   sub("members",collectionGroup(db,"members"),s=>{mem={};s.forEach(d=>{const p=d.ref.parent.parent;if(!p||(d.data().status!=="active"))return;(mem[p.id]=mem[p.id]||{})[d.id]=true;});render();});
+  sub("ev",collection(db,"events"),s=>{evs={};s.forEach(d=>{evs[d.id]=d.data();});render();},()=>{evs={};});
   sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{access:{},proxies:{}};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};cfgLoaded=true;applyAccess();render();},e=>{console.error(e);cfgLoaded=true;render();});
 }
 onAuthStateChanged(auth,async u=>{

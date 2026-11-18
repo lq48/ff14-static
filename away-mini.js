@@ -1,6 +1,6 @@
 /* 飛地大廳：請假行事曆近 30 天預覽（可展開／收起） */
 import { collection, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { HOLI, sortIdsBy } from "./away-core.js?v=1";
+import { HOLI, sortIdsBy, eventMarks, markTip } from "./away-core.js?v=2";
 
 const DAYS=30,WK="日一二三四五六";
 const pad=n=>String(n).padStart(2,"0");
@@ -49,6 +49,9 @@ const CSS=`
 .am-g tr.ce .nm a:hover{color:var(--accent)}
 .am-g .nm .me{font-size:10px;color:var(--accent);margin-left:4px}
 .am-hint{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+.am-g .evm{display:block;text-decoration:none;color:var(--gold,#B8860B);font-size:13px;line-height:20px;opacity:.75}
+.am-g .evm.fx{opacity:1;font-weight:900}
+.am-g .evm:hover{color:var(--accent)}
 .am-g .ms{border-left:1px solid var(--line)}
 .am-g .cn{font-weight:800;color:var(--am-good);font-size:11.5px}
 .am-g .cn.low{color:var(--am-off)}
@@ -63,7 +66,7 @@ const CSS=`
 
 export function initAwayMini({db,getCtx}){
   if(!document.getElementById("amCss")){const st=document.createElement("style");st.id="amCss";st.textContent=CSS;document.head.appendChild(st);}
-  let cfg={access:{},proxies:{}},away={},subs={},canList=false,nDays=30;
+  let cfg={access:{},proxies:{}},away={},subs={},canList=false,nDays=30,evs={};
   const sub=(k,ref,fn,err)=>{if(subs[k])return;subs[k]=onSnapshot(ref,fn,err||(e=>console.warn("awayMini",k,e&&e.code)));};
   const unsub=k=>{if(subs[k]){subs[k]();delete subs[k];}};
 
@@ -75,6 +78,7 @@ export function initAwayMini({db,getCtx}){
   }
   function mine(){const {me,isOwner,users}=getCtx();if(!me)return[];
     const P=cfg.proxies||{};return Object.keys(users).filter(t=>t===me.uid||isOwner||(P[t]||{})[me.uid]).concat(me.uid);}
+  sub("ev",collection(db,"events"),s=>{evs={};s.forEach(d=>{evs[d.id]=d.data();});paint();},()=>{evs={};});
   sub("cfg",doc(db,"awayCfg","main"),s=>{cfg=s.exists()?s.data():{};cfg.access=cfg.access||{};cfg.proxies=cfg.proxies||{};access();paint();},()=>{access();paint();});
 
   const entriesOf=u=>((away[u]||{}).entries)||[];
@@ -104,6 +108,10 @@ export function initAwayMini({db,getCtx}){
     else if(sel.length)h+='<p class="muted" style="margin:0 0 8px;font-size:13px">只看：'+esc(sel.map(t=>(statics.find(s=>s.id===t)||{}).name||"").filter(Boolean).join("、"))+'（在行事曆頁面可以改）</p>';
       let tb='<div class="am-gw"><table class="am-g"><thead><tr><th class="nm" style="font-weight:500;color:var(--muted)">成員（'+N+'）</th>'+
         D.map((d,i)=>{const x=parse(d);return '<th class="dy'+cls(d)+(x.getDate()===1&&i?" ms":"")+'" title="'+esc(md(d)+(HOLI[d]?" "+HOLI[d]:""))+'">'+(x.getDate()===1||i===0?(x.getMonth()+1)+'/':'')+x.getDate()+'<br>'+WK[x.getDay()]+'</th>';}).join("")+'</tr>';
+      // 揪團活動列（有活動才顯示）
+      const EM=eventMarks(evs);
+      if(D.some(d=>EM[d]))tb+='<tr class="ev"><th class="nm" style="font-weight:500;color:var(--muted);font-size:11.5px">揪團</th>'+D.map((d,i)=>{const a=EM[d],x=parse(d);if(!a)return '<th class="dy'+cls(d)+(x.getDate()===1&&i?" ms":"")+'"></th>';
+        const fx=a.some(z=>z.fixed);return '<th class="dy'+cls(d)+(x.getDate()===1&&i?" ms":"")+'"><a class="evm'+(fx?" fx":"")+'" href="events.html'+(a.length===1?'?e='+encodeURIComponent(a[0].id):'')+'" title="'+esc(md(d)+"\n"+markTip(a))+'">'+(fx?"★":"○")+'</a></th>';}).join("")+'</tr>';
       // 每個固定團一列：全員到齊打勾，有人不在就顯示缺幾人
       const shown=new Set(ids);
       statics.forEach(st=>{const ms=Object.keys(mem[st.id]||{}).filter(id=>mem[st.id][id].status==="active"&&shown.has(id));if(!ms.length)return;
@@ -115,7 +123,7 @@ export function initAwayMini({db,getCtx}){
       ids.forEach(id=>{const u=users[id],ce=canEd(id);tb+='<tr'+(ce?' class="ce"':'')+'><th class="nm" scope="row">'+(ce?'<a href="away.html?u='+encodeURIComponent(id)+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+esc(nameOf(u))+(id===me.uid?'<span class="me">你</span>':'')+(ce?'</a>':'')+'</th>'+
         D.map((d,i)=>{const s=dayState(id,d),x=parse(d);return '<td class="'+(s||cls(d).trim())+(x.getDate()===1&&i?" ms":"")+'"'+(ce?' data-am="go" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(nameOf(u)+" "+md(d)+(s?"："+(s==="off"?"請假":"可能不在"):"")+(ce?"（點一下從這天請假）":""))+'"></td>';}).join("")+'</tr>';});
       h+=tb+'</tbody></table></div>';
-    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團列：✓ 全員到齊、−2 有 2 人請假</span><span style="margin-left:auto;color:var(--accent)">點自己那一列的格子就能請假</span></div>';
+    h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團列：✓ 全員到齊、−2 有 2 人請假</span>'+(Object.keys(evs).length?'<span>揪團列：★ 已定案、○ 調查中的候選日</span>':'')+'<span style="margin-left:auto;color:var(--accent)">點自己那一列的格子就能請假</span></div>';
     const gw=el.querySelector(".am-gw"),sx=gw?gw.scrollLeft:0;
     el.innerHTML=h;const ng=el.querySelector(".am-gw");if(ng)ng.scrollLeft=sx;
   }

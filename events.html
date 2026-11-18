@@ -148,13 +148,13 @@ const JOBS=[["PLD","騎士","tank"],["WAR","戰士","tank"],["DRK","暗騎","tan
   .map(([k,n,r])=>({k,n,r}));
 const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
 const ROLE_N={tank:"坦",heal:"補",dps:"輸出"};
-const KINDS=["高難度","一般副本","藏寶圖","死宮","節慶活動","聚會","其他"];
+const KINDS=["高難度","一般副本","藏寶圖","聚會","其他"];
 const TPL={
-  raid:{n:"高難度初見",kind:"高難度",size:8,roles:true,t:2,h:2,d:4,desc:"初見團，大家一起摸機制！\n\n裝等：\n攻略：\n備註：每個人先看過攻略影片～"},
-  map:{n:"藏寶圖",kind:"藏寶圖",size:8,roles:false,desc:"一起挖寶！請先準備好地圖。"},
-  dungeon:{n:"死宮",kind:"死宮",size:4,roles:true,t:1,h:1,d:2,desc:""},
-  party:{n:"節慶／聚會",kind:"節慶活動",size:0,roles:false,desc:"主題：\n地點：\n服裝："},
-  free:{n:"自訂",kind:"其他",size:0,roles:false,desc:""}};
+  raid:{n:"高難本",kind:"高難度",min:8,size:8,roles:true,t:2,h:2,d:4,desc:"初見團，大家一起摸機制！\n\n攻略：\n備註：每個人先看過攻略影片～"},
+  map:{n:"藏寶圖",kind:"藏寶圖",min:2,size:8,roles:false,desc:"一起挖寶！請先準備好地圖。\n2 人以上就能出發，滿 8 人最好。"},
+  party:{n:"聚會",kind:"聚會",min:0,size:0,roles:false,desc:"主題：\n地點：\n服裝："},
+  free:{n:"自訂",kind:"其他",min:0,size:0,roles:false,desc:""}};
+const sizeTxt=e=>{const mn=e.minSize||0,mx=e.size||0;return mx&&mn&&mn<mx?mn+"～"+mx+" 人":mx?mx+" 人":mn?mn+" 人以上":"";};
 const WK="日一二三四五六";
 
 /* ===== 狀態 ===== */
@@ -192,6 +192,18 @@ function fillComp(e,people){
   return got;
 }
 
+/* 這個時間能不能成團：人數到最少門檻、職能也湊得齊 */
+function ready(e,x){const mn=e.minSize||e.size||0;if(!mn&&!e.roles)return '';
+  const okRoles=g=>!e.roles||(g.tank>=(e.t||0)&&g.heal>=(e.h||0)&&g.dps>=(e.d||0));
+  const need=e.roles?Math.max(mn,(e.t||0)+(e.h||0)+(e.d||0)):mn;
+  const A=x.ok,B=x.ok.concat(x.mb);
+  let h='';
+  if(A.length>=need&&okRoles(fillComp(e,A)))h='<span class="pill y">可以成團</span>';
+  else if(B.length>=need&&okRoles(fillComp(e,B)))h='<span class="pill m">算上勉強的可以成團</span>';
+  else h='<span class="pill n">'+(A.length>=need?'職能還不齊':'還差 '+(need-A.length)+' 人')+'</span>';
+  if(e.size&&A.length>e.size)h+=' <span class="pill m">超過上限 '+e.size+' 人</span>';
+  return h;}
+
 /* ===== 畫面 ===== */
 function render(){
   const app=$("#app");
@@ -225,7 +237,7 @@ function detailHTML(id,e){
     (mg?'<div class="row"><button class="btn sm" data-a="edit">編輯活動</button>'+(e.status==="closed"?'<button class="btn sm" data-a="reopen">重新開放</button>':'<button class="btn sm" data-a="close">結束活動</button>')+'<button class="btn sm danger" data-a="del">刪除</button></div>':'')+'</div>';
   if(fx)h+='<div class="banner">確定時間　<b>'+esc(whenTxt(fx))+'</b>'+(mg?'　<button class="btn sm" data-a="unfix">取消定案</button>':'')+'</div>';
   // 活動說明
-  const facts=[];if(e.size)facts.push('<span class="fact"><b>人數</b>'+e.size+' 人</span>');
+  const facts=[];if(sizeTxt(e))facts.push('<span class="fact"><b>人數</b>'+sizeTxt(e)+(e.minSize&&e.size&&e.minSize<e.size?'（'+e.minSize+' 人就能出發）':'')+'</span>');
   if(e.roles)facts.push('<span class="fact"><b>職能</b>坦 '+(e.t||0)+'　補 '+(e.h||0)+'　輸出 '+(e.d||0)+'</span>');
   if(e.ilvl)facts.push('<span class="fact"><b>裝等</b>'+esc(e.ilvl)+'</span>');
   h+='<div class="panel">'+(e.desc?'<p class="desc">'+linkify(e.desc)+'</p>':'<p class="muted" style="margin:0">（發起人沒有寫說明）</p>')+(facts.length?'<div class="facts">'+facts.join("")+'</div>':'')+'</div>';
@@ -251,7 +263,7 @@ function detailHTML(id,e){
       if(e.roles){const gA=fillComp(e,x.ok),gB=fillComp(e,x.ok.concat(x.mb));
         comp='<div class="comp">'+[["tank",e.t],["heal",e.h],["dps",e.d]].filter(([,n])=>n).map(([r,n])=>'<span class="'+(gA[r]>=n?"ok":"lack")+'">'+ROLE_N[r]+' <b>'+gA[r]+'/'+n+'</b></span>'+(gB[r]>gA[r]?'<span class="muted">（含勉強 '+gB[r]+'）</span>':'')).join("　")+'</div>';}
       const names=x.ok.map(r=>nameOf(users[r.u])).join("、")+(x.mb.length?'；勉強：'+x.mb.map(r=>nameOf(users[r.u])).join("、"):'');
-      return '<div class="res'+(best&&x.score===best&&!fx?" best":"")+'"><span class="when">'+esc(whenTxt(x.s))+'</span><div title="'+esc(names)+'"><div class="bar"><i class="y" style="width:'+(x.ok.length/mx*100)+'%"></i><i class="m" style="width:'+(x.mb.length/mx*100)+'%"></i></div><div class="comp">可以 <b>'+x.ok.length+'</b>　勉強 <b>'+x.mb.length+'</b>'+(e.size?'　／ 需要 '+e.size+' 人':'')+'</div>'+comp+'</div>'+
+      return '<div class="res'+(best&&x.score===best&&!fx?" best":"")+'"><span class="when">'+esc(whenTxt(x.s))+'</span><div title="'+esc(names)+'"><div class="bar"><i class="y" style="width:'+(x.ok.length/mx*100)+'%"></i><i class="m" style="width:'+(x.mb.length/mx*100)+'%"></i></div><div class="comp">可以 <b>'+x.ok.length+'</b>　勉強 <b>'+x.mb.length+'</b>'+(sizeTxt(e)?'　／ '+sizeTxt(e):'')+'　'+ready(e,x)+'</div>'+comp+'</div>'+
         (mg?(e.fixed===x.s.id&&e.status==="fixed"?'<span class="pill fixed">已定案</span>':'<button class="btn sm" data-a="fix" data-s="'+x.s.id+'">定案這個時間</button>'):'<span></span>')+'</div>';}).join("")+'</div>';
   }
   if(list.length){
@@ -273,7 +285,8 @@ function formHTML(){const F=form;
   if(!F.id)h+='<div class="fld"><span>從範本開始</span><div class="chips">'+Object.entries(TPL).map(([k,t])=>'<button type="button" class="chip" data-a="tpl" data-k="'+k+'" aria-pressed="'+(F.tpl===k)+'">'+t.n+'</button>').join("")+'</div><p class="hint">範本只是幫你先填好常用設定，選完都還能改。</p></div>';
   h+='<label class="fld"><span>活動名稱</span><input class="f" data-ff="title" maxlength="40" value="'+esc(F.title)+'" placeholder="例如：幻青龍初見團"></label>'+
     '<div class="row" style="align-items:flex-start"><label class="fld" style="flex:1;min-width:140px"><span>類型</span><select class="f" data-ff="kind">'+KINDS.map(k=>'<option'+(k===F.kind?" selected":"")+'>'+k+'</option>').join("")+'</select></label>'+
-    '<label class="fld" style="width:120px"><span>人數（0＝不限）</span><input class="f" type="number" min="0" max="48" data-ff="size" value="'+(F.size||0)+'"></label>'+
+    '<label class="fld" style="width:130px"><span>最少幾人成團</span><input class="f" type="number" min="0" max="48" data-ff="min" value="'+(F.min||0)+'"></label>'+
+    '<label class="fld" style="width:130px"><span>最多幾人（0＝不限）</span><input class="f" type="number" min="0" max="48" data-ff="size" value="'+(F.size||0)+'"></label>'+
     '<label class="fld" style="flex:1;min-width:140px"><span>裝等需求（可不填）</span><input class="f" data-ff="ilvl" maxlength="20" value="'+esc(F.ilvl||"")+'" placeholder="例如：730 以上"></label></div>'+
     '<div class="fld"><label class="row" style="font-weight:700;font-size:13px"><input type="checkbox" data-ff="roles"'+(F.roles?" checked":"")+'> 需要大家填職業（戰鬥內容建議打開）</label>'+
     (F.roles?'<div class="three" style="margin-top:6px;max-width:360px">'+[["t","坦"],["h","補"],["d","輸出"]].map(([k,n])=>'<label class="fld" style="margin:0"><span>'+n+'</span><input class="f" type="number" min="0" max="24" data-ff="'+k+'" value="'+(F[k]||0)+'"></label>').join("")+'</div>':'')+'</div>'+
@@ -289,9 +302,10 @@ function formHTML(){const F=form;
 async function saveForm(){const F=form;
   const title=(F.title||"").trim();if(!title){toast("請填活動名稱");return;}
   const slots=F.slots.filter(s=>s.d).map(s=>({id:s.id||rid(),d:s.d,t:s.t||"",note:s.note||""})).sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
-  const data={title:title.slice(0,40),kind:F.kind||"其他",desc:(F.desc||"").slice(0,1500),ilvl:(F.ilvl||"").trim().slice(0,20),size:Math.max(0,Math.min(48,+F.size||0)),
+  const data={title:title.slice(0,40),kind:F.kind||"其他",desc:(F.desc||"").slice(0,1500),ilvl:(F.ilvl||"").trim().slice(0,20),size:Math.max(0,Math.min(48,+F.size||0)),minSize:Math.max(0,Math.min(48,+F.min||0)),
     roles:!!F.roles,t:F.roles?+F.t||0:0,h:F.roles?+F.h||0:0,d:F.roles?+F.d||0:0,slots,updatedAt:Date.now()};
   try{
+    if(data.size&&data.minSize>data.size){toast("最少人數不能比最多人數多");return;}
     if(F.id){const old=events[F.id];if(old.status==="fixed"&&!slots.some(s=>s.id===old.fixed)){data.status="open";data.fixed="";}
       await updateDoc(doc(db,"events",F.id),data);form=null;toast("已儲存");go({e:F.id});}
     else{const ref=await addDoc(collection(db,"events"),{...data,by:me.uid,status:"open",fixed:"",createdAt:Date.now()});form=null;toast("揪團已發起，把網址貼到 Discord 給大家填吧！");go({e:ref.id});}
@@ -311,13 +325,13 @@ async function saveRsvp(){const e=events[view.e];if(!draft.go){toast("先選要�
 function go(v){view=v;history.pushState(null,"",v.e?"events.html?e="+encodeURIComponent(v.e):"events.html");draft=null;render();window.scrollTo(0,0);}
 document.addEventListener("click",async ev=>{const b=ev.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,e=events[view.e];
   if(a==="new"){form=newForm();render();}
-  else if(a==="tpl"){const t=TPL[b.dataset.k];form={...form,tpl:b.dataset.k,kind:t.kind,size:t.size,roles:t.roles,t:t.t||0,h:t.h||0,d:t.d||0,desc:form.desc&&form.desc!==TPL[form.tpl].desc?form.desc:t.desc};render();}
+  else if(a==="tpl"){const t=TPL[b.dataset.k];form={...form,tpl:b.dataset.k,kind:t.kind,size:t.size,min:t.min,roles:t.roles,t:t.t||0,h:t.h||0,d:t.d||0,desc:form.desc&&form.desc!==TPL[form.tpl].desc?form.desc:t.desc};render();}
   else if(a==="sadd"){const last=form.slots[form.slots.length-1];form.slots.push({id:rid(),d:last?last.d:today(),t:last?last.t:"21:00",note:""});render();}
   else if(a==="squick"){form.slots.push({id:rid(),d:nextDow(+b.dataset.w),t:b.dataset.t,note:""});render();}
   else if(a==="srm"){form.slots.splice(+b.dataset.i,1);render();}
   else if(a==="fcancel"){ev.preventDefault();form=null;render();}
   else if(a==="fsave")saveForm();
-  else if(a==="edit"){form={id:view.e,tpl:"",title:e.title,kind:e.kind,desc:e.desc||"",ilvl:e.ilvl||"",size:e.size||0,roles:!!e.roles,t:e.t||0,h:e.h||0,d:e.d||0,slots:structuredClone(e.slots||[])};render();}
+  else if(a==="edit"){form={id:view.e,tpl:"",title:e.title,kind:e.kind,desc:e.desc||"",ilvl:e.ilvl||"",size:e.size||0,min:e.minSize||0,roles:!!e.roles,t:e.t||0,h:e.h||0,d:e.d||0,slots:structuredClone(e.slots||[])};render();}
   else if(a==="go"){draft.go=b.dataset.v;draft.dirty=true;render();}
   else if(a==="sl"){draft.slots[b.dataset.s]=b.dataset.v;draft.dirty=true;render();}
   else if(a==="job"){const k=b.dataset.k,i=draft.jobs.indexOf(k);if(i>=0)draft.jobs.splice(i,1);else draft.jobs.push(k);draft.dirty=true;render();}
