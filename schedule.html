@@ -248,7 +248,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .dcnote{flex-basis:100%;display:grid;gap:2px;font-size:12.5px;color:var(--muted)}
 .besthint{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
 </style>
-<link rel="stylesheet" href="cozy.css?v=7">
+<link rel="stylesheet" href="cozy.css?v=8">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -362,6 +362,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 import { mountNav } from "./nav.js?v=1";
+import { undoToast } from "./ui.js?v=1";
 const NOTIFY_URL = WORKER_URL;   // 設定都在 config.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -679,7 +680,10 @@ function dcBoxHTML(sv,missing){
 }
 async function removeResp(k,btn){
   if(!canManageSurvey(cur())||!armedTwice("r"+k,btn,"確定？"))return;
-  try{await deleteDoc(doc(db,"surveys",curSid,"responses",k));toast("已清除");}catch(e){toast("清除失敗");}
+  const sid=curSid,prev=surveyResps(sid)[k],who=nameOf(cur(),k);
+  try{await deleteDoc(doc(db,"surveys",sid,"responses",k));
+    undoToast("已清除 "+who+" 的回覆",prev?async()=>{const d={slots:prev.slots||{},updatedAt:prev.updatedAt||Date.now()};if(prev.note)d.note=prev.note;await setDoc(doc(db,"surveys",sid,"responses",k),d);}:null);
+  }catch(e){toast("清除失敗");}
 }
 
 /* ---------- 管理（團長） ---------- */
@@ -980,7 +984,9 @@ function setupEvents(){
       else if(a==="changeName"){changingName=true;renderFill();}
       else if(a==="cancelName"){changingName=false;renderFill();}
       else if(a==="drag"){dragMode=!dragMode;renderFill();}
-      else if(a==="clear")toggleCells([...document.querySelectorAll("#fillGrid td.cell.on")]);
+      else if(a==="clear"){const on=[...document.querySelectorAll("#fillGrid td.cell.on")];if(!on.length){toast("目前沒有勾選任何時間");return;}
+        const snap={};for(const d in draft)snap[d]=new Set(draft[d]);const key=draftKey;
+        toggleCells(on);undoToast("已清除勾選（還沒送出，按「儲存」才會生效）",()=>{if(draftKey!==key)throw new Error("changed");draft=snap;dirty=true;renderFill();});}
       else if(a==="none"){
         if(!editable())return;
         noneOpen=!noneOpen;

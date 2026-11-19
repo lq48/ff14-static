@@ -136,7 +136,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
 @media (max-width:640px){.two{grid-template-columns:1fr}.srow{grid-template-columns:1fr}.cal .nm{min-width:108px;max-width:108px}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=7">
+<link rel="stylesheet" href="cozy.css?v=8">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -144,6 +144,7 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
 import { mountNav } from "./nav.js?v=1";
+import { undoToast } from "./ui.js?v=1";
 import { HOLI, sortIdsBy, eventMarks, markTip, fixedEvents, attendMap } from "./away-core.js?v=3";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -251,7 +252,7 @@ function render(){
 /* ===== 編輯 ===== */
 function openEdit(u,day){modal={k:"edit",u,form:day?{id:"",from:day,to:day,kind:"off",label:"",pub:true}:null};renderModal();}
 function renderModal(){
-  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("input",onModalInput);}
+  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m){if(formLeaveOk())closeModal();}else onClick(e);});m.addEventListener("input",onModalInput);}
   let h='<div class="sheet" role="dialog" aria-modal="true">';
   if(modal.k==="edit"){const u=modal.u,list=entriesOf(u).slice().sort((a,b)=>a.from.localeCompare(b.from)),today=ymd(new Date());
     const eds=editableIds();
@@ -286,8 +287,13 @@ function renderModal(){
   m.innerHTML=h+'</div>';m.querySelector(".sheet").scrollTop=sc;
 }
 function closeModal(){modal=null;const m=$("#modal");if(m)m.remove();}
+/* 請假表單有改動但還沒儲存時：關分頁會提醒；點背景或「關閉」要按兩次 */
+let formArmedAt=0;
+const formDirty=()=>!!(modal&&modal.form&&modal.form._dirty);
+function formLeaveOk(){if(!formDirty())return true;if(Date.now()-formArmedAt<4000)return true;formArmedAt=Date.now();toast("請假還沒儲存，再按一次就放棄");return false;}
+window.addEventListener("beforeunload",e=>{if(formDirty()){e.preventDefault();e.returnValue="";}});
 function onModalInput(e){const t=e.target;
-  if(t.dataset.ff&&modal&&modal.form){modal.form[t.dataset.ff]=t.value;if(t.dataset.ff==="from"&&modal.form.to<t.value){modal.form.to=t.value;const x=$('[data-ff="to"]');if(x)x.value=t.value;}}
+  if(t.dataset.ff&&modal&&modal.form){modal.form[t.dataset.ff]=t.value;modal.form._dirty=true;if(t.dataset.ff==="from"&&modal.form.to<t.value){modal.form.to=t.value;const x=$('[data-ff="to"]');if(x)x.value=t.value;}}
   else if(t.id==="who"){modal.u=t.value;modal.form=null;renderModal();}
   else if(t.dataset.copy&&t.value&&modal.k==="edit"){copyEntry(modal.u,t.dataset.copy,t.value);t.value="";}
   else if(t.dataset.acc!=null&&modal.k==="settings"){if(t.value)modal.access[t.dataset.acc]=t.value;else delete modal.access[t.dataset.acc];}
@@ -320,12 +326,14 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="edit"){openEdit(b.dataset.u,b.dataset.d||null);}
   else if(a==="fnew"){modal.form={id:"",from:ymd(new Date()),to:ymd(new Date()),kind:"off",label:"",pub:true};renderModal();}
   else if(a==="fedit"){const x=entriesOf(modal.u).find(z=>z.id===b.dataset.id),l=labelOf(modal.u,x);modal.form={id:x.id,from:x.from,to:x.to,kind:x.kind,label:l.t,pub:!l.lock};renderModal();}
-  else if(a==="fdel"){if(!armed(b,"再按一次刪除"))return;const u=modal.u,labels={...(((priv[u]||{}).labels)||{})};saveEntries(u,entriesOf(u).filter(z=>z.id!==b.dataset.id),labels).then(ok=>{if(ok){render();renderModal();toast("已刪除");}});}
-  else if(a==="fkind"){modal.form.kind=b.dataset.v;renderModal();}
-  else if(a==="fpub"){modal.form.pub=b.dataset.v==="1";renderModal();}
+  else if(a==="fdel"){if(!armed(b,"再按一次刪除"))return;const u=modal.u,labels={...(((priv[u]||{}).labels)||{})},before=entriesOf(u).map(z=>({...z})),gone=before.find(z=>z.id===b.dataset.id);
+    saveEntries(u,before.filter(z=>z.id!==b.dataset.id),{...labels}).then(ok=>{if(!ok)return;render();if(modal)renderModal();
+      undoToast("已刪除 "+(gone?(gone.from===gone.to?gone.from.slice(5):gone.from.slice(5)+"～"+gone.to.slice(5)):"")+" 的請假",async()=>{if(!await saveEntries(u,before,{...labels}))throw new Error("undo failed");render();if(modal)renderModal();});});}
+  else if(a==="fkind"){modal.form.kind=b.dataset.v;modal.form._dirty=true;renderModal();}
+  else if(a==="fpub"){modal.form.pub=b.dataset.v==="1";modal.form._dirty=true;renderModal();}
   else if(a==="fcancel"){modal.form=null;renderModal();}
   else if(a==="fsave")saveForm();
-  else if(a==="mclose")closeModal();
+  else if(a==="mclose"){if(formLeaveOk())closeModal();}
   else if(a==="selall"){sel.clear();saveFilter();render();}
   else if(a==="selst"){const t=b.dataset.t;if(sel.has(t))sel.delete(t);else sel.add(t);saveFilter();render();}
   else if(a==="settings"){modal={k:"settings",order:sortIds(Object.keys(users)),access:{...(cfg.access||{})},proxies:JSON.parse(JSON.stringify(cfg.proxies||{}))};renderModal();}
