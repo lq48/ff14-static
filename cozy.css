@@ -99,6 +99,10 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   [data-skin="cozy"] .btn{min-height:40px}
   [data-skin="cozy"] .btn.sm{min-height:36px;padding-left:14px;padding-right:14px}
   [data-skin="cozy"] .linkbtn{min-height:36px;padding:6px 8px}
+  /* Phase 4：篩選標籤、BiS 來源／狀態按鈕、勾選框，在觸控裝置上加大 */
+  [data-skin="cozy"] .chip{min-height:36px}
+  [data-skin="cozy"] .src,[data-skin="cozy"] .stbtn{min-height:36px}
+  [data-skin="cozy"] input[type="checkbox"]{width:20px;height:20px}
 }
 
 /* ---------- 7. 表單 ---------- */

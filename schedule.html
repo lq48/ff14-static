@@ -248,7 +248,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .dcnote{flex-basis:100%;display:grid;gap:2px;font-size:12.5px;color:var(--muted)}
 .besthint{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
 </style>
-<link rel="stylesheet" href="cozy.css?v=9">
+<link rel="stylesheet" href="cozy.css?v=10">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -1070,7 +1070,7 @@ mountNav({page:"team",auth});
    if(m)signInWithCustomToken(auth,decodeURIComponent(m[1])).catch(e=>{console.error(e);toast("Discord 登入失敗");});
    if(er)toast("Discord 登入失敗："+decodeURIComponent(er[1]));}
   const want=new URLSearchParams(location.search).get("s");
-  $("#app").hidden=false;
+  /* 等調查資料到了才和「載入中」一起切換，避免版面跳動、也不會閃一下「還沒有調查」 */
   setupManage();setupEvents();renderTabs();renderFoot();
   onAuthStateChanged(auth,async u=>{
     authUser=u;authClaims={};
@@ -1093,7 +1093,7 @@ mountNav({page:"team",auth});
   });
   onSnapshot(collection(db,"surveys"),s=>{
     surveys=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    $("#loadingBox").hidden=true;
+    $("#loadingBox").hidden=true;$("#app").hidden=false;
     if(curSid&&!cur())curSid=null;
     if(firstLoad){
       firstLoad=false;
