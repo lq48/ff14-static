@@ -2,11 +2,13 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<script src="skin.js?v=2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>莫古莫古★大收集～奇譚探究者～兌換試算</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23DD7655%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.1%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21 12l-9-9-9 9h2v7a2 2 0 0 0 2 2h6%27/%3E%3Cpath d=%27M9 21v-6a2 2 0 0 1 2-2h2%27/%3E%3Cpath d=%27M18 22l3.35-3.284a2.143 2.143 0 0 0 .005-3.071 2.242 2.242 0 0 0-3.129-.006l-.224.22-.223-.22a2.242 2.242 0 0 0-3.128-.006 2.143 2.143 0 0 0-.006 3.071L18 22z%27/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#EEEAF6; --surface:#FBFAFE; --surface2:#E3DDF0; --ink:#2B2350; --muted:#6A6290;
@@ -139,11 +141,12 @@ footer a{color:var(--muted)}
 }
 @media (prefers-reduced-motion:reduce){.meter span,.meter .cap{transition:none}}
 </style>
+<link rel="stylesheet" href="cozy.css?v=4">
 </head>
 <body>
+<header class="sitebar" id="sitebar"></header>
 
 <header class="wrap intro">
-  <a class="back" href="./">← 回光之戰士飛地</a>
   <h1>莫古莫古★大收集～奇譚探究者～<br>稀少奇譚神點石兌換試算</h1>
   <p>勾選想換的道具，上方會即時算出需要多少石、手上的石還差多少。展開每項可看其他取得方式、單人難度與推薦理由。勾選內容會記在這台裝置的瀏覽器裡。</p>
 </header>
@@ -399,5 +402,6 @@ $('themeBtn').addEventListener('click',()=>{
 
 render();
 </script>
+<script type="module">import { mountNav } from "./nav.js?v=1";mountNav({page:"tools"});</script>
 </body>
 </html>

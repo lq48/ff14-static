@@ -2,10 +2,10 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<script src="skin.js?v=1"></script>
+<script src="skin.js?v=2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>請假行事曆｜光之戰士飛地</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23DD7655%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.1%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21 12l-9-9-9 9h2v7a2 2 0 0 0 2 2h6%27/%3E%3Cpath d=%27M9 21v-6a2 2 0 0 1 2-2h2%27/%3E%3Cpath d=%27M18 22l3.35-3.284a2.143 2.143 0 0 0 .005-3.071 2.242 2.242 0 0 0-3.129-.006l-.224.22-.223-.22a2.242 2.242 0 0 0-3.128-.006 2.143 2.143 0 0 0-.006 3.071L18 22z%27/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
@@ -136,12 +136,14 @@ table.cal{border-collapse:separate;border-spacing:0;width:max-content}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
 @media (max-width:640px){.two{grid-template-columns:1fr}.srow{grid-template-columns:1fr}.cal .nm{min-width:108px;max-width:108px}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=3">
+<link rel="stylesheet" href="cozy.css?v=4">
 </head>
 <body>
+<header class="sitebar" id="sitebar"></header>
 <div class="wrap" id="app"><div class="empty">載入中…</div></div>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { mountNav } from "./nav.js?v=1";
 import { HOLI, sortIdsBy, eventMarks, markTip, fixedEvents, attendMap } from "./away-core.js?v=3";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -150,6 +152,7 @@ import { getFirestore, collection, collectionGroup, doc, onSnapshot, setDoc } fr
 /* Discord 大頭貼失效（對方換了頭像、網站還存舊的）時，自動換成 Discord 預設頭像 */
 document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
 const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
+mountNav({page:"away",auth});
 
 /* ===== 狀態 ===== */
 let evs={},rs={},me=null,isOwner=false,users={},statics=[],mem={},cfg={access:{},proxies:{}},away={},priv={};
@@ -204,7 +207,7 @@ function render(){
   if(pendingOpen&&cfgLoaded&&usersLoaded){const P=pendingOpen;pendingOpen=null;history.replaceState(null,"",location.pathname);
     const u=P.u&&canEdit(P.u)?P.u:(canEdit(me.uid)?me.uid:editableIds()[0]),d=/^\d{4}-\d{2}-\d{2}$/.test(P.d||"")?P.d:ymd(new Date());if(u)setTimeout(()=>openEdit(u,d),0);}
   const D=days(),ids=rowIds(),today=D[0];
-  let h='<a class="back" href="index.html">← 回飛地大廳</a><div class="top"><div><h1>請假行事曆</h1><div class="sub">飛地成員接下來 '+months+' 個月的請假與可能不在的日子</div></div><div class="tools">'+
+  let h='<div class="top"><div><h1>請假行事曆</h1><div class="sub">飛地成員接下來 '+months+' 個月的請假與可能不在的日子</div></div><div class="tools">'+
     (editableIds().length?'<button class="btn primary" data-a="new">＋ 我要請假</button>':'')+
     '<select class="f" style="width:auto" id="months" aria-label="顯示範圍">'+[1,3,6].map(m=>'<option value="'+m+'"'+(m===months?" selected":"")+'>'+m+' 個月</option>').join("")+'</select>'+
     (isOwner?'<button class="btn" data-a="settings">權限與順序</button>':'')+'</div></div>';
