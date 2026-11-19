@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=6">
+<link rel="stylesheet" href="cozy.css?v=7">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -1114,6 +1114,65 @@ async function bisPatch(uid,patch){
   await updateDoc(doc(db,"statics",curTid,"bis",recId(uid)),p);
 }
 
+/* ---- 完成度摘要：只看「畢業目標」（final），開荒（過渡）裝不算 ----
+   每個部位分成：done 已完成（點數裝需強化的要強化完）、part 已取得待強化、need 尚缺、unset 未設定來源 */
+function bisSummary(uid){
+  const f=(recOf(uid).final)||{},res={done:0,part:0,need:0,unset:0,slots:{},need_:{raid:[],tome:[],craft:[],other:[]},aug:[]};
+  BIS_SLOTS.forEach(s=>{const sl=f[s.k]||{};const st=!sl.src?"unset":slotDone(sl)?"done":slotPartial(sl)?"part":"need";
+    res[st]++;res.slots[s.k]=st;if(st==="need")(res.need_[sl.src]||res.need_.other).push(s);if(st==="part")res.aug.push(s);});
+  return res;
+}
+const floorsFor=(t,key)=>(t.floors||[]).filter((f,i)=>((t.drops||{})["f"+i]||[]).includes(key));
+const BS_LABEL={done:"已完成",part:"已取得・待強化",need:"尚缺",unset:"未設定"};
+function bisBar(sm){const w=n=>(n/11*100).toFixed(1)+"%";
+  return'<span class="bbar" aria-hidden="true"><i class="b-done" style="width:'+w(sm.done)+'"></i><i class="b-part" style="width:'+w(sm.part)+'"></i><i class="b-need" style="width:'+w(sm.need)+'"></i></span>';}
+/* 我的 BiS：完成度、武器、缺件依取得方式整理 */
+function bisMineSumHTML(t,uid,edit){
+  const sm=bisSummary(uid);
+  if(sm.unset===11)return'<div class="bsum empty"><p class="big">還沒有設定畢業 BiS</p><p class="muted">完成度會依「畢業」的設定計算。'+(edit?'可以在下方切到「畢業」，用「貼上配裝表」或「一鍵套用常見畢業配置」快速設定。':'請本人或團長幫忙設定。')+'</p>'+
+    (edit&&bisSet!=="final"?'<button class="btn sm primary" data-bisset="final">切到「畢業」開始設定</button>':'')+'</div>';
+  const nm=list=>list.map(s=>s.n).join("、");
+  const raidByFloor={};sm.need_.raid.forEach(s=>{const fl=floorsFor(t,s.d);(fl.length?fl:["（掉落表沒有這個部位）"]).forEach(f=>(raidByFloor[f]=raidByFloor[f]||[]).push(s));});
+  const augByMat={};sm.aug.forEach(s=>{const k=MAT_OF[s.g];(augByMat[k]=augByMat[k]||[]).push(s);});
+  const wst=sm.slots.weapon,wsl=bslot(recOf(uid),"final","weapon");
+  let rows="";
+  [...(t.floors||[]),"（掉落表沒有這個部位）"].filter(f=>raidByFloor[f]).forEach(f=>rows+='<li><span class="ag-k k-team">零式 '+esc(f)+'</span>'+esc(nm(raidByFloor[f]))+'</li>');
+  if(sm.need_.tome.length)rows+='<li><span class="ag-k k-away">點數兌換</span>'+esc(nm(sm.need_.tome))+'</li>';
+  Object.keys(augByMat).forEach(k=>{const fl=floorsFor(t,k);rows+='<li><span class="ag-k k-ev">強化</span>'+esc(nm(augByMat[k]))+'<small>需要 '+esc((t.mats||{})[k]||k)+(fl.length?'（'+esc(fl.join("、"))+'）':'')+'</small></li>';});
+  if(sm.need_.craft.length)rows+='<li><span class="ag-k">製作</span>'+esc(nm(sm.need_.craft))+'</li>';
+  if(sm.need_.other.length)rows+='<li><span class="ag-k">其他</span>'+esc(nm(sm.need_.other))+'</li>';
+  return'<div class="bsum">'+
+    '<div class="bsum-top"><div class="bsum-num"><b>'+sm.done+'</b> / 11<span>畢業 BiS 完成</span></div>'+bisBar(sm)+
+      '<div class="bsum-chips">'+(sm.part?'<span class="stp soft">待強化 '+sm.part+'</span>':'')+(sm.need?'<span class="stp warm">尚缺 '+sm.need+'</span>':'')+(sm.unset?'<span class="stp">未設定 '+sm.unset+'</span>':'')+(sm.done===11?'<span class="stp good">畢業了 🎉</span>':'')+'</div></div>'+
+    '<p class="bsum-key"><b>武器</b>'+(wst==="unset"?'<span class="stp">未設定</span>':wst==="done"?'<span class="stp good">已取得</span>':wst==="part"?'<span class="stp soft">已取得・待強化</span>':
+      '<span class="stp warm">尚缺</span><span class="muted">'+esc(BIS_SRC[wsl.src]||"")+(wsl.src==="raid"&&floorsFor(t,"weapon").length?'・'+esc(floorsFor(t,"weapon").join("、"))+' 掉落':'')+'</span>')+'</p>'+
+    (sm.unset&&sm.unset<11?'<p class="bsum-warn">還有 '+sm.unset+' 個部位沒有設定畢業裝（'+esc(nm(BIS_SLOTS.filter(s=>sm.slots[s.k]==="unset")))+'），這些部位不算在完成度裡，也不會出現在缺件清單。</p>':'')+
+    (rows?'<div class="bsum-need"><div class="flabel">還缺什麼</div><ul>'+rows+'</ul></div>':'')+
+    '<p class="hint" style="margin:8px 0 0">完成＝畢業目標的裝備已取得；點數裝勾了「需強化」要強化完才算。開荒（過渡）裝不算進完成度。</p></div>';
+}
+/* 全團摘要：每人卡片＋各層還有誰需要 */
+function bisTeamSumHTML(t){
+  const ms=bisMembers();if(!ms.length)return"";
+  const S=ms.map(m=>({m,sm:bisSummary(m.id)}));
+  const tot=k=>S.reduce((a,x)=>a+x.sm[k],0);
+  const setUp=S.filter(x=>x.sm.unset<11),wDone=S.filter(x=>x.sm.slots.weapon==="done").length,wSet=S.filter(x=>x.sm.slots.weapon!=="unset").length;
+  let h='<div class="panel"><div class="phead"><h2>全團畢業進度</h2></div>'+
+    '<div class="tsum-line"><span><b>'+tot("done")+'</b> / '+(ms.length*11)+' 件完成</span>'+(tot("part")?'<span class="stp soft">待強化 '+tot("part")+'</span>':'')+'<span class="stp warm">尚缺 '+tot("need")+'</span>'+(tot("unset")?'<span class="stp">未設定 '+tot("unset")+'</span>':'')+
+      '<span class="tsum-w">武器：'+wDone+' / '+ms.length+' 人已取得'+(wSet<ms.length?'（'+(ms.length-wSet)+' 人未設定）':'')+'</span></div>'+
+    '<div class="bcards">'+S.map(({m,sm})=>{const u=users[m.id],j=JOB[teamJob(curTid,m.id)];const miss=BIS_SLOTS.filter(s=>sm.slots[s.k]==="need"||sm.slots[s.k]==="part");
+      return'<button type="button" class="bcard" data-bisgo="'+m.id+'"><span class="bc-h"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span><b>'+esc(nameOf(u))+'</b><small>'+esc(m.slot||"替補")+(j?'・'+esc(j.n):'')+'</small></span>'+
+        (sm.unset===11?'<span class="stp">BiS 未設定</span>':'<span class="bc-n">'+sm.done+'<small>/11</small></span>')+'</span>'+
+        (sm.unset===11?'':bisBar(sm))+
+        '<span class="bc-f"><span class="stp '+({done:"good",part:"soft",need:"warm",unset:""})[sm.slots.weapon]+'">武器'+({done:"✓",part:"待強化",need:"缺",unset:"未設定"})[sm.slots.weapon]+'</span>'+
+        (sm.unset&&sm.unset<11?'<span class="stp">未設定 '+sm.unset+'</span>':'')+
+        (miss.length&&sm.unset<11?'<span class="bc-miss">缺：'+esc(miss.map(s=>s.n).join("、"))+'</span>':sm.done===11?'<span class="bc-miss">畢業了</span>':'')+'</span></button>';}).join("")+'</div>';
+  const fl=t.floors||[];
+  const floorRows=fl.map((f,i)=>{const keys=((t.drops||{})["f"+i])||[];const parts=keys.map(k=>{const n=needers(t,k).reduce((a,x)=>a+x.count,0);return n?esc(dropLabel(t,k))+' ×'+n:"";}).filter(Boolean);
+    return parts.length?'<li><span class="ag-k k-team">'+esc(f)+'</span>'+parts.join("、")+'</li>':"";}).filter(Boolean);
+  if(floorRows.length)h+='<div class="bsum-need" style="margin-top:14px"><div class="flabel">各層還需要的掉落（全團合計）</div><ul>'+floorRows.join("")+'</ul></div>';
+  return h+'<p class="hint" style="margin:8px 0 0">一律依「畢業」目標計算，開荒裝不算；沒有設定來源的部位列為「未設定」，不算尚缺。點卡片可以看那個人的明細。</p></div>';
+}
+
 /* ---- 畫面 ---- */
 function bisHTML(st){
   const back='<div style="margin-bottom:12px"><button class="linkbtn" data-act="team">← 回 '+esc(st.name)+'</button></div>';
@@ -1149,22 +1208,23 @@ function bisMineHTML(t){
   h+='</div>';
   h+='<div class="bisstats"><div class="box"><div class="lab">開荒</div><div class="num">'+countDone(r,"prog")+' / 11</div></div><div class="box"><div class="lab">畢業</div><div class="num">'+countDone(r,"final")+' / 11</div></div>'+
     (t.colls||[]).map(c=>'<label class="box coll"><span class="lab">'+esc(c.n)+'</span><span><input type="checkbox" data-biscoll="'+esc(c.id)+'"'+((r.coll||{})[c.id]?' checked':'')+(edit?'':' disabled')+'> '+((r.coll||{})[c.id]?'已取得':'未取得')+'</span></label>').join("")+'</div>';
+  h+=bisMineSumHTML(t,bisWho,edit);
   h+='<div class="chips" style="margin:6px 0 12px">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div>';
   const link=(r.links||{})[bisSet]||"";
   h+='<div class="bislink">'+(edit?'<input class="sel" data-bislink placeholder="配裝連結（選填）：neko7ina、xivgear 都可以" value="'+esc(link)+'">':'')+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">開啟配裝 ↗</a>':(edit?'':'<span class="muted small">沒有配裝連結</span>'))+'</div>';
-  h+='<div class="mtable"><table class="bistable"><thead><tr><th>部位</th><th>裝備名稱</th><th>來源</th><th>狀態</th>'+(bisSet==="prog"?'<th>同畢業</th>':'')+'</tr></thead><tbody>';
+  h+='<div class="mtable bmine"><table class="bistable"><thead><tr><th>部位</th><th>裝備名稱</th><th>來源</th><th>狀態</th>'+(bisSet==="prog"?'<th>同畢業</th>':'')+'</tr></thead><tbody>';
   for(const s of BIS_SLOTS){
     const sl=bslot(r,bisSet,s.k);const same=bisSet==="prog"&&sl.same;const eff=same?bslot(r,"final",s.k):sl;
     const done=doneOf(r,bisSet,s.k);
     const upg=bisSet==="prog"&&finalHas(r,s.k);
     const st=upg?"✓ 已換成畢業裝":same?"跟畢業一起拿":sl.st==="aug"?"✓ 已強化":sl.st==="got"?(sl.src==="tome"&&sl.aug?"已取得・待強化":"✓ 已取得"):"未取得";
-    h+='<tr class="'+(done?'done':slotPartial(sl)?'part':'')+'"><td>'+s.n+'</td>'+
-      '<td>'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+s.k+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
-      '<td>'+(same?'<span class="src s-'+(eff.src||"")+'">'+(BIS_SRC[eff.src]||"—")+'</span>':
+    h+='<tr class="'+(done?'done':slotPartial(sl)?'part':'')+'"><td class="bt-slot">'+s.n+'</td>'+
+      '<td data-label="名稱">'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+s.k+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
+      '<td data-label="來源">'+(same?'<span class="src s-'+(eff.src||"")+'">'+(BIS_SRC[eff.src]||"—")+'</span>':
         '<button class="src s-'+(sl.src||"none")+'" data-bissrc="'+s.k+'"'+(edit?'':' disabled')+'>'+(BIS_SRC[sl.src]||"設定來源")+'</button>'+
         (sl.src==="tome"?'<label class="augck"><input type="checkbox" data-bisaug="'+s.k+'"'+(sl.aug?' checked':'')+(edit?'':' disabled')+'>需強化</label>':''))+'</td>'+
-      '<td>'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+s.k+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
-      (bisSet==="prog"?'<td><input type="checkbox" data-bissame="'+s.k+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
+      '<td data-label="狀態">'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+s.k+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
+      (bisSet==="prog"?'<td data-label="同畢業"><input type="checkbox" data-bissame="'+s.k+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
   }
   h+='</tbody></table></div>';
   if(edit){
@@ -1180,7 +1240,7 @@ function bisMineHTML(t){
 }
 function bisAllHTML(t){
   const ms=bisMembers();
-  let h='<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
+  let h=bisTeamSumHTML(t)+'<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
   h+='<div class="bislegend"><span><span class="sw" style="background:color-mix(in srgb,var(--raid) 24%,transparent);color:var(--raid)">零</span>零式</span>'+
     '<span><span class="sw" style="background:color-mix(in srgb,var(--tome) 24%,transparent);color:var(--tome)">點</span>點數</span>'+
     '<span><span class="sw" style="background:color-mix(in srgb,var(--craft) 24%,transparent);color:var(--craft)">製</span>製作</span>'+
