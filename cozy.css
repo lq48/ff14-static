@@ -1,29 +1,58 @@
-/* ===== 光之戰士飛地：溫馨風格（cozy）=====
-   只在 <html data-skin="cozy"> 時生效；網址加 ?skin=cozy 開啟、?skin=classic 換回原本的樣子 */
+/* =====================================================================
+   光之戰士飛地：全站樣式（Cozy 設計系統）
+   - 預設套用溫馨風格（<html data-skin="cozy">，由 skin.js 設定）
+   - 網址加 ?skin=classic 或在使用者選單切換，可暫時換回舊版外觀
+   - 各頁自己的 <style> 定義版面；這個檔案提供 tokens、主題覆寫與共用元件
+   ===================================================================== */
 
-/* ---------- 色票：暖奶油底、陶土橘主色、鼠尾草綠、奶油黃、霧藍 ---------- */
+/* ---------- 1. 與主題無關的 tokens（字級、間距、圓角、圖示、點擊範圍） ---------- */
+:root{
+  --fs-xs:12px; --fs-sm:13px; --fs-md:15px; --fs-lg:17px; --fs-xl:20px; --fs-2xl:clamp(26px,5.2vw,38px);
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px;
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-pill:999px;
+  --ico-sm:16px; --ico-md:18px; --ico-lg:22px; --ico-box:32px;
+  --tap:44px; --bnav-h:0px;
+}
+/* 舊版外觀沒有定義的色彩，給共用元件一個安全的預設值（:where 權重為 0，各頁原本的設定優先） */
+:where(:root){
+  --surface2:color-mix(in srgb,var(--bg) 55%,var(--surface));
+  --accent-soft:var(--accent);
+  --peach:color-mix(in srgb,var(--accent) 12%,var(--surface)); --peach-ink:var(--accent);
+  --sage:color-mix(in srgb,#2E8B57 14%,var(--surface)); --sage-ink:var(--ink);
+  --butter:color-mix(in srgb,#B8860B 16%,var(--surface)); --butter-ink:var(--ink);
+  --sky:color-mix(in srgb,var(--accent) 8%,var(--surface)); --sky-ink:var(--ink);
+  --shadow-sm:0 0 0 1px var(--line); --shadow:0 0 0 1px var(--line);
+}
+
+/* ---------- 2. Cozy 色彩：淺色 ---------- */
+/* 文字對比（WCAG AA ≥ 4.5）：ink/bg 11.7、muted/bg 5.2、muted/surface2 4.9、accent/bg 4.9、白字/accent 5.7 */
 :root[data-skin="cozy"]{
   color-scheme:light;
-  --bg:#F7EDE1; --surface:#FFF9F2; --surface2:#F4E7D8; --ink:#3B2B24; --muted:#8A7364; --line:#EBDCCB;
-  --accent:#DD7655; --accent-ink:#FFFFFF; --gold:#C98A2E; --danger:#C2533B;
-  --tank:#5B88B5; --heal:#5E9A7C; --dps:#D46A51; --raid:#9474BC; --tome:#5B88B5; --craft:#4C978E;
+  --bg:#F7EDE1; --surface:#FFF9F2; --surface2:#F4E7D8; --ink:#3B2B24; --muted:#74604F; --line:#EBDCCB;
+  --accent:#A84A29; --accent-ink:#FFFFFF; --accent-soft:#DD7655; --gold:#87591A; --danger:#A8402B;
+  --tank:#3E6690; --heal:#2F6B4E; --dps:#A8402B; --raid:#7A55A8; --tome:#3E6690; --craft:#2F6E67;
   --peach:#F8D9C6; --sage:#D7E6DA; --butter:#F7E6B5; --sky:#D9E4F0;
-  --peach-ink:#A9472C; --sage-ink:#3F7058; --butter-ink:#8A6416; --sky-ink:#3E6690;
+  --peach-ink:#9A3E24; --sage-ink:#36634D; --butter-ink:#7A5810; --sky-ink:#35587E;
+  --shadow-sm:0 1px 2px rgba(120,72,40,.10),0 4px 12px -8px rgba(120,72,40,.30);
   --shadow:0 10px 26px -16px rgba(120,72,40,.45),0 2px 6px -3px rgba(120,72,40,.18);
+  --shadow-lg:0 18px 40px -18px rgba(120,72,40,.55);
+  --focus:0 0 0 3px color-mix(in srgb,var(--accent-soft) 45%,transparent);
   --radius:20px;
   /* 請假行事曆與揪團頁會用到的 */
-  --weekend:#F1E4D4; --hol:#F9DCD3; --hol-ink:#C2533B;
-  --yes:#4F8F6E; --yes-bg:#DCEBDF; --mb:#C4862A; --mb-bg:#F7E7C6; --no:#8A7364; --no-bg:#EFE3D6;
+  --weekend:#F1E4D4; --hol:#F9DCD3; --hol-ink:#A8402B;
+  --yes:#2F6B4E; --yes-bg:#DCEBDF; --mb:#8A5A12; --mb-bg:#F7E7C6; --no:#74604F; --no-bg:#EFE3D6;
+  --off:#776659; --off-ink:#FFFFFF; --maybe:#C4862A;
 }
+/* ---------- 3. Cozy 色彩：深色（跟隨系統，或使用者選單指定） ---------- */
 @media (prefers-color-scheme:dark){
   :root[data-skin="cozy"]:not([data-theme="light"]){
     color-scheme:dark;
     --bg:#1F1814; --surface:#2A211C; --surface2:#33281F; --ink:#F4E7D9; --muted:#B9A391; --line:#45372D;
-    --accent:#EE8B6B; --accent-ink:#2A1812; --gold:#E9B45C; --danger:#F08A73;
+    --accent:#EE8B6B; --accent-ink:#2A1812; --accent-soft:#EE8B6B; --gold:#E9B45C; --danger:#F08A73;
     --tank:#8DB3DA; --heal:#8DC4A6; --dps:#F0937C; --raid:#C2A6E6; --tome:#8DB3DA; --craft:#7CC6BD;
     --peach:#4A3026; --sage:#2D3A31; --butter:#433722; --sky:#2B3542;
     --peach-ink:#F6B79C; --sage-ink:#A8D3BA; --butter-ink:#F0D08A; --sky-ink:#AFC8E6;
-    --shadow:0 10px 26px -16px rgba(0,0,0,.7);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow:0 10px 26px -16px rgba(0,0,0,.7); --shadow-lg:0 18px 40px -18px rgba(0,0,0,.8);
     --weekend:#2F2620; --hol:#41271F; --hol-ink:#F49A85;
     --yes:#8DC4A6; --yes-bg:#25362C; --mb:#E9B45C; --mb-bg:#3D3020; --no:#B9A391; --no-bg:#33281F;
   }
@@ -31,101 +60,84 @@
 :root[data-skin="cozy"][data-theme="dark"]{
   color-scheme:dark;
   --bg:#1F1814; --surface:#2A211C; --surface2:#33281F; --ink:#F4E7D9; --muted:#B9A391; --line:#45372D;
-  --accent:#EE8B6B; --accent-ink:#2A1812; --gold:#E9B45C; --danger:#F08A73;
+  --accent:#EE8B6B; --accent-ink:#2A1812; --accent-soft:#EE8B6B; --gold:#E9B45C; --danger:#F08A73;
   --tank:#8DB3DA; --heal:#8DC4A6; --dps:#F0937C; --raid:#C2A6E6; --tome:#8DB3DA; --craft:#7CC6BD;
   --peach:#4A3026; --sage:#2D3A31; --butter:#433722; --sky:#2B3542;
   --peach-ink:#F6B79C; --sage-ink:#A8D3BA; --butter-ink:#F0D08A; --sky-ink:#AFC8E6;
-  --shadow:0 10px 26px -16px rgba(0,0,0,.7);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow:0 10px 26px -16px rgba(0,0,0,.7); --shadow-lg:0 18px 40px -18px rgba(0,0,0,.8);
   --weekend:#2F2620; --hol:#41271F; --hol-ink:#F49A85;
   --yes:#8DC4A6; --yes-bg:#25362C; --mb:#E9B45C; --mb-bg:#3D3020; --no:#B9A391; --no-bg:#33281F;
 }
 
-/* ---------- 字體：標題改用圓潤厚實的黑體，比襯線體親切 ---------- */
+/* ---------- 4. 基礎：字體、連結、focus ---------- */
 [data-skin="cozy"] body{letter-spacing:.01em}
 [data-skin="cozy"] h1,[data-skin="cozy"] .hero h1,[data-skin="cozy"] .panel h2,[data-skin="cozy"] .center h1{
   font-family:"Noto Sans TC",system-ui,sans-serif;font-weight:900;letter-spacing:.02em}
 [data-skin="cozy"] .brand{font-family:"Noto Sans TC",sans-serif;font-weight:700;letter-spacing:.12em}
+[data-skin="cozy"] :focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:var(--focus)}
 
-/* ---------- 卡片：大圓角、無硬邊框、柔和陰影 ---------- */
-[data-skin="cozy"] .panel{border:0;border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+/* ---------- 5. 卡片：大圓角、無硬邊框、柔和陰影 ---------- */
+[data-skin="cozy"] .panel{border:0;border-radius:var(--r-lg);box-shadow:var(--shadow);padding:22px}
 [data-skin="cozy"] .sheet{border-radius:24px}
-[data-skin="cozy"] .mod,[data-skin="cozy"] .card{border:0;border-radius:18px;box-shadow:var(--shadow);transition:transform .15s ease,box-shadow .15s ease}
-[data-skin="cozy"] .mod:hover,[data-skin="cozy"] .card:hover{transform:translateY(-2px);box-shadow:0 14px 30px -16px rgba(120,72,40,.55)}
+[data-skin="cozy"] .mod,[data-skin="cozy"] .card{border:0;border-radius:18px;box-shadow:var(--shadow-sm);background:var(--surface);transition:transform .15s ease,box-shadow .15s ease}
+[data-skin="cozy"] .mod:hover,[data-skin="cozy"] .card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 
-/* ---------- 按鈕：膠囊形，主要按鈕陶土橘帶一點陰影 ---------- */
-[data-skin="cozy"] .btn{border-radius:999px;border-color:var(--line);background:var(--surface);font-weight:700}
+/* ---------- 6. 按鈕 ---------- */
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+[data-skin="cozy"] .btn{border-radius:var(--r-pill);border-color:var(--line);background:var(--surface);font-weight:700}
 [data-skin="cozy"] .btn:hover{background:var(--surface2)}
 [data-skin="cozy"] .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 6px 14px -8px color-mix(in srgb,var(--accent) 80%,transparent)}
-[data-skin="cozy"] .btn.primary:hover{filter:brightness(1.05);background:var(--accent)}
-[data-skin="cozy"] .chip{border-radius:999px}
+[data-skin="cozy"] .btn.primary:hover{filter:brightness(1.07);background:var(--accent)}
+[data-skin="cozy"] .btn.danger{color:var(--danger)}
+[data-skin="cozy"] .btn.discord,[data-skin="cozy"] .btn.discord:hover{background:#5865F2;border-color:#5865F2;color:#fff}
+[data-skin="cozy"] .btn.discord:hover{filter:brightness(1.06)}
+[data-skin="cozy"] .chip{border-radius:var(--r-pill)}
 [data-skin="cozy"] .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 [data-skin="cozy"] .tab[aria-selected="true"]{border-bottom-color:var(--accent)}
+/* 觸控裝置：讓常用按鈕容易點 */
+@media (pointer:coarse){
+  [data-skin="cozy"] .btn{min-height:40px}
+  [data-skin="cozy"] .btn.sm{min-height:36px;padding-left:14px;padding-right:14px}
+  [data-skin="cozy"] .linkbtn{min-height:36px;padding:6px 8px}
+}
 
-/* ---------- 輸入框：圓角、暖色底 ---------- */
+/* ---------- 7. 表單 ---------- */
 [data-skin="cozy"] .f,[data-skin="cozy"] .form input,[data-skin="cozy"] .form textarea,[data-skin="cozy"] .form select,[data-skin="cozy"] .sel,
-[data-skin="cozy"] .mrow select,[data-skin="cozy"] .tgtrow input,[data-skin="cozy"] .tgtrow select{border-radius:12px;background:var(--surface2);border-color:var(--line)}
+[data-skin="cozy"] .mrow select,[data-skin="cozy"] .tgtrow input,[data-skin="cozy"] .tgtrow select,[data-skin="cozy"] .phform input,[data-skin="cozy"] .phform select{border-radius:12px;background:var(--surface2);border-color:var(--line)}
 
-/* ---------- 大廳 ---------- */
+/* ---------- 8. 狀態標籤（柔和底色，不用警告色表示一般待辦） ---------- */
+[data-skin="cozy"] .badge{border-radius:var(--r-pill);background:var(--surface2);color:var(--muted)}
+[data-skin="cozy"] .badge.open{background:var(--sage);color:var(--sage-ink)}
+[data-skin="cozy"] .tag{border-radius:var(--r-pill);border-color:var(--line);background:var(--surface)}
+[data-skin="cozy"] .evs{background:var(--surface);color:var(--muted)}
+[data-skin="cozy"] .evs.ok{background:var(--sage);color:var(--sage-ink)}
+[data-skin="cozy"] .evs.me{background:var(--sky);color:var(--sky-ink)}
+[data-skin="cozy"] .evs.todo{background:var(--peach);color:var(--peach-ink)}
+[data-skin="cozy"] .you{border-radius:var(--r-pill);background:var(--accent);color:var(--accent-ink)}
+[data-skin="cozy"] .phtag{border-radius:var(--r-pill)}
+
+/* ---------- 9. 大廳既有區塊 ---------- */
 [data-skin="cozy"] .hero{border-left:0;padding:0;margin-bottom:20px}
 [data-skin="cozy"] .hero h1{display:inline;background:linear-gradient(transparent 60%,var(--peach) 60%,var(--peach) 92%,transparent 92%);padding:0 .12em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 [data-skin="cozy"] .group{border-radius:24px;box-shadow:var(--shadow)}
-[data-skin="cozy"] .target{border-radius:999px;background:var(--surface2);border-color:transparent}
+[data-skin="cozy"] .target{border-radius:var(--r-pill);background:var(--surface2);border-color:transparent}
 [data-skin="cozy"] .target.main{background:var(--butter);color:var(--butter-ink);border-color:transparent}
 [data-skin="cozy"] .notice{border-radius:16px;background:var(--butter);border:0;color:var(--butter-ink)}
-
-/* 功能卡片輪流用四種柔和底色，像便利貼 */
 [data-skin="cozy"] .mods{gap:14px}
 [data-skin="cozy"] .mod{padding:18px}
-[data-skin="cozy"] .mod:nth-child(4n+1){background:var(--peach)}
-[data-skin="cozy"] .mod:nth-child(4n+2){background:var(--sage)}
-[data-skin="cozy"] .mod:nth-child(4n+3){background:var(--butter)}
-[data-skin="cozy"] .mod:nth-child(4n+4){background:var(--sky)}
-[data-skin="cozy"] .badge{border-radius:999px;background:rgba(255,255,255,.55);color:var(--ink)}
-
-/* 固定團成員格、飛地成員 */
-[data-skin="cozy"] .slot{border:0;border-top:5px solid var(--rc);border-radius:18px;box-shadow:var(--shadow)}
+[data-skin="cozy"] .slot{border:0;border-top:5px solid var(--rc);border-radius:18px;box-shadow:var(--shadow-sm)}
 [data-skin="cozy"] .person{border:0;background:var(--surface2)}
-
-/* 揪團列 */
 [data-skin="cozy"] .evi{border:0;border-left:0;border-radius:16px;background:var(--surface2);padding:12px 14px}
 [data-skin="cozy"] .evi:hover{background:var(--peach)}
-[data-skin="cozy"] .evi .evk{color:var(--peach-ink);background:var(--peach);border-radius:999px;padding:0 8px}
+[data-skin="cozy"] .evi .evk{color:var(--peach-ink);background:var(--peach);border-radius:var(--r-pill);padding:0 8px}
 [data-skin="cozy"] .evi:hover .evk{background:var(--surface)}
 [data-skin="cozy"] .eva img{border-color:var(--surface2)}
-
-/* ---------- 揪團頁 ---------- */
-[data-skin="cozy"] .card{border-left:0;background:var(--surface)}
-[data-skin="cozy"] .cards .card:nth-child(4n+1){background:var(--peach)}
-[data-skin="cozy"] .cards .card:nth-child(4n+2){background:var(--sage)}
-[data-skin="cozy"] .cards .card:nth-child(4n+3){background:var(--butter)}
-[data-skin="cozy"] .cards .card:nth-child(4n+4){background:var(--sky)}
-[data-skin="cozy"] .pill.kind{background:rgba(255,255,255,.6);color:var(--ink)}
-[data-skin="cozy"] .banner{border:0;border-radius:20px;background:var(--sage);color:var(--sage-ink);box-shadow:var(--shadow)}
-[data-skin="cozy"] .seg button{border-radius:999px}
-[data-skin="cozy"] .jb{border-radius:999px}
-[data-skin="cozy"] .fact{border-radius:999px;background:var(--surface2)}
-
-/* ---------- 請假行事曆 ---------- */
-[data-skin="cozy"] .gw,[data-skin="cozy"] .am-gw{border-radius:16px;border-color:var(--line)}
-[data-skin="cozy"] .am{--am-off:#8C7B70;--am-maybe:#C4862A;--am-hol:var(--hol);--am-holink:var(--hol-ink);--am-good:var(--heal)}
-[data-skin="cozy"] .cal td.off{background:#8C7B70}
-:root[data-skin="cozy"]{--off:#8C7B70;--maybe:#C4862A}
-
-/* ---------- 風格切換按鈕 ---------- */
-.skin-toggle{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:999px;padding:8px 14px;font:700 13px/1 "Noto Sans TC",sans-serif;
-  background:var(--ink);color:var(--bg);box-shadow:0 8px 20px -10px rgba(0,0,0,.5);cursor:pointer;opacity:.85}
-.skin-toggle:hover{opacity:1}
-
-/* ---------- 固定團卡片、成員卡、連結卡（第二輪） ---------- */
 [data-skin="cozy"] .teams{gap:14px}
-[data-skin="cozy"] .teamcard{border:0;border-radius:18px;box-shadow:var(--shadow);transition:transform .15s ease}
-[data-skin="cozy"] .teamcard:hover{transform:translateY(-2px)}
-[data-skin="cozy"] .teams .teamcard:nth-child(3n+1){background:var(--peach)}
-[data-skin="cozy"] .teams .teamcard:nth-child(3n+2){background:var(--sage)}
-[data-skin="cozy"] .teams .teamcard:nth-child(3n+3){background:var(--sky)}
+[data-skin="cozy"] .teamcard{border:0;border-radius:18px;background:var(--surface2);box-shadow:none;transition:transform .15s ease,box-shadow .15s ease}
+[data-skin="cozy"] .teamcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 [data-skin="cozy"] .teamcard .tn{font-family:"Noto Sans TC",sans-serif;font-size:19px}
-[data-skin="cozy"] .teamcard .avs img{border-color:rgba(255,255,255,.8)}
-[data-skin="cozy"] .teamcard .rel{border-radius:999px;background:rgba(255,255,255,.6);color:var(--ink)}
+[data-skin="cozy"] .teamcard .avs img{border-color:var(--surface2)}
+[data-skin="cozy"] .teamcard .rel{border-radius:var(--r-pill);background:var(--peach);color:var(--peach-ink)}
 [data-skin="cozy"] .crystals{gap:14px}
 [data-skin="cozy"] .crystal{border:0;border-left:0;border-radius:18px;background:var(--surface2);box-shadow:none;position:relative}
 [data-skin="cozy"] .crystal::before{content:"";position:absolute;left:14px;right:14px;top:0;height:4px;border-radius:0 0 4px 4px;background:var(--rc)}
@@ -134,20 +146,178 @@
 [data-skin="cozy"] .lcard,[data-skin="cozy"] .dropcard{border:0;border-radius:16px;background:var(--surface2)}
 [data-skin="cozy"] .lcard:hover{box-shadow:var(--shadow)}
 [data-skin="cozy"] .lcard.self{border-left:0;box-shadow:inset 0 0 0 2px var(--butter)}
+[data-skin="cozy"] .lops{background:transparent;border-top-color:var(--line)}
+[data-skin="cozy"] .loadhelp{border:0;border-radius:var(--r-lg);box-shadow:var(--shadow)}
+[data-skin="cozy"] .fillpanel{border:0;border-radius:var(--r-md);background:var(--sky);color:var(--sky-ink)}
+[data-skin="cozy"] .toast{border-radius:var(--r-pill);padding:10px 18px}
 
-/* ---------- 小圖示（只在溫馨風格顯示） ---------- */
+/* ---------- 10. 揪團頁 ---------- */
+[data-skin="cozy"] .card{border-left:0}
+[data-skin="cozy"] .pill.kind{background:var(--peach);color:var(--peach-ink)}
+[data-skin="cozy"] .banner{border:0;border-radius:20px;background:var(--sage);color:var(--sage-ink);box-shadow:var(--shadow-sm)}
+[data-skin="cozy"] .seg button{border-radius:var(--r-pill)}
+[data-skin="cozy"] .jb{border-radius:var(--r-pill)}
+[data-skin="cozy"] .pill.maybe{color:var(--butter-ink)}
+[data-skin="cozy"] .pill.fixed{background:var(--peach);color:var(--peach-ink)}
+[data-skin="cozy"] .fact{border-radius:var(--r-pill);background:var(--surface2)}
+
+/* ---------- 11. 請假行事曆 ---------- */
+[data-skin="cozy"] .gw,[data-skin="cozy"] .am-gw{border-radius:16px;border-color:var(--line)}
+[data-skin="cozy"] .am{--am-off:var(--off);--am-maybe:var(--maybe);--am-hol:var(--hol);--am-holink:var(--hol-ink);--am-good:var(--heal)}
+[data-skin="cozy"] .cal td.off{background:var(--off)}
+[data-skin="cozy"] .am-g .evd{color:var(--gold)}
+[data-skin="cozy"] .am-g .evd.cf{color:var(--gold)}
+
+/* ---------- 12. 小圖示（標題前的圓角色塊） ---------- */
 .ico{display:none}
-[data-skin="cozy"] .ico{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:11px;margin-right:10px;vertical-align:-7px;flex:none}
-[data-skin="cozy"] .mod>.t .ico{width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.65)!important;vertical-align:-8px}
-[data-skin="cozy"] .ico-peach{background:var(--peach);color:var(--peach-ink)}
-[data-skin="cozy"] .ico-sage{background:var(--sage);color:var(--sage-ink)}
-[data-skin="cozy"] .ico-butter{background:var(--butter);color:var(--butter-ink)}
-[data-skin="cozy"] .ico-sky{background:var(--sky);color:var(--sky-ink)}
+[data-skin="cozy"] .ico{display:inline-flex;align-items:center;justify-content:center;width:var(--ico-box);height:var(--ico-box);border-radius:11px;margin-right:10px;vertical-align:-7px;flex:none}
+[data-skin="cozy"] .mod>.t .ico{width:30px;height:30px;border-radius:10px;vertical-align:-8px}
+.ico-peach{background:var(--peach);color:var(--peach-ink)}
+.ico-sage{background:var(--sage);color:var(--sage-ink)}
+.ico-butter{background:var(--butter);color:var(--butter-ink)}
+.ico-sky{background:var(--sky);color:var(--sky-ink)}
 [data-skin="cozy"] .phead h2{display:flex;align-items:center}
+.svgi{display:inline-block;flex:none;vertical-align:-3px}
 
-/* ---------- 大廳問候語 ---------- */
+/* ---------- 13. 大廳問候語 ---------- */
 .greet-line{margin:4px 0 0;font-size:15px;color:var(--muted)}
 .greet-line b{color:var(--ink);font-weight:700}
 .greet-line a{color:var(--accent);font-weight:700;text-decoration:none}
 .greet-line a:hover{text-decoration:underline}
 [data-skin="cozy"] .greet-line{font-size:15.5px}
+
+/* =====================================================================
+   共用元件（兩種外觀都會用到，只使用 tokens）
+   ===================================================================== */
+
+/* ---------- 14. 網站頂部導覽 ---------- */
+.sitebar{position:relative;z-index:12;min-height:60px;padding-top:env(safe-area-inset-top,0px);background:color-mix(in srgb,var(--surface) 82%,var(--bg));border-bottom:1px solid var(--line)}
+:root[data-skin="cozy"] .sitebar{border-bottom:0;box-shadow:0 1px 0 var(--line)}
+.sb-in{max-width:1120px;margin:0 auto;padding:0 16px;min-height:60px;display:flex;align-items:center;gap:12px}
+.sb-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:900;font-size:16px;letter-spacing:.06em;white-space:nowrap;border-radius:var(--r-md);padding:4px 6px 4px 0}
+.sb-logo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;background:var(--accent-soft);color:#fff}
+:root[data-skin="cozy"][data-theme="dark"] .sb-logo{color:var(--accent-ink)}
+@media (prefers-color-scheme:dark){:root[data-skin="cozy"]:not([data-theme="light"]) .sb-logo{color:var(--accent-ink)}}
+.sb-nav{display:flex;align-items:center;gap:2px;margin-left:12px;flex:1;min-width:0}
+.sb-nav a{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 13px;border-radius:var(--r-pill);color:var(--muted);text-decoration:none;font-weight:700;font-size:14.5px;white-space:nowrap}
+.sb-nav a:hover{background:var(--surface2);color:var(--ink)}
+.sb-nav a[aria-current="page"]{background:var(--peach);color:var(--peach-ink)}
+.sb-user{margin-left:auto;position:relative}
+.sb-ubtn{display:flex;align-items:center;gap:8px;min-height:40px;padding:3px 10px 3px 3px;border:0;border-radius:var(--r-pill);background:transparent;color:var(--ink);font-weight:700;font-size:14px;max-width:220px}
+.sb-ubtn:hover,.sb-ubtn[aria-expanded="true"]{background:var(--surface2)}
+.sb-ubtn img{width:32px;height:32px;border-radius:50%;background:var(--surface2);flex:none}
+.sb-ubtn .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-login{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:var(--r-pill);background:var(--accent);color:var(--accent-ink);font-weight:700;text-decoration:none;font-size:14px}
+.sb-menu{position:absolute;right:0;top:calc(100% + 6px);width:240px;max-width:calc(100vw - 24px);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-lg);padding:6px;z-index:70}
+:root[data-skin="cozy"] .sb-menu{border:0}
+.sb-menu .mh{padding:8px 10px 6px;font-size:12px;color:var(--muted)}
+.sb-menu a,.sb-menu button.mi{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:0 10px;border:0;border-radius:10px;background:none;color:var(--ink);text-decoration:none;font-size:14.5px;text-align:left}
+.sb-menu a:hover,.sb-menu button.mi:hover{background:var(--surface2)}
+.sb-menu hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
+.sb-seg{display:flex;gap:4px;padding:2px 6px 8px}
+.sb-seg button{flex:1;min-height:36px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700}
+.sb-seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+
+/* ---------- 15. 手機底部導覽 ---------- */
+.bnav{display:none}
+@media (max-width:760px){
+  .sb-nav{display:none}
+  .sb-ubtn .nm{display:none}
+  .sb-ubtn{padding:3px}
+  body.has-bnav{--bnav-h:62px;padding-bottom:calc(var(--bnav-h) + env(safe-area-inset-bottom,0px))}
+  .has-bnav .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:15;height:calc(var(--bnav-h) + env(safe-area-inset-bottom,0px));padding:0 4px env(safe-area-inset-bottom,0px);
+    background:color-mix(in srgb,var(--surface) 94%,transparent);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .bnav a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);text-decoration:none;font-size:11.5px;font-weight:700;border-radius:14px;margin:5px 1px}
+  .bnav a .bi{display:flex;align-items:center;justify-content:center;width:48px;height:28px;border-radius:var(--r-pill)}
+  .bnav a[aria-current="page"]{color:var(--peach-ink)}
+  .bnav a[aria-current="page"] .bi{background:var(--peach)}
+  /* 浮在底部的元素往上讓出導覽列的位置 */
+  .has-bnav .toast,.has-bnav #toast{bottom:calc(var(--bnav-h) + 14px + env(safe-area-inset-bottom,0px))}
+  .has-bnav .savebar{bottom:var(--bnav-h);padding-bottom:12px}
+}
+
+/* ---------- 16. 載入與錯誤 ---------- */
+.loadbox{display:flex;flex-direction:column;align-items:center;gap:14px;padding:64px 16px;color:var(--muted);text-align:center}
+.loadbox .dots{display:flex;gap:7px}
+.loadbox .dots i{width:9px;height:9px;border-radius:50%;background:var(--accent-soft);opacity:.35;animation:cz-dot 1.2s ease-in-out infinite}
+.loadbox .dots i:nth-child(2){animation-delay:.15s}.loadbox .dots i:nth-child(3){animation-delay:.3s}
+@keyframes cz-dot{0%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+
+/* ---------- 17. 今日飛地（大廳 Dashboard） ---------- */
+.dash-top{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;margin:0 0 16px}
+.dash-top>.panel{margin:0}
+@media (max-width:820px){.dash-top{grid-template-columns:1fr}}
+.panel>.dash-h,.dash-h{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:900;font-family:"Noto Sans TC",system-ui,sans-serif}
+.dash-h .icb{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:11px;flex:none}
+.next-main{display:grid;gap:6px}
+.next-team{font-size:13px;font-weight:700;color:var(--muted)}
+.next-when{font-size:clamp(22px,4.4vw,28px);font-weight:900;line-height:1.2;letter-spacing:.01em}
+.next-when small{font-size:15px;font-weight:700;color:var(--muted);margin-left:8px;white-space:nowrap;display:inline-block}
+.next-what{font-size:16px;font-weight:700}
+.next-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:4px;font-size:14px;color:var(--muted)}
+.next-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.next-more{list-style:none;margin:14px 0 0;padding:12px 0 0;border-top:1px dashed var(--line);display:grid;gap:6px;font-size:14px}
+.next-more li{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.next-more .w{font-weight:700;font-variant-numeric:tabular-nums;min-width:7.5em}
+.next-more a{color:inherit}
+.stp{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;border-radius:var(--r-pill);padding:2px 10px;background:var(--surface2);color:var(--muted)}
+.stp.good{background:var(--sage);color:var(--sage-ink)}
+.stp.soft{background:var(--butter);color:var(--butter-ink)}
+.stp.info{background:var(--sky);color:var(--sky-ink)}
+.stp.warm{background:var(--peach);color:var(--peach-ink)}
+.empty-state{display:grid;justify-items:start;gap:8px;color:var(--muted);font-size:14.5px}
+.empty-state p{margin:0}
+.empty-state .big{font-size:16px;color:var(--ink);font-weight:700}
+.todo-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.todo-list a{display:flex;align-items:center;gap:12px;min-height:var(--tap);padding:8px 12px;border-radius:var(--r-md);background:var(--surface2);color:var(--ink);text-decoration:none;font-size:14.5px}
+.todo-list a:hover{background:var(--peach)}
+.todo-list .dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--accent-soft)}
+.todo-list .dot.sage{background:var(--heal)}
+.todo-list .dot.sky{background:var(--tank)}
+.todo-list .tx{flex:1;min-width:0}
+.todo-list .tx small{display:block;color:var(--muted);font-size:12.5px}
+.todo-list .go{color:var(--muted);flex:none}
+.quick{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0 0 16px}
+@media (max-width:900px){.quick{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.qt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:96px;padding:14px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm);color:var(--ink);text-decoration:none;border:1px solid transparent;transition:transform .15s ease,box-shadow .15s ease}
+:root:not([data-skin="cozy"]) .qt{border-color:var(--line)}
+.qt:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.qt .qi{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px}
+.qt .qn{font-weight:700;font-size:15px;line-height:1.3}
+.qt .qd{font-size:12.5px;color:var(--muted);line-height:1.35;margin-top:-4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+@media (max-width:480px){.quick{gap:8px}.qt{padding:12px 10px;min-height:92px}.qt .qn{font-size:14px}.qt .qd{display:none}}
+.sec-title{display:flex;align-items:center;gap:10px;margin:28px 0 12px;font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--muted)}
+.sec-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.mchips{display:flex;flex-wrap:wrap;gap:8px}
+.mchips .mc{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:var(--r-pill);background:var(--surface2);font-size:14px}
+.mchips .mc img{width:30px;height:30px;border-radius:50%}
+.mchips .mc .jb{font-size:12px;font-weight:700}
+.mchips .mc.r-tank .jb{color:var(--tank)}.mchips .mc.r-heal .jb{color:var(--heal)}.mchips .mc.r-dps .jb{color:var(--dps)}
+.phead{flex-wrap:wrap}
+.phead>h2{white-space:nowrap}
+.phead-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pinmark{display:inline-flex;color:var(--gold);vertical-align:-2px}
+.morebar{display:flex;justify-content:center;margin-top:14px}
+
+/* ---------- 18. 未登入首頁 ---------- */
+.welcome{max-width:760px;margin:8px auto 0;display:grid;gap:20px;text-align:center}
+.welcome .wl-logo{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:18px;background:var(--accent-soft);color:#fff;margin:0 auto}
+.welcome h1{margin:0;font-size:var(--fs-2xl);font-weight:900;line-height:1.2}
+.welcome .lead{margin:0 auto;max-width:34em;color:var(--muted);font-size:16px}
+.welcome .wl-cta{display:grid;justify-items:center;gap:10px}
+.welcome .wl-cta .btn.discord{display:inline-flex;align-items:center;gap:10px;border-radius:var(--r-pill);min-height:50px;box-shadow:0 10px 22px -12px #5865F2}
+.welcome .wl-cta .note{font-size:13px;color:var(--muted)}
+.welcome .group{margin:0}
+.welcome .pub{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;text-align:left}
+.welcome .pub a{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface);box-shadow:var(--shadow-sm);color:var(--ink);text-decoration:none}
+:root:not([data-skin="cozy"]) .welcome .pub a{border:1px solid var(--line)}
+.welcome .pub a small{display:block;color:var(--muted);font-size:12.5px}
+.welcome .pub .qi{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;flex:none}
+.welcome .alt{font-size:13px;color:var(--muted)}
+
+/* ---------- 19. 減少動態 ---------- */
+@media (prefers-reduced-motion:reduce){
+  [data-skin="cozy"] .mod,[data-skin="cozy"] .card,[data-skin="cozy"] .teamcard,.qt{transition:none}
+  [data-skin="cozy"] .mod:hover,[data-skin="cozy"] .card:hover,[data-skin="cozy"] .teamcard:hover,.qt:hover{transform:none}
+  .loadbox .dots i{animation:none;opacity:.6}
+}

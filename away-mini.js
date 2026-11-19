@@ -70,14 +70,14 @@ const CSS=`
 
 export function initAwayMini({db,getCtx}){
   if(!document.getElementById("amCss")){const st=document.createElement("style");st.id="amCss";st.textContent=CSS;document.head.appendChild(st);}
-  let cfg={access:{},proxies:{}},away={},subs={},canList=false,nDays=30,evs={},rs={};
+  let cfg={access:{},proxies:{}},away={},subs={},canList=false,allLoaded=false,nDays=30,evs={},rs={};
   const sub=(k,ref,fn,err)=>{if(subs[k])return;subs[k]=onSnapshot(ref,fn,err||(e=>console.warn("awayMini",k,e&&e.code)));};
   const unsub=k=>{if(subs[k]){subs[k]();delete subs[k];}};
 
   function access(){
     const {me,isOwner}=getCtx();if(!me)return;
     const a=(cfg.access||{})[me.uid]||"";canList=isOwner||a==="view"||a==="lead";
-    if(canList)sub("all",collection(db,"away"),s=>{away={};s.forEach(d=>{away[d.id]=d.data();});paint();},()=>{canList=false;unsub("all");access();paint();});
+    if(canList)sub("all",collection(db,"away"),s=>{away={};s.forEach(d=>{away[d.id]=d.data();});allLoaded=true;paint();},()=>{canList=false;allLoaded=false;unsub("all");access();paint();});
     else{unsub("all");mine().forEach(id=>sub("u/"+id,doc(db,"away",id),s=>{if(s.exists())away[id]=s.data();else delete away[id];paint();},()=>{}));}
   }
   function mine(){const {me,isOwner,users}=getCtx();if(!me)return[];
@@ -138,5 +138,7 @@ export function initAwayMini({db,getCtx}){
   document.addEventListener("click",e=>{const t=e.target.closest('[data-am="go"]');if(t)location.href="away.html?u="+encodeURIComponent(t.dataset.u)+"&d="+t.dataset.d;});
   let rt=null;const onR=()=>{clearTimeout(rt);rt=setTimeout(()=>{nDays=30;paint();},150);};window.addEventListener("resize",onR);
   function todayOff(){const d=ymd(new Date()),{ids}=rowIds();return {off:ids.filter(id=>dayState(id,d)==="off"),maybe:ids.filter(id=>dayState(id,d)==="maybe")};}
-  return {paint,todayOff,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
+  /* 某一天、某些成員的請假狀況（大廳「下一場冒險」用）；full=false 表示只看得到自己和代填對象 */
+  function dayInfo(d,ids){const r={off:[],maybe:[],full:canList&&allLoaded};(ids||[]).forEach(id=>{const s=dayState(id,d);if(s==="off")r.off.push(id);else if(s==="maybe")r.maybe.push(id);});return r;}
+  return {paint,todayOff,dayInfo,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
 }

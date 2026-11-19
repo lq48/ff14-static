@@ -14,6 +14,14 @@ const P={
   target:'<circle cx="12" cy="12" r="1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="9"/>',
   users:'<circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>',
   key:'<circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L19 4M18 5l2 2M15 8l2 2"/>',
+  /* Phase 1 補充：同一套線條規格（24×24、線寬 1.9、圓角端點） */
+  pin:'<path d="M15 4.5l-4 4-4 1.5-1.5 1.5 7 7 1.5-1.5 1.5-4 4-4"/><path d="M9 15l-4.5 4.5"/><path d="M14.5 4l5.5 5.5"/>',
+  logout:'<path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/><path d="M9 12h12l-3-3"/><path d="M18 15l3-3"/>',
+  login:'<path d="M9 8V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"/><path d="M3 12h13l-3-3"/><path d="M13 15l3-3"/>',
+  right:'<path d="M9 6l6 6-6 6"/>',
+  down:'<path d="M6 9l6 6 6-6"/>',
+  refresh:'<path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
 };
 /* 標題關鍵字 → 圖示、底色 */
 const RULES=[
@@ -22,10 +30,13 @@ const RULES=[
   [/BiS|配裝/,"sword","peach"],[/復盤|紀錄/,"note","sky"],[/莫古|收集|道具/,"gift","butter"],[/目標|進度/,"target","peach"],
   [/權限/,"key","butter"],
 ];
-const svg=k=>'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+P[k]+'</svg>';
+const svg=(k,size)=>'<svg class="svgi" viewBox="0 0 24 24" width="'+(size||18)+'" height="'+(size||18)+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+(P[k]||"")+'</svg>';
+/* 其他模組直接取用：icon("cal")、icon("team",22) */
+export const icon=svg;
+export const ICONS=Object.keys(P);
 function deco(root){
   root.querySelectorAll(".panel>h2,.panel>.phead>h2,.mod>.t").forEach(h=>{
-    if(h.dataset.ico)return;const t=h.textContent||"";const r=RULES.find(([re])=>re.test(t));h.dataset.ico="1";if(!r)return;
+    if(h.dataset.ico||h.querySelector(".ico,.icb"))return;const t=h.textContent||"";const r=RULES.find(([re])=>re.test(t));h.dataset.ico="1";if(!r)return;
     const s=document.createElement("span");s.className="ico ico-"+r[2];s.innerHTML=svg(r[1]);h.prepend(s);
   });
 }

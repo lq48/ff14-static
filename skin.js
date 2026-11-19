@@ -1,16 +1,16 @@
-/* 風格切換：網址加 ?skin=cozy 試用溫馨風格，?skin=classic 換回原本；選過之後會記住，並在右下角顯示切換按鈕 */
+/* 外觀設定（放在 <head> 最前面，畫面出現前就套用，避免閃爍）
+   - 預設使用溫馨風格（cozy）
+   - 網址加 ?skin=classic 可換回舊版外觀，?skin=cozy 換回溫馨；也可以在右上角的使用者選單切換
+   - 深淺色：跟隨系統，或在使用者選單指定（存在這台裝置）
+   註：舊的試用期設定（localStorage "skin"）不再沿用，所以每個人都會先看到新外觀 */
 (function(){
-  var K="skin",v="";
-  try{var q=new URLSearchParams(location.search).get("skin");if(q==="cozy"||q==="classic")localStorage.setItem(K,q);v=localStorage.getItem(K)||"";}catch(e){}
-  if(v==="cozy")document.documentElement.setAttribute("data-skin","cozy");
-  if(!v)return;
-  document.addEventListener("DOMContentLoaded",function(){
-    var b=document.createElement("button");b.type="button";b.className="skin-toggle";
-    var set=function(){var on=document.documentElement.getAttribute("data-skin")==="cozy";b.textContent=on?"換回原本風格":"試試溫馨風格";};
-    set();
-    b.addEventListener("click",function(){var on=document.documentElement.getAttribute("data-skin")==="cozy";
-      if(on)document.documentElement.removeAttribute("data-skin");else document.documentElement.setAttribute("data-skin","cozy");
-      try{localStorage.setItem(K,on?"classic":"cozy");}catch(e){}set();});
-    document.body.appendChild(b);
-  });
+  var d=document.documentElement,skin="",theme="";
+  try{
+    var q=new URLSearchParams(location.search).get("skin");
+    if(q==="cozy"||q==="classic")localStorage.setItem("skinPref",q);
+    skin=localStorage.getItem("skinPref")||"";
+    theme=localStorage.getItem("themePref")||"";
+  }catch(e){}
+  if(skin!=="classic")d.setAttribute("data-skin","cozy");
+  if(theme==="light"||theme==="dark")d.setAttribute("data-theme",theme);
 })();

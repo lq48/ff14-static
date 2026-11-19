@@ -2,12 +2,13 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<script src="skin.js?v=2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>出席時間調查｜固團</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<title>出席時間調查｜光之戰士飛地</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23DD7655%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.1%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21 12l-9-9-9 9h2v7a2 2 0 0 0 2 2h6%27/%3E%3Cpath d=%27M9 21v-6a2 2 0 0 1 2-2h2%27/%3E%3Cpath d=%27M18 22l3.35-3.284a2.143 2.143 0 0 0 .005-3.071 2.242 2.242 0 0 0-3.129-.006l-.224.22-.223-.22a2.242 2.242 0 0 0-3.128-.006 2.143 2.143 0 0 0-.006 3.071L18 22z%27/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
 <style>
 :root{
   color-scheme:light;
@@ -236,11 +237,13 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .tip .tl b{display:inline-block;min-width:3.2em;font-weight:700}
 .tip .tn{opacity:.7}
 </style>
+<link rel="stylesheet" href="cozy.css?v=4">
 </head>
 <body>
+<header class="sitebar" id="sitebar"></header>
 <div class="page">
   <header class="mast">
-    <p class="brand">固團出席表</p>
+    <p class="brand">出席時間調查</p>
     <div class="who" id="who"></div>
   </header>
 
@@ -347,6 +350,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 </script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
+import { mountNav } from "./nav.js?v=1";
 const NOTIFY_URL = WORKER_URL;   // 設定都在 config.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1001,6 +1005,7 @@ if(!FIREBASE_CONFIG.apiKey||!FIREBASE_CONFIG.projectId){
 }else{
   const app=initializeApp(FIREBASE_CONFIG);
   db=getFirestore(app);auth=getAuth(app);
+mountNav({page:"team",auth});
   {const m=location.hash.match(/dctoken=([^&]+)/),er=location.hash.match(/dcerror=([^&]+)/);
    if(m||er)history.replaceState(null,"",location.pathname+location.search);
    if(m)signInWithCustomToken(auth,decodeURIComponent(m[1])).catch(e=>{console.error(e);toast("Discord 登入失敗");});

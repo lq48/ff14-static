@@ -2,10 +2,10 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<script src="skin.js?v=1"></script>
+<script src="skin.js?v=2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>揪團活動｜光之戰士飛地</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🙋</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23DD7655%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.1%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21 12l-9-9-9 9h2v7a2 2 0 0 0 2 2h6%27/%3E%3Cpath d=%27M9 21v-6a2 2 0 0 1 2-2h2%27/%3E%3Cpath d=%27M18 22l3.35-3.284a2.143 2.143 0 0 0 .005-3.071 2.242 2.242 0 0 0-3.129-.006l-.224.22-.223-.22a2.242 2.242 0 0 0-3.128-.006 2.143 2.143 0 0 0-.006 3.071L18 22z%27/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
@@ -127,12 +127,14 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
 @media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr 100px 40px}.three{grid-template-columns:1fr 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=3">
+<link rel="stylesheet" href="cozy.css?v=4">
 </head>
 <body>
+<header class="sitebar" id="sitebar"></header>
 <div class="wrap" id="app"><div class="empty">載入中…</div></div>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
+import { mountNav } from "./nav.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -141,6 +143,7 @@ import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, upda
 document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
 
 const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
+mountNav({page:"events",auth});
 
 /* ===== 常數 ===== */
 const JOBS=[["PLD","騎士","tank"],["WAR","戰士","tank"],["DRK","暗騎","tank"],["GNB","絕槍","tank"],
@@ -227,7 +230,7 @@ function listHTML(){
     return '<a class="card" href="events.html?e='+encodeURIComponent(id)+'"><div class="row"><span class="pill kind">'+esc(e.kind||"其他")+'</span>'+statusPill(e)+'</div><h3>'+esc(e.title)+'</h3><div class="meta">'+
       (f?'確定時間：'+esc(whenTxt(f)):(e.slots||[]).length?'候選時間：'+esc((e.slots||[]).slice(0,3).map(whenTxt).join("、"))+((e.slots||[]).length>3?" 等":""):"只問參加意願")+
       '<br>發起人：'+esc(nameOf(users[e.by]))+'</div></a>';};
-  return '<a class="back" href="index.html">← 回飛地大廳</a><div class="top"><div><h1>揪團活動</h1><div class="sub">任何人都能發起，問大家要不要參加、哪個時間可以</div></div><div class="row">'+(isOwner?'<button class="btn" data-a="helpers">代填權限</button>':'')+'<button class="btn primary" data-a="new">＋ 發起揪團</button></div></div>'+
+  return '<div class="top"><div><h1>揪團活動</h1><div class="sub">任何人都能發起，問大家要不要參加、哪個時間可以</div></div><div class="row">'+(isOwner?'<button class="btn" data-a="helpers">代填權限</button>':'')+'<button class="btn primary" data-a="new">＋ 發起揪團</button></div></div>'+
     (act.length?'<div class="cards">'+act.map(card).join("")+'</div>':'<div class="panel empty">目前沒有進行中的揪團，來發起一個吧！</div>')+
     (past.length?'<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">已結束的活動（'+past.length+'）</summary><div class="cards" style="margin-top:12px">'+past.map(card).join("")+'</div></details>':'');
 }
