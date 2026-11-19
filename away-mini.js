@@ -133,9 +133,10 @@ export function initAwayMini({db,getCtx}){
       h+=tb+'</tbody></table></div>';
     h+='<div class="am-legend"><span><span class="am-sw" style="background:var(--am-off)"></span>請假</span><span><span class="am-sw" style="background:color-mix(in srgb,var(--am-maybe) 16%,transparent) repeating-linear-gradient(135deg,color-mix(in srgb,var(--am-maybe) 45%,transparent) 0 1.5px,transparent 1.5px 6px);border:1px solid var(--am-maybe)"></span>可能不在</span><span><span class="am-sw" style="background:var(--am-hol)"></span>國定假日</span><span>固定團列：✓ 全員到齊、−2 有 2 人請假</span>'+(Object.keys(evs).length?'<span>揪團：★ 已定案（成員格子裡的 ★ 是會參加的人）、○ 調查中</span>':'')+'<span style="margin-left:auto;color:var(--accent)">點自己那一列的格子就能請假</span></div>';
     const gw=el.querySelector(".am-gw"),sx=gw?gw.scrollLeft:0;
-    el.innerHTML=h;const ng=el.querySelector(".am-gw");if(ng)ng.scrollLeft=sx;
+    el.innerHTML=h;window.dispatchEvent(new Event("awaymini"));const ng=el.querySelector(".am-gw");if(ng)ng.scrollLeft=sx;
   }
   document.addEventListener("click",e=>{const t=e.target.closest('[data-am="go"]');if(t)location.href="away.html?u="+encodeURIComponent(t.dataset.u)+"&d="+t.dataset.d;});
   let rt=null;const onR=()=>{clearTimeout(rt);rt=setTimeout(()=>{nDays=30;paint();},150);};window.addEventListener("resize",onR);
-  return {paint,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
+  function todayOff(){const d=ymd(new Date()),{ids}=rowIds();return {off:ids.filter(id=>dayState(id,d)==="off"),maybe:ids.filter(id=>dayState(id,d)==="maybe")};}
+  return {paint,todayOff,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
 }

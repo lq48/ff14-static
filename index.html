@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=2">
+<link rel="stylesheet" href="cozy.css?v=3">
 </head>
 <body>
 <div class="page">
@@ -328,7 +328,8 @@ a{color:var(--accent)}
 </script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
-import { initAwayMini } from "./away-mini.js?v=ev2";
+import { initAwayMini } from "./away-mini.js?v=gr1";
+import { startIcons } from "./icons.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -424,6 +425,7 @@ app=initializeApp(FIREBASE_CONFIG);db=getFirestore(app);auth=getAuth(app);
   if(er)toast("Discord 登入失敗："+decodeURIComponent(er[1]));
 }
 curTid=urlTeam();view=curTid?(urlMod()==="bis"?"mod":"team"):"lobby";
+startIcons();
 onAuthStateChanged(auth,async u=>{
   me=u;claims={};
   unsub.forEach(f=>f());unsub=[];if(awayMini){awayMini.stop();awayMini=null;}
@@ -615,11 +617,28 @@ function eventsPanelHTML(){
         '<div class="evb"><span class="eva">'+av+'</span><span class="evn">'+(ys.length||ms.length?ys.length+' 人要來'+(ms.length?'・'+ms.length+' 人看時間':''):'還沒有人報名')+'</span>'+st+'<span class="sp"></span>'+mine+'</div></a>';}).join("")+'</div>'
       :'<p class="muted" style="margin:0">目前沒有揪團。想找人打本、挖寶或辦活動，按「發起揪團」問問大家！</p>')+'</div>';
 }
+/* 大廳問候語：依時段打招呼，再用一句話說今天的狀況 */
+function greetHello(p){const h=new Date().getHours(),n=p?esc(nameOf(p)):"";
+  const w=h>=5&&h<11?"早安":h<14?"午安":h<18?"午安":h<23?"晚上好":"夜深了";
+  return p?(w==="夜深了"?"夜深了，"+n+"，早點休息喔。":w+"，"+n+"。"):"歡迎來到光之戰士飛地。";}
+function greetLine(){
+  const pd=n=>String(n).padStart(2,"0"),t=new Date(),td=t.getFullYear()+"-"+pd(t.getMonth()+1)+"-"+pd(t.getDate()),parts=[];
+  const act=evActive();
+  const today=act.map(e=>{const f=e.status==="fixed"&&(e.slots||[]).find(s=>s.id===e.fixed);return f&&f.d===td?{e,t:f.t||""}:null;}).filter(Boolean).sort((a,b)=>a.t.localeCompare(b.t));
+  today.forEach(x=>parts.push((x.t&&x.t>="17"?"今晚 ":"今天 ")+(x.t?x.t+" ":"")+'有 <a href="events.html?e='+encodeURIComponent(x.e.id)+'">'+esc(x.e.title)+'</a>'));
+  const todo=me?act.filter(e=>evRs[e.id]&&!evRs[e.id][me.uid]):[];
+  if(todo.length)parts.push('<a href="'+(todo.length===1?'events.html?e='+encodeURIComponent(todo[0].id):'events.html')+'">'+todo.length+' 場揪團等你回覆</a>');
+  const o=awayMini&&awayMini.todayOff?awayMini.todayOff():null;
+  if(o&&o.off.length)parts.push('今天 <b>'+o.off.length+'</b> 人請假'+(o.off.length<=3?'（'+o.off.map(id=>esc(nameOf(users[id]))).join("、")+'）':''));
+  if(!parts.length)return act.length?"今天沒有排定的團，看看大家在揪什麼吧。":"今天沒有排定的行程，想打本的話來發起一場揪團吧。";
+  return parts.join("，")+"。";
+}
+window.addEventListener("awaymini",()=>{const el=document.getElementById("greetLine");if(el)el.innerHTML=greetLine();});
 /* 飛地大廳 */
 function lobbyHTML(){
   const p=users[me.uid];
   const ids=Object.keys(users).sort((a,b)=>(a===me.uid?-1:b===me.uid?1:nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")));
-  return'<section class="hero"><h1>光之戰士飛地</h1><p class="slogan">'+(p?'歡迎回來，'+esc(nameOf(p))+'。':'歡迎來到光之戰士飛地。')+'</p></section>'+
+  return'<section class="hero"><h1>光之戰士飛地</h1><p class="slogan">'+greetHello(p)+'</p><p class="greet-line" id="greetLine">'+greetLine()+'</p></section>'+
     '<figure class="group"><img src="img/group-2026-halloween-1920.webp" srcset="img/group-2026-halloween-960.webp 960w, img/group-2026-halloween-1920.webp 1920w" sizes="(max-width:1100px) 100vw, 1100px" alt="光之戰士飛地的大家，在 2026 年萬聖節穿著各式服裝一起合照" width="1920" height="900"><figcaption><span class="cap">一起走過的每一場冒險</span><span class="gtag">2026 萬聖節 · 光之戰士飛地</span></figcaption></figure>'+
     '<div class="panel"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
       (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
