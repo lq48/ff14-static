@@ -384,6 +384,8 @@ const DEFAULT_TARGETS=[
 /* ---------- 小工具 ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* 連結只接受 http(s)，其他（例如 javascript:）一律不給連 */
+const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"#";
 const W=WORKER_URL.replace(/\/+$/,"");
 function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2800);}
 const armed={};
@@ -400,7 +402,7 @@ const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"未知成員";
 const jobLabel=k=>JOB[k]?JOB[k].n:"";
 function jobOptions(sel,blank){
   let h=blank?'<option value="">'+blank+'</option>':"";
-  for(const c of JOB_CATS)h+='<optgroup label="'+c.n+'">'+JOBS.filter(j=>j.c===c.k).map(j=>'<option value="'+j.k+'"'+(j.k===sel?" selected":"")+'>'+j.n+'</option>').join("")+'</optgroup>';
+  for(const c of JOB_CATS)h+='<optgroup label="'+c.n+'">'+JOBS.filter(j=>j.c===c.k).map(j=>'<option value="'+esc(j.k)+'"'+(j.k===sel?" selected":"")+'>'+j.n+'</option>').join("")+'</optgroup>';
   return h;
 }
 
@@ -607,7 +609,7 @@ function profileHTML(){
       [...SERVERS,...(d.server&&!SERVERS.includes(d.server)?[d.server]:[])].map(x=>'<option'+(x===d.server?' selected':'')+'>'+esc(x)+'</option>').join("")+'</select></label>'+
     '<label>主職業<select id="pJob">'+jobOptions(d.job,"請選擇")+'</select></label></div>'+
     '<div><div style="font-size:14px;font-weight:500;margin-bottom:4px">副職業（可複選）</div><div id="pSubs">'+
-      JOB_CATS.map(c=>'<div class="jobcat"><span class="catn">'+c.n+'</span><div class="chips">'+JOBS.filter(j=>j.c===c.k).map(j=>'<button type="button" class="chip jc-'+j.r+'" data-sub="'+j.k+'" aria-pressed="'+d.subJobs.includes(j.k)+'">'+j.n+'</button>').join("")+'</div></div>').join("")+'</div></div>'+
+      JOB_CATS.map(c=>'<div class="jobcat"><span class="catn">'+c.n+'</span><div class="chips">'+JOBS.filter(j=>j.c===c.k).map(j=>'<button type="button" class="chip jc-'+j.r+'" data-sub="'+esc(j.k)+'" aria-pressed="'+d.subJobs.includes(j.k)+'">'+j.n+'</button>').join("")+'</div></div>').join("")+'</div></div>'+
     '<label>開荒宣言（選填）<input id="pBio" maxlength="60" value="'+esc(d.bio)+'" placeholder="例如：這次一定要過 P5！"></label>'+
     '<div><button class="btn primary" data-act="saveProfile">'+(ph?'確認並完成':first?'建立靈魂水晶':'儲存')+'</button>'+(first?'':' <button class="btn" data-act="cancelProfile">取消</button>')+'</div>'+
     '</div></div>';
@@ -788,7 +790,7 @@ function todoItems(){
 function todoPanelHTML(){
   const it=todoItems();
   return'<section class="panel" aria-labelledby="todoH"><h2 class="dash-h" id="todoH" data-ico="1">'+icb("check","sage")+'我的待辦'+(it.length?'<span class="stp warm" style="margin-left:auto">'+it.length+'</span>':'')+'</h2>'+
-    (it.length?'<ul class="todo-list">'+it.slice(0,6).map(x=>'<li><a href="'+esc(x.href)+'"'+(x.act?' data-act="'+x.act+'" data-tid="'+esc(x.tid)+'"':'')+(x.jump?' data-jump="'+x.jump+'"':'')+'>'+
+    (it.length?'<ul class="todo-list">'+it.slice(0,6).map(x=>'<li><a href="'+esc(x.href)+'"'+(x.act?' data-act="'+esc(x.act)+'" data-tid="'+esc(x.tid)+'"':'')+(x.jump?' data-jump="'+esc(x.jump)+'"':'')+'>'+
       '<span class="dot'+(x.dot?' '+x.dot:'')+'" aria-hidden="true"></span><span class="tx">'+esc(x.t)+'<small>'+esc(x.d)+'</small></span><span class="go">'+icon("right",16)+'</span></a></li>').join("")+'</ul>'+
       (it.length>6?'<p class="muted small" style="margin:8px 0 0">還有 '+(it.length-6)+' 項</p>':'')
     :'<div class="empty-state"><p class="big">今天沒有待辦，安心享受艾奧傑亞吧 ☕</p><p>有新的揪團或出席調查需要你回覆時，會出現在這裡。</p></div>')+'</section>';
@@ -818,7 +820,7 @@ function qpPanelHTML(){
   return'<div class="qpick" id="qpick" role="region" aria-labelledby="qpickH"><div class="qpick-h"><b id="qpickH">'+QP[quickPick].ask+'</b><button type="button" class="linkbtn" data-act="qpickClose">關閉</button></div><div class="qpick-list">'+
     L.map(st=>{const l=qpLink(quickPick,st),slot=Object.keys(st.roles||{}).find(k=>st.roles[k]===me.uid)||"",j=JOB[teamJob(st.id,me.uid)];
       const sub=[slot,j?j.n:"",leaderOf(st)?"團長":""].filter(Boolean).join("・")||(((membersOf(st.id)[me.uid]||{}).status==="active")?"成員":"");
-      return'<a class="qp" href="'+esc(l.href)+'"'+(l.act?' data-act="'+l.act+'"':'')+' data-tid="'+esc(st.id)+'" data-remember="1"><span class="qp-n">'+esc(st.name)+(st.id===last?'<span class="stp info">上次</span>':'')+'</span>'+(sub?'<span class="qp-s">'+esc(sub)+'</span>':'')+'<span class="go">'+icon("right",16)+'</span></a>';}).join("")+'</div></div>';
+      return'<a class="qp" href="'+esc(l.href)+'"'+(l.act?' data-act="'+esc(l.act)+'"':'')+' data-tid="'+esc(st.id)+'" data-remember="1"><span class="qp-n">'+esc(st.name)+(st.id===last?'<span class="stp info">上次</span>':'')+'</span>'+(sub?'<span class="qp-s">'+esc(sub)+'</span>':'')+'<span class="go">'+icon("right",16)+'</span></a>';}).join("")+'</div></div>';
 }
 function quickHTML(){
   const sv=svs.find(x=>svOpenFor(x)&&mySvKey(x));
@@ -830,8 +832,8 @@ function quickHTML(){
     qpTile("bis","sword","peach","加入固定團後可以用"),
     qpTile("mit","shield","sky","加入固定團後可以用"),
   ];
-  return'<nav class="quick" aria-label="常用功能">'+T.map(x=>'<a class="qt'+(x.pick&&quickPick===x.pick?' on':'')+'" href="'+esc(x.href)+'"'+(x.act?' data-act="'+x.act+'" data-tid="'+esc(x.tid)+'" data-remember="1"':'')+(x.jump?' data-jump="'+x.jump+'"':'')+
-    (x.pick?' role="button" data-act="qpick" data-pick="'+x.pick+'" aria-expanded="'+(quickPick===x.pick)+'" aria-controls="qpick"':'')+'>'+
+  return'<nav class="quick" aria-label="常用功能">'+T.map(x=>'<a class="qt'+(x.pick&&quickPick===x.pick?' on':'')+'" href="'+esc(x.href)+'"'+(x.act?' data-act="'+esc(x.act)+'" data-tid="'+esc(x.tid)+'" data-remember="1"':'')+(x.jump?' data-jump="'+esc(x.jump)+'"':'')+
+    (x.pick?' role="button" data-act="qpick" data-pick="'+esc(x.pick)+'" aria-expanded="'+(quickPick===x.pick)+'" aria-controls="qpick"':'')+'>'+
     '<span class="qi ico-'+x.c+'">'+icon(x.ico,20)+'</span><span class="qn">'+x.n+'</span><span class="qd">'+esc(x.d)+'</span></a>').join("")+'</nav>'+qpPanelHTML();
 }
 
@@ -957,10 +959,10 @@ function linkCardHTML(l,mode){
   const by=l.byName||nameOf(users[l.by]);
   const st=mode==="mine"?'<span class="tag '+(l.status==="rejected"?'bad':'wait')+'">'+(l.status==="rejected"?'未通過':'審核中')+'</span>':'';
   let ops="";
-  if(mode==="review")ops='<button class="btn sm primary" data-lok="'+l.id+'">通過</button><button class="btn sm" data-ledit="'+l.id+'">修改</button><button class="btn sm danger" data-lrej="'+l.id+'">退回</button>';
-  else if(mode==="mine")ops='<button class="btn sm" data-ledit="'+l.id+'">'+(l.status==="rejected"?'修改後重新投稿':'修改')+'</button><button class="btn sm danger" data-ldel="'+l.id+'">撤回</button>';
-  else if(isOwner)ops='<button class="linkbtn" data-lpin="'+l.id+'">'+(l.pinned?'取消置頂':'置頂')+'</button><button class="linkbtn" data-ledit="'+l.id+'">編輯</button><button class="linkbtn" data-ldel="'+l.id+'">下架</button>';
-  return'<div class="lcard'+(l.pinned&&mode==="show"?' pinned':'')+'"><a class="lmain" href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'+
+  if(mode==="review")ops='<button class="btn sm primary" data-lok="'+esc(l.id)+'">通過</button><button class="btn sm" data-ledit="'+esc(l.id)+'">修改</button><button class="btn sm danger" data-lrej="'+esc(l.id)+'">退回</button>';
+  else if(mode==="mine")ops='<button class="btn sm" data-ledit="'+esc(l.id)+'">'+(l.status==="rejected"?'修改後重新投稿':'修改')+'</button><button class="btn sm danger" data-ldel="'+esc(l.id)+'">撤回</button>';
+  else if(isOwner)ops='<button class="linkbtn" data-lpin="'+esc(l.id)+'">'+(l.pinned?'取消置頂':'置頂')+'</button><button class="linkbtn" data-ledit="'+esc(l.id)+'">編輯</button><button class="linkbtn" data-ldel="'+esc(l.id)+'">下架</button>';
+  return'<div class="lcard'+(l.pinned&&mode==="show"?' pinned':'')+'"><a class="lmain" href="'+esc(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+
     '<span class="lt">'+(l.pinned&&mode==="show"?'<span class="pinmark" title="置頂">'+icon("pin",15)+'</span> ':'')+esc(l.title)+' <span class="ldom">'+esc(domainOf(l.url))+' ↗</span></span>'+
     '<span class="ld">'+esc(l.desc||"")+'</span>'+
     '<span class="ltags"><span class="tag">'+esc(l.cat)+'</span><span class="tag">'+esc(l.lang)+'</span>'+st+'<span class="by">由 '+esc(by)+' 分享</span></span></a>'+
@@ -1045,7 +1047,7 @@ function bisSubscribe(tid){
     if(!bisTiers.some(t=>t.id===bisTierId))bisTierId=bisTiers[0]?bisTiers[0].id:null;
     bisReady.tiers=true;render(true);
   },err2));
-  bisUnsub.push(onSnapshot(collection(db,"statics",tid,"bis"),s=>{bisRecs={};s.docs.forEach(d=>bisRecs[d.id]=d.data());bisReady.recs=true;render(true);},err2));
+  bisUnsub.push(onSnapshot(collection(db,"statics",tid,"bis"),s=>{bisRecs={};s.docs.forEach(d=>bisRecs[d.id]=cleanBisRec(d.data()));bisReady.recs=true;render(true);},err2));
   bisUnsub.push(onSnapshot(collection(db,"statics",tid,"loot"),s=>{bisLoot=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));render(true);},err2));
 }
 let bisReady={tiers:false,recs:false};
@@ -1055,6 +1057,18 @@ function bisStop(){bisUnsub.forEach(f=>f());bisUnsub=[];bisFor=null;bisTiers=[];
 const bisTier=()=>bisTiers.find(t=>t.id===bisTierId)||null;
 const recId=uid=>bisTierId+"__"+uid;
 const recOf=uid=>bisRecs[recId(uid)]||{};
+/* BiS 紀錄讀進來時先清理：規則只檢查是誰在改，不檢查內容；
+   來源、狀態會被拿來組 HTML 的 class，所以只接受已知的值，不認得的部位直接略過 */
+const BIS_ST_OK=new Set(["none","got","aug"]);
+function cleanBisRec(r){
+  const c={...(r&&typeof r==="object"?r:{})},keys=new Set(BIS_SLOTS.map(x=>x.k));
+  ["final","prog"].forEach(set=>{const src=c[set]&&typeof c[set]==="object"?c[set]:{},o={};
+    Object.keys(src).forEach(k=>{if(!keys.has(k))return;const v=src[k]&&typeof src[k]==="object"?{...src[k]}:{};
+      if(v.src!==undefined&&!BIS_SRC[v.src])v.src="";if(v.st!==undefined&&!BIS_ST_OK.has(v.st))v.st="none";
+      if(v.name!==undefined)v.name=String(v.name);v.aug=!!v.aug;if(v.same!==undefined)v.same=!!v.same;o[k]=v;});
+    c[set]=o;});
+  return c;
+}
 function bisMyPerm(){const st=cur(),m=myMember();if(isOwner)return"all";if(!m||m.status!=="active")return"none";return((m.perms||{}).bis)||"none";}
 const bisCanEditAll=()=>isOwner||bisMyPerm()==="all";
 const bisCanEdit=uid=>bisCanEditAll()||(me&&uid===me.uid&&bisMyPerm()==="own");
@@ -1191,7 +1205,7 @@ function bisTeamSumHTML(t){
     '<div class="tsum-line"><span><b>'+tot("done")+'</b> / '+(ms.length*11)+' 件完成</span>'+(tot("part")?'<span class="stp soft">待強化 '+tot("part")+'</span>':'')+'<span class="stp warm">尚缺 '+tot("need")+'</span>'+(tot("unset")?'<span class="stp">未設定 '+tot("unset")+'</span>':'')+
       '<span class="tsum-w">武器：'+wDone+' / '+ms.length+' 人已取得'+(wSet<ms.length?'（'+(ms.length-wSet)+' 人未設定）':'')+'</span></div>'+
     '<div class="bcards">'+S.map(({m,sm})=>{const u=users[m.id],j=JOB[teamJob(curTid,m.id)];const miss=BIS_SLOTS.filter(s=>sm.slots[s.k]==="need"||sm.slots[s.k]==="part");
-      return'<button type="button" class="bcard" data-bisgo="'+m.id+'"><span class="bc-h"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span><b>'+esc(nameOf(u))+'</b><small>'+esc(m.slot||"替補")+(j?'・'+esc(j.n):'')+'</small></span>'+
+      return'<button type="button" class="bcard" data-bisgo="'+esc(m.id)+'"><span class="bc-h"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span><b>'+esc(nameOf(u))+'</b><small>'+esc(m.slot||"替補")+(j?'・'+esc(j.n):'')+'</small></span>'+
         (sm.unset===11?'<span class="stp">BiS 未設定</span>':'<span class="bc-n">'+sm.done+'<small>/11</small></span>')+'</span>'+
         (sm.unset===11?'':bisBar(sm))+
         '<span class="bc-f"><span class="stp '+({done:"good",part:"soft",need:"warm",unset:""})[sm.slots.weapon]+'">武器'+({done:"✓",part:"待強化",need:"缺",unset:"未設定"})[sm.slots.weapon]+'</span>'+
@@ -1218,7 +1232,7 @@ function bisHTML(st){
       :'<div class="panel"><p class="muted">團長還沒有設定要追蹤的零式。</p></div>');
   }
   const tabs=[["mine","我的 BiS"],["all","全團總表"],["drops","掉落查詢"],["loot","分裝紀錄"]];if(bisCanEditAll())tabs.push(["settings","設定"]);
-  h+='<nav class="tabs">'+tabs.map(([k,n])=>'<button class="tab" data-bistab="'+k+'" aria-selected="'+(bisTab===k)+'">'+n+'</button>').join("")+'</nav>';
+  h+='<nav class="tabs">'+tabs.map(([k,n])=>'<button class="tab" data-bistab="'+esc(k)+'" aria-selected="'+(bisTab===k)+'">'+n+'</button>').join("")+'</nav>';
   if(!t.confirmed&&(bisTab==="drops"||bisTab==="loot"))h+='<div class="notice small">掉落表為預填內容，尚待確認。'+(bisCanEditAll()?'請到「設定」核對後勾選「掉落表已確認」。':'')+'</div>';
   if(bisTab==="all")h+=bisAllHTML(t);
   else if(bisTab==="drops")h+=bisDropsHTML(t);
@@ -1235,12 +1249,12 @@ function bisMineHTML(t){
   const job=JOB[teamJob(curTid,bisWho)];
   let h='<div class="panel">';
   h+='<div class="bisuser"><img src="'+esc(avatarUrl(u))+'" alt=""><div><div class="nm">'+esc(nameOf(u))+'</div><div class="small muted">'+esc(whoLabel(m))+(job?'・'+esc(job.n):'')+'</div></div>';
-  if(bisCanEditAll()||ms.length>1)h+='<select class="sel" data-biswho style="margin-left:auto;max-width:220px">'+ms.map(x=>'<option value="'+x.id+'"'+(x.id===bisWho?' selected':'')+'>'+esc(nameOf(users[x.id]))+'（'+esc(whoLabel(x))+'）</option>').join("")+'</select>';
+  if(bisCanEditAll()||ms.length>1)h+='<select class="sel" data-biswho style="margin-left:auto;max-width:220px">'+ms.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===bisWho?' selected':'')+'>'+esc(nameOf(users[x.id]))+'（'+esc(whoLabel(x))+'）</option>').join("")+'</select>';
   h+='</div>';
   h+='<div class="bisstats"><div class="box"><div class="lab">開荒</div><div class="num">'+countDone(r,"prog")+' / 11</div></div><div class="box"><div class="lab">畢業</div><div class="num">'+countDone(r,"final")+' / 11</div></div>'+
     (t.colls||[]).map(c=>'<label class="box coll"><span class="lab">'+esc(c.n)+'</span><span><input type="checkbox" data-biscoll="'+esc(c.id)+'"'+((r.coll||{})[c.id]?' checked':'')+(edit?'':' disabled')+'> '+((r.coll||{})[c.id]?'已取得':'未取得')+'</span></label>').join("")+'</div>';
   h+=bisMineSumHTML(t,bisWho,edit);
-  h+='<div class="chips" style="margin:6px 0 12px">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div>';
+  h+='<div class="chips" style="margin:6px 0 12px">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+esc(k)+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div>';
   const link=(r.links||{})[bisSet]||"";
   h+='<div class="bislink">'+(edit?'<input class="sel" data-bislink placeholder="配裝連結（選填）：neko7ina、xivgear 都可以" value="'+esc(link)+'">':'')+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">開啟配裝 ↗</a>':(edit?'':'<span class="muted small">沒有配裝連結</span>'))+'</div>';
   h+='<div class="mtable bmine"><table class="bistable"><thead><tr><th>部位</th><th>裝備名稱</th><th>來源</th><th>狀態</th>'+(bisSet==="prog"?'<th>同畢業</th>':'')+'</tr></thead><tbody>';
@@ -1250,12 +1264,12 @@ function bisMineHTML(t){
     const upg=bisSet==="prog"&&finalHas(r,s.k);
     const st=upg?"✓ 已換成畢業裝":same?"跟畢業一起拿":sl.st==="aug"?"✓ 已強化":sl.st==="got"?(sl.src==="tome"&&sl.aug?"已取得・待強化":"✓ 已取得"):"未取得";
     h+='<tr class="'+(done?'done':slotPartial(sl)?'part':'')+'"><td class="bt-slot">'+s.n+'</td>'+
-      '<td data-label="名稱">'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+s.k+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
+      '<td data-label="名稱">'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+esc(s.k)+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
       '<td data-label="來源">'+(same?'<span class="src s-'+(eff.src||"")+'">'+(BIS_SRC[eff.src]||"—")+'</span>':
-        '<button class="src s-'+(sl.src||"none")+'" data-bissrc="'+s.k+'"'+(edit?'':' disabled')+'>'+(BIS_SRC[sl.src]||"設定來源")+'</button>'+
-        (sl.src==="tome"?'<label class="augck"><input type="checkbox" data-bisaug="'+s.k+'"'+(sl.aug?' checked':'')+(edit?'':' disabled')+'>需強化</label>':''))+'</td>'+
-      '<td data-label="狀態">'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+s.k+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
-      (bisSet==="prog"?'<td data-label="同畢業"><input type="checkbox" data-bissame="'+s.k+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
+        '<button class="src s-'+(sl.src||"none")+'" data-bissrc="'+esc(s.k)+'"'+(edit?'':' disabled')+'>'+(BIS_SRC[sl.src]||"設定來源")+'</button>'+
+        (sl.src==="tome"?'<label class="augck"><input type="checkbox" data-bisaug="'+esc(s.k)+'"'+(sl.aug?' checked':'')+(edit?'':' disabled')+'>需強化</label>':''))+'</td>'+
+      '<td data-label="狀態">'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+esc(s.k)+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
+      (bisSet==="prog"?'<td data-label="同畢業"><input type="checkbox" data-bissame="'+esc(s.k)+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
   }
   h+='</tbody></table></div>';
   if(edit){
@@ -1264,14 +1278,14 @@ function bisMineHTML(t){
       '<details><summary>貼上配裝表，自動判斷來源</summary><p class="small muted">在配裝器選取整張裝備表複製後貼上；只有 11 行裝備名稱也可以，會依武器、頭、身……戒指的順序對應。依名稱關鍵字判斷：'+esc((t.kw||{}).raid||"")+' → 零式；'+esc((t.kw||{}).aug||"")+' → 點數＋強化；'+esc((t.kw||{}).tome||"")+' → 點數。</p>'+
       '<textarea class="sel" id="bisPaste" rows="6" placeholder="貼在這裡"></textarea><div style="margin-top:6px"><button class="btn sm primary" data-act="bisParse">套用到「'+(bisSet==="prog"?"開荒":"畢業")+'」</button></div></details>'+
       '<div class="addrow"><button class="btn sm" data-act="bisTemplate">一鍵套用常見'+(bisSet==="prog"?"開荒（全部點數）":"畢業配置")+'</button>'+
-      (others.length?'<select class="sel" id="bisCopyFrom" style="max-width:220px"><option value="">複製其他成員的'+(bisSet==="prog"?"開荒":"畢業")+'設定…</option>'+others.map(x=>'<option value="'+x.id+'">'+esc(nameOf(users[x.id]))+'</option>').join("")+'</select><button class="btn sm" data-act="bisCopy">複製</button>':'')+'</div>'+
+      (others.length?'<select class="sel" id="bisCopyFrom" style="max-width:220px"><option value="">複製其他成員的'+(bisSet==="prog"?"開荒":"畢業")+'設定…</option>'+others.map(x=>'<option value="'+esc(x.id)+'">'+esc(nameOf(users[x.id]))+'</option>').join("")+'</select><button class="btn sm" data-act="bisCopy">複製</button>':'')+'</div>'+
       '<p class="hint">一鍵套用和複製只會改「來源與名稱」，不會動到已取得的狀態。點「來源」可以切換零式 → 點數 → 製作 → 其他；點「狀態」切換取得進度。</p></div>';
   }
   return h+'</div>';
 }
 function bisAllHTML(t){
   const ms=bisMembers();
-  let h=bisTeamSumHTML(t)+'<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
+  let h=bisTeamSumHTML(t)+'<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+esc(k)+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
   h+='<div class="bislegend"><span><span class="sw" style="background:color-mix(in srgb,var(--raid) 24%,transparent);color:var(--raid)">零</span>零式</span>'+
     '<span><span class="sw" style="background:color-mix(in srgb,var(--tome) 24%,transparent);color:var(--tome)">點</span>點數</span>'+
     '<span><span class="sw" style="background:color-mix(in srgb,var(--craft) 24%,transparent);color:var(--craft)">製</span>製作</span>'+
@@ -1281,7 +1295,7 @@ function bisAllHTML(t){
   h+='<div class="mtable"><table class="bisgrid"><thead><tr><th class="who">成員</th>'+BIS_SLOTS.map(s=>'<th>'+s.n+'</th>').join("")+(t.colls||[]).map(c=>'<th>'+esc(c.n)+'</th>').join("")+'<th>進度</th></tr></thead><tbody>';
   for(const m of ms){
     const r=recOf(m.id),u=users[m.id];
-    h+='<tr><td class="who"><button class="linkbtn" data-bisgo="'+m.id+'">'+esc(nameOf(u))+'</button><div class="small muted">'+esc(whoLabel(m))+'</div></td>';
+    h+='<tr><td class="who"><button class="linkbtn" data-bisgo="'+esc(m.id)+'">'+esc(nameOf(u))+'</button><div class="small muted">'+esc(whoLabel(m))+'</div></td>';
     for(const s of BIS_SLOTS){
       const sl=bslot(r,bisSet,s.k),same=bisSet==="prog"&&sl.same,eff=same?bslot(r,"final",s.k):sl;
       const done=doneOf(r,bisSet,s.k),part=!same&&slotPartial(sl);
@@ -1297,7 +1311,7 @@ function bisAllHTML(t){
 function bisDropsHTML(t){
   const fl=t.floors||[];if(bisFloor>=fl.length)bisFloor=0;
   const keys=((t.drops||{})["f"+bisFloor])||[];
-  let h='<div class="panel"><div class="chips" style="margin-bottom:12px">'+fl.map((f,i)=>'<button class="chip" data-bisfloor="'+i+'" aria-pressed="'+(i===bisFloor)+'">'+esc(f)+'</button>').join("")+'</div>';
+  let h='<div class="panel"><div class="chips" style="margin-bottom:12px">'+fl.map((f,i)=>'<button class="chip" data-bisfloor="'+esc(i)+'" aria-pressed="'+(i===bisFloor)+'">'+esc(f)+'</button>').join("")+'</div>';
   if(!keys.length)return h+'<p class="muted">這層還沒有設定掉落。</p></div>';
   h+='<div class="drops">'+keys.map(k=>{
     const ns=needers(t,k).sort((a,b)=>lootCount(a.id)-lootCount(b.id));
@@ -1316,10 +1330,10 @@ function bisLootHTML(t){
     const ns=d.item?needers(t,d.item).map(n=>n.id):[];
     h+='<div class="panel"><h2>記錄分裝</h2><div class="lootform">'+
       '<label>週次<select class="sel" data-loot="week">'+weeks.map(w=>'<option'+(w===d.week?' selected':'')+'>'+w+'</option>').join("")+'</select></label>'+
-      '<label>樓層<select class="sel" data-loot="floor">'+fl.map((f,i)=>'<option value="'+i+'"'+(i===+d.floor?' selected':'')+'>'+esc(f)+'</option>').join("")+'</select></label>'+
+      '<label>樓層<select class="sel" data-loot="floor">'+fl.map((f,i)=>'<option value="'+esc(i)+'"'+(i===+d.floor?' selected':'')+'>'+esc(f)+'</option>').join("")+'</select></label>'+
       '<label>物品<select class="sel" data-loot="item">'+keys.map(k=>'<option value="'+esc(k)+'"'+(k===d.item?' selected':'')+'>'+esc(dropLabel(t,k))+'</option>').join("")+'</select></label>'+
       '<label>給誰<select class="sel" data-loot="to"><option value="">選擇成員…</option>'+
-        ms.map(m=>'<option value="'+m.id+'"'+(m.id===d.to?' selected':'')+'>'+(ns.includes(m.id)?'★ ':'')+esc(nameOf(users[m.id]))+'（已分 '+lootCount(m.id)+'）</option>').join("")+'</select></label>'+
+        ms.map(m=>'<option value="'+esc(m.id)+'"'+(m.id===d.to?' selected':'')+'>'+(ns.includes(m.id)?'★ ':'')+esc(nameOf(users[m.id]))+'（已分 '+lootCount(m.id)+'）</option>').join("")+'</select></label>'+
       '<div><button class="btn primary" data-act="lootAdd">記錄</button></div></div>'+
       '<p class="hint">★ 表示這個人的畢業目標還缺這項。記錄裝備或收藏品後，會自動把對方的進度勾成已取得。週次以每週二台灣時間 16:00 重置為分界。</p></div>';
   }
@@ -1330,7 +1344,7 @@ function bisLootHTML(t){
     const byWeek={};list.forEach(l=>(byWeek[l.week]||(byWeek[l.week]=[])).push(l));
     h+=Object.keys(byWeek).sort().reverse().map(w=>'<h3>'+w+' 這週</h3><ul class="lootlist">'+byWeek[w].sort((a,b)=>a.floor-b.floor).map(l=>
       '<li><span class="target">'+esc(fl[l.floor]||"")+'</span> '+esc(dropLabel(t,l.item))+' → <b>'+esc(nameOf(users[l.to]))+'</b>'+
-      (bisCanEditAll()?' <button class="linkbtn" data-lootdel="'+l.id+'">刪除</button>':'')+'</li>').join("")+'</ul>').join("");
+      (bisCanEditAll()?' <button class="linkbtn" data-lootdel="'+esc(l.id)+'">刪除</button>':'')+'</li>').join("")+'</ul>').join("");
   }
   return h+'</div>';
 }
@@ -1341,11 +1355,11 @@ function bisSettingsHTML(t){
   const lbl=k=>k.startsWith("c:")?((d.colls.find(c=>"c:"+c.id===k)||{}).n||"收藏品"):k.startsWith("mat")?(d.mats[k]||k):DROP_GEAR.find(x=>x[0]===k)[1];
   let h='<div class="panel"><h2>本期設定</h2><div class="form" style="max-width:none">'+
     '<label style="max-width:300px">名稱<input data-bset="name" maxlength="20" value="'+esc(d.name)+'"></label>'+
-    '<div><div class="flabel">樓層名稱</div><div class="addrow" style="margin-top:0">'+d.floors.map((f,i)=>'<input class="sel" style="max-width:110px" data-bfloor="'+i+'" maxlength="12" value="'+esc(f)+'">').join("")+'</div></div>'+
+    '<div><div class="flabel">樓層名稱</div><div class="addrow" style="margin-top:0">'+d.floors.map((f,i)=>'<input class="sel" style="max-width:110px" data-bfloor="'+esc(i)+'" maxlength="12" value="'+esc(f)+'">').join("")+'</div></div>'+
     '<div><div class="flabel">掉落表（勾選每層會掉的東西）</div><div class="mtable"><table class="bisgrid droptbl"><thead><tr><th class="who">物品</th>'+d.floors.map(f=>'<th>'+esc(f)+'</th>').join("")+'</tr></thead><tbody>'+
-      allKeys.map(k=>'<tr><td class="who">'+esc(lbl(k))+'</td>'+d.floors.map((f,i)=>'<td><input type="checkbox" data-bdrop="'+i+'" data-key="'+esc(k)+'"'+(((d.drops["f"+i])||[]).includes(k)?' checked':'')+'></td>').join("")+'</tr>').join("")+'</tbody></table></div></div>'+
-    '<div><div class="flabel">強化素材名稱（請填遊戲內的正式名稱）</div><div class="row2">'+MAT_KEYS.map(([k,n])=>'<label>'+n+'用<input data-bmat="'+k+'" maxlength="20" value="'+esc(d.mats[k]||"")+'"></label>').join("")+'</div></div>'+
-    '<div><div class="flabel">本期收藏品</div>'+d.colls.map((c,i)=>'<div class="addrow" style="margin-top:4px"><input class="sel" data-bcoll="'+i+'" maxlength="20" value="'+esc(c.n)+'"><button class="x" data-bcollrm="'+i+'" aria-label="移除">×</button></div>').join("")+
+      allKeys.map(k=>'<tr><td class="who">'+esc(lbl(k))+'</td>'+d.floors.map((f,i)=>'<td><input type="checkbox" data-bdrop="'+esc(i)+'" data-key="'+esc(k)+'"'+(((d.drops["f"+i])||[]).includes(k)?' checked':'')+'></td>').join("")+'</tr>').join("")+'</tbody></table></div></div>'+
+    '<div><div class="flabel">強化素材名稱（請填遊戲內的正式名稱）</div><div class="row2">'+MAT_KEYS.map(([k,n])=>'<label>'+n+'用<input data-bmat="'+esc(k)+'" maxlength="20" value="'+esc(d.mats[k]||"")+'"></label>').join("")+'</div></div>'+
+    '<div><div class="flabel">本期收藏品</div>'+d.colls.map((c,i)=>'<div class="addrow" style="margin-top:4px"><input class="sel" data-bcoll="'+esc(i)+'" maxlength="20" value="'+esc(c.n)+'"><button class="x" data-bcollrm="'+esc(i)+'" aria-label="移除">×</button></div>').join("")+
       '<button class="btn sm" data-act="bisCollAdd" style="margin-top:6px">＋ 新增收藏品</button></div>'+
     '<div><div class="flabel">自動判斷來源的名稱關鍵字（以逗號分隔）</div><div class="row2">'+
       '<label>零式<input data-bkw="raid" value="'+esc(d.kw.raid||"")+'"></label><label>點數＋強化<input data-bkw="aug" value="'+esc(d.kw.aug||"")+'"></label><label>點數<input data-bkw="tome" value="'+esc(d.kw.tome||"")+'"></label></div></div>'+
@@ -1488,10 +1502,10 @@ function joinHTML(m){
 }
 function cardHTML(slot,uid){
   const u=uid&&users[uid];const pk=slotPick===slot.k?' picked':'';
-  if(!u)return'<div class="slot r-'+slot.r+' empty'+pk+'" data-slotpick="'+slot.k+'" role="button" tabindex="0"><span class="lab">'+slot.k+'</span>尚未分配</div>';
+  if(!u)return'<div class="slot r-'+slot.r+' empty'+pk+'" data-slotpick="'+esc(slot.k)+'" role="button" tabindex="0"><span class="lab">'+slot.k+'</span>尚未分配</div>';
   const also=alsoOf(curTid,uid).filter(k=>k!==slot.k);
   const tj=teamJob(curTid,uid),j=JOB[tj],alts=teamAlts(curTid,uid).filter(k=>JOB[k]);
-  return'<div class="slot r-'+slot.r+pk+'" data-slotpick="'+slot.k+'" role="button" tabindex="0" title="點一下看誰能補 '+slot.k+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
+  return'<div class="slot r-'+slot.r+pk+'" data-slotpick="'+esc(slot.k)+'" role="button" tabindex="0" title="點一下看誰能補 '+slot.k+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
     '<div class="nm">'+esc(nameOf(u))+'</div>'+phTag(u)+'<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
     (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(alts.length?'<div class="alts">備用：'+esc(alts.map(jobLabel).join("、"))+'</div>':'')+
     (also.length?'<div class="alts">也可打 '+esc(also.join("、"))+'</div>':'')+
@@ -1506,7 +1520,7 @@ function rosterHTML(st){
     const slotOf=id=>Object.keys(roles).find(k=>roles[k]===id)||"";
     pick='<div class="fillpanel"><b>誰能打 '+slotPick+'</b>　'+(main?'正選：'+esc(nameOf(users[main]))+'　':'')+
       (cands.length?'也可打：'+cands.map(id=>{const j=JOB[teamJob(st.id,id)];return esc(nameOf(users[id]))+'（'+(slotOf(id)?'正選 '+slotOf(id):'替補')+(j?'・'+esc(j.n):'')+'）';}).join("、"):'<span class="muted">目前沒有人標示也可以打這個位置</span>')+
-      ' <button class="linkbtn" data-slotpick="'+slotPick+'">關閉</button></div>';
+      ' <button class="linkbtn" data-slotpick="'+esc(slotPick)+'">關閉</button></div>';
   }
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+slotsOf(st).map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+pick+
     (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=alsoOf(st.id,id).join("、");return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">也可打 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
@@ -1515,7 +1529,7 @@ function modulesHTML(st){
   const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;
   return'<div class="panel"><h2>功能</h2><div class="mods">'+
     '<a class="mod" href="schedule.html"><span class="t">出席時間調查</span><span class="d">填寫可以出團的時段</span><span class="badge open">使用中</span></a>'+
-    vis.map(x=>{const s=mods[x.k]||"owner";return'<button class="mod" data-mod="'+x.k+'"><span class="t">'+x.n+'</span><span class="d">'+x.d+'</span>'+
+    vis.map(x=>{const s=mods[x.k]||"owner";return'<button class="mod" data-mod="'+esc(x.k)+'"><span class="t">'+x.n+'</span><span class="d">'+x.d+'</span>'+
       (x.k==="bis"||x.k==="mit"?(mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見</span>':'<span class="badge open">使用中</span>'):
        mgr?'<span class="badge'+(s==="all"?' open':'')+'">'+MOD_STATUS[s]+'可見・建置中</span>':'<span class="badge">建置中</span>')+'</button>';}).join("")+
     '</div>'+(!mgr&&!vis.length?'<p class="muted small" style="margin:12px 0 0">更多功能準備中，敬請期待。</p>':'')+'</div>';
@@ -1535,7 +1549,7 @@ function manageHTML(st){
   const pending=Object.keys(membersOf(st.id)).filter(id=>membersOf(st.id)[id].status==="pending");
   return'<div style="margin-bottom:12px"><button class="linkbtn" data-act="team">← 回 '+esc(st.name)+'</button></div>'+
     '<h1 style="font-family:Noto Serif TC,serif;margin:0 0 12px">管理「'+esc(st.name)+'」</h1>'+
-    '<nav class="tabs">'+tabs.map(([k,n])=>'<button class="tab" data-mg="'+k+'" aria-selected="'+(mgTab===k)+'">'+n+(k==="members"&&pending.length?'（'+pending.length+' 個申請）':'')+'</button>').join("")+'</nav>'+
+    '<nav class="tabs">'+tabs.map(([k,n])=>'<button class="tab" data-mg="'+esc(k)+'" aria-selected="'+(mgTab===k)+'">'+n+(k==="members"&&pending.length?'（'+pending.length+' 個申請）':'')+'</button>').join("")+'</nav>'+
     (mgTab==="members"?membersMgHTML(st,pending):mgTab==="modules"?modulesMgHTML(st):mgTab==="team"?teamMgHTML(st):leadersMgHTML(st));
 }
 function membersMgHTML(st,pending){
@@ -1545,7 +1559,7 @@ function membersMgHTML(st,pending){
   let h='';
   if(pending.length)h+='<div class="panel"><h2>加入申請</h2>'+pending.map(id=>{const u=users[id],m=ms[id];
     return'<div class="req"><img src="'+esc(avatarUrl(u))+'" alt=""><div class="info"><b>'+esc(nameOf(u))+'</b> <span class="muted small">'+esc(u?[u.charName,jobLabel(u.job)].filter(Boolean).join(" "):"")+'</span>'+
-      (m.note?'<div class="small">「'+esc(m.note)+'」</div>':'')+'</div><button class="btn sm primary" data-approve="'+id+'">核准</button><button class="btn sm danger" data-reject="'+id+'">拒絕</button></div>';}).join("")+
+      (m.note?'<div class="small">「'+esc(m.note)+'」</div>':'')+'</div><button class="btn sm primary" data-approve="'+esc(id)+'">核准</button><button class="btn sm danger" data-reject="'+esc(id)+'">拒絕</button></div>';}).join("")+
     '<label class="small" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="welcomeOn" checked> 核准時在 Discord 發歡迎公告</label></div>';
   h+='<div class="panel"><h2>成員與職業（'+active.length+'）</h2>';
   if(!active.length)h+='<p class="muted">還沒有成員。可以從下方把飛地成員直接加入，或等他們申請。</p>';
@@ -1554,18 +1568,18 @@ function membersMgHTML(st,pending){
     h+='<div class="mtable"><div class="inner"><div class="mrow jrow mhead"><span>成員</span><span>職責</span><span>固定團職業</span><span>備用職業 1</span><span>備用職業 2</span><span></span></div>'+
     active.map(id=>{const u=users[id],m=ms[id],sl=slotOf(id),alts=m.alts||[];const warn=mismatch(sl,teamJob(st.id,id));
       return'<div class="mrow jrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b>'+phTag(u)+'<div class="small muted">主職業：'+esc(u?jobLabel(u.job):"")+'</div></div></div>'+
-        '<div><select data-slot="'+id+'" aria-label="職責"><option value="">替補</option>'+SL.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
-          '<div class="alsochips"><span class="small muted">也可打</span>'+SL.filter(s=>s.k!==sl).map(s=>'<button type="button" class="mini" data-also="'+id+'" data-k="'+s.k+'" aria-pressed="'+alsoOf(st.id,id).includes(s.k)+'">'+s.k+'</button>').join("")+'</div></div>'+
-        '<div>'+jobSel('data-tjob="'+id+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
-        jobSel('data-talt="'+id+'" data-i="0" aria-label="備用職業 1"',alts[0]||"","無")+
-        jobSel('data-talt="'+id+'" data-i="1" aria-label="備用職業 2"',alts[1]||"","無")+
-        (id===me.uid?'<span></span>':'<button class="btn sm danger" data-remove="'+id+'">移出</button>')+'</div>';}).join("")+'</div></div>'+
+        '<div><select data-slot="'+esc(id)+'" aria-label="職責"><option value="">替補</option>'+SL.map(s=>'<option'+(s.k===sl?' selected':'')+'>'+s.k+'</option>').join("")+'</select>'+
+          '<div class="alsochips"><span class="small muted">也可打</span>'+SL.filter(s=>s.k!==sl).map(s=>'<button type="button" class="mini" data-also="'+esc(id)+'" data-k="'+esc(s.k)+'" aria-pressed="'+alsoOf(st.id,id).includes(s.k)+'">'+s.k+'</button>').join("")+'</div></div>'+
+        '<div>'+jobSel('data-tjob="'+esc(id)+'" aria-label="固定團職業"',m.job||"","（暫用主職業："+(u?jobLabel(u.job):"")+"）")+(warn?'<div class="warn">⚠ '+esc(warn)+'</div>':'')+'</div>'+
+        jobSel('data-talt="'+esc(id)+'" data-i="0" aria-label="備用職業 1"',alts[0]||"","無")+
+        jobSel('data-talt="'+esc(id)+'" data-i="1" aria-label="備用職業 2"',alts[1]||"","無")+
+        (id===me.uid?'<span></span>':'<button class="btn sm danger" data-remove="'+esc(id)+'">移出</button>')+'</div>';}).join("")+'</div></div>'+
     '<p class="hint" style="margin:8px 0 0">職責沒有分配的人會顯示在「替補成員」。固定團職業沒設定時，沿用靈魂水晶的主職業。</p>';
   }
   h+='</div>';
   if(active.length)h+='<div class="panel"><h2>功能權限</h2><div class="mtable"><div class="inner" style="min-width:640px"><div class="mrow prow mhead"><span>成員</span>'+MODULES.map(x=>'<span>'+x.n+'</span>').join("")+'</div>'+
     active.map(id=>{const u=users[id],m=ms[id];return'<div class="mrow prow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><div><b>'+esc(nameOf(u))+'</b></div></div>'+
-      MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+id+'" data-pmod="'+x.k+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+k+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+'</div>';}).join("")+
+      MODULES.map(x=>{const v=(m.perms||{})[x.k]||"none";return'<select data-perm="'+esc(id)+'" data-pmod="'+esc(x.k)+'" aria-label="'+x.n+'權限">'+Object.entries(PERM).map(([k,n])=>'<option value="'+esc(k)+'"'+(k===v?' selected':'')+'>'+n+'</option>').join("")+'</select>';}).join("")+'</div>';}).join("")+
     '</div></div><p class="hint" style="margin:8px 0 0">權限只在功能設為「指定成員」或「全團開放」時才有作用。</p></div>';
   {const DID=/^\d{15,21}$/;
    const dirLeft=DIRECTORY.filter(p=>!users["dc_"+p.did]);
@@ -1581,7 +1595,7 @@ function membersMgHTML(st,pending){
     '<div class="phbtns"><label class="small" style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" data-ph="welcome"'+(d.welcome?' checked':'')+' style="width:auto"> 在 Discord 發歡迎公告</label><button class="btn primary" data-act="phAdd">新增並加入這個團</button></div>'+
     '</div><p class="hint" style="margin:8px 0 0">取得 Discord ID：Discord 設定開啟「開發者模式」，對名字按右鍵 →「複製使用者 ID」。</p></div>';}
   h+='<div class="panel"><h2>從飛地成員直接加入</h2>'+(outsiders.length?'<p class="muted small">這些人已經建立過靈魂水晶，但還不是這個團的成員。</p><div class="others">'+
-    outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+id+'">加入</button></div>';}).join("")+'</div>':
+    outsiders.map(id=>{const u=users[id];return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+(id===me.uid?'（你）':'')+'</span><button class="btn sm" data-add="'+esc(id)+'">加入</button></div>';}).join("")+'</div>':
     '<p class="muted">飛地成員都已經在這個團裡了。</p>')+
     (outsiders.length?'<label class="small" style="display:flex;gap:6px;align-items:center;margin-top:10px"><input type="checkbox" id="addWelcomeOn"> 加入時在 Discord 發歡迎公告</label>':'')+'</div>';
   return h;
@@ -1589,8 +1603,8 @@ function membersMgHTML(st,pending){
 function modulesMgHTML(st){
   const mods=st.modules||{};
   return'<div class="panel"><h2>功能開放狀態</h2><p class="muted small">建置期間維持「只有團長」，確認好用後再開放。各功能的資料也會由資料庫規則依這個設定把關。</p>'+
-    MODULES.map(x=>'<div class="modrow"><div><b>'+x.n+'</b><div class="small muted">'+x.d+'</div></div><select class="sel" data-modstatus="'+x.k+'">'+
-      Object.entries(MOD_STATUS).map(([k,n])=>'<option value="'+k+'"'+((mods[x.k]||"owner")===k?' selected':'')+'>'+n+'</option>').join("")+'</select></div>').join("")+
+    MODULES.map(x=>'<div class="modrow"><div><b>'+x.n+'</b><div class="small muted">'+x.d+'</div></div><select class="sel" data-modstatus="'+esc(x.k)+'">'+
+      Object.entries(MOD_STATUS).map(([k,n])=>'<option value="'+esc(k)+'"'+((mods[x.k]||"owner")===k?' selected':'')+'>'+n+'</option>').join("")+'</select></div>').join("")+
     '<p class="hint" style="margin:10px 0 0">「只有團長」包含總團長與有功能開放權限的團長；「指定成員」＝權限不是「不可見」的成員；「全團開放」＝所有成員都看得到。</p></div>';
 }
 function teamMgHTML(st){
@@ -1607,11 +1621,11 @@ function teamMgHTML(st){
 }
 function tgtListHTML(){
   return(tgtDraft.length?'<div class="tgtrow tgthead"><span>副本名稱</span><span>類型</span><span>主要目標</span><span>已通關</span><span></span></div>':'')+
-    tgtDraft.map((x,i)=>'<div class="tgtrow"><input data-tgtn="'+i+'" maxlength="30" value="'+esc(x.n)+'" aria-label="副本名稱"><select data-tgtt="'+i+'" aria-label="類型">'+
-    Object.entries(TARGET_TYPES).map(([k,n])=>'<option value="'+k+'"'+(x.t===k?' selected':'')+'>'+n+'</option>').join("")+'</select>'+
-    '<label class="ck"><input type="checkbox" data-tgtmain="'+i+'"'+(x.main?' checked':'')+' aria-label="設為主要目標"></label>'+
-    '<label class="ck"><input type="checkbox" data-tgtdone="'+i+'"'+(x.done?' checked':'')+' aria-label="已通關"></label>'+
-    '<button class="x" data-tgtrm="'+i+'" aria-label="移除">×</button></div>').join("");
+    tgtDraft.map((x,i)=>'<div class="tgtrow"><input data-tgtn="'+esc(i)+'" maxlength="30" value="'+esc(x.n)+'" aria-label="副本名稱"><select data-tgtt="'+esc(i)+'" aria-label="類型">'+
+    Object.entries(TARGET_TYPES).map(([k,n])=>'<option value="'+esc(k)+'"'+(x.t===k?' selected':'')+'>'+n+'</option>').join("")+'</select>'+
+    '<label class="ck"><input type="checkbox" data-tgtmain="'+esc(i)+'"'+(x.main?' checked':'')+' aria-label="設為主要目標"></label>'+
+    '<label class="ck"><input type="checkbox" data-tgtdone="'+esc(i)+'"'+(x.done?' checked':'')+' aria-label="已通關"></label>'+
+    '<button class="x" data-tgtrm="'+esc(i)+'" aria-label="移除">×</button></div>').join("");
 }
 const CAPS=[["members","成員管理","核准申請、加入或移出成員、分配職責與權限"],["info","團隊資料","修改團名、口號、簡介與目標副本"],["modules","功能開放","切換各功能的開放狀態"],["survey","出席調查","為這個團發起、截止與管理出席時間調查"]];
 function leadersMgHTML(st){
@@ -1620,9 +1634,9 @@ function leadersMgHTML(st){
   return'<div class="panel"><h2>團長與權限</h2><p class="muted small">只有總團長可以指派團長，並決定每位團長可以做哪些事。團長不能建立或刪除固定團，也不能指派其他團長。</p>'+
     (ids.length?ids.map(id=>{const u=users[id],c=L[id];
       return'<div class="lrow"><div class="who"><img src="'+esc(avatarUrl(u))+'" alt=""><b>'+esc(nameOf(u))+'</b></div><div class="caps">'+
-        CAPS.map(([k,n,d])=>'<label title="'+d+'"><input type="checkbox" data-lcap="'+id+'" data-cap="'+k+'"'+(c[k]?' checked':'')+'> '+n+'</label>').join("")+
-        '</div><button class="btn sm danger" data-lrm="'+id+'">取消團長</button></div>';}).join(""):'<p class="muted">這個團還沒有指派團長，目前由總團長管理。</p>')+
-    (cand.length?'<div class="addrow"><select class="sel" id="leaderAdd"><option value="">選擇飛地成員…</option>'+cand.map(id=>'<option value="'+id+'">'+esc(nameOf(users[id]))+'</option>').join("")+'</select><button class="btn" data-act="leaderAdd">指派為團長</button></div>':'')+
+        CAPS.map(([k,n,d])=>'<label title="'+d+'"><input type="checkbox" data-lcap="'+esc(id)+'" data-cap="'+esc(k)+'"'+(c[k]?' checked':'')+'> '+n+'</label>').join("")+
+        '</div><button class="btn sm danger" data-lrm="'+esc(id)+'">取消團長</button></div>';}).join(""):'<p class="muted">這個團還沒有指派團長，目前由總團長管理。</p>')+
+    (cand.length?'<div class="addrow"><select class="sel" id="leaderAdd"><option value="">選擇飛地成員…</option>'+cand.map(id=>'<option value="'+esc(id)+'">'+esc(nameOf(users[id]))+'</option>').join("")+'</select><button class="btn" data-act="leaderAdd">指派為團長</button></div>':'')+
     '<p class="hint" style="margin:10px 0 0">'+CAPS.map(([,n,d])=>n+'：'+d).join("；")+'。</p></div>'+
     '<div class="panel danger-zone"><h2>刪除固定團</h2><p class="muted small">會一併移除所有成員資料，無法復原。成員的靈魂水晶不受影響。</p><button class="btn danger" data-act="delStatic">刪除「'+esc(st.name)+'」</button></div>';
 }
@@ -1668,8 +1682,8 @@ document.addEventListener("click",async e=>{
       if(a==="openTeam"){e.preventDefault();go("team",act.dataset.tid);return;}
       if(a==="openBis"){e.preventDefault();bisTab="mine";go("mod",act.dataset.tid);return;}
       if(a==="qpick"){e.preventDefault();const k=act.dataset.pick;quickPick=quickPick===k?null:k;render();
-        const f=quickPick&&document.querySelector("#qpick .qp");if(f)f.focus();else{const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();}return;}
-      if(a==="qpickClose"){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();return;}
+        const f=quickPick&&document.querySelector("#qpick .qp");if(f)f.focus();else{const b=document.querySelector('[data-pick="'+esc(k)+'"]');if(b)b.focus();}return;}
+      if(a==="qpickClose"){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+esc(k)+'"]');if(b)b.focus();return;}
       if(a==="agendaMore"){agendaMore=!agendaMore;render();const b=document.querySelector('[data-act="agendaMore"]');if(b)b.focus();return;}
       if(a==="membersToggle"){membersOpen=!membersOpen;render();const b=document.querySelector('[data-act="membersToggle"]');if(b)b.focus();return;}
       if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
@@ -1769,7 +1783,7 @@ document.addEventListener("click",async e=>{
     }
   }catch(e2){console.error(e2);toast(e2&&e2.code==="permission-denied"?"沒有權限執行這個動作":"操作失敗，請再試一次");}
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&quickPick){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&quickPick){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+esc(k)+'"]');if(b)b.focus();}});
 document.addEventListener("change",async e=>{
   const t=e.target;
   try{

@@ -284,6 +284,8 @@ let unDuty=null,unPlan=null,unSlots=null,ready={duties:false,lib:false};
 /* ===== 小工具 ===== */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* 連結只接受 http(s)，其他（例如 javascript:）一律不給連 */
+const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"#";
 const uid=()=>Math.random().toString(36).slice(2,9);
 const clone=o=>JSON.parse(JSON.stringify(o));
 function secs(t){if(!t)return null;const m=String(t).trim().match(/^(\d+)(?::(\d{1,2}))?$/);if(!m)return null;return m[2]!=null?(+m[1])*60+(+m[2]):+m[1];}
@@ -376,11 +378,11 @@ function render(){
   h+='<button class="btn" data-a="skills">技能庫</button>'+(duty?'<button class="btn" data-a="text">文字小抄</button>':'')+'<button class="btn" data-a="io">匯出／匯入</button></div></div>';
   if(duty)h+='<div class="vseg" role="group" aria-label="檢視方式"><button type="button" data-a="vmode" data-v="list" aria-pressed="'+(vmode==="list")+'">我的減傷</button><button type="button" data-a="vmode" data-v="grid" aria-pressed="'+(vmode==="grid")+'">完整時間軸'+(canAll()||canSlot(mySlot())?'（編輯）':'')+'</button></div>';
   if(duty){
-    h+='<div class="scrollx">'+(duty.stages||[]).map((s,i)=>'<button class="tab'+(i===cur?" on":"")+'" data-a="stage" data-i="'+i+'">'+esc(s.name)+'</button>').join("")+'</div>';
+    h+='<div class="scrollx">'+(duty.stages||[]).map((s,i)=>'<button class="tab'+(i===cur?" on":"")+'" data-a="stage" data-i="'+esc(i)+'">'+esc(s.name)+'</button>').join("")+'</div>';
     h+='<div class="scrollx"><span class="lbl">只看</span><button class="tab'+(filt==="all"?" on":"")+'" data-a="filt" data-s="all">全部</button>'+(mySlot()&&dSlots().includes(mySlot())?'<button class="tab'+(filt==="mine"?" on":"")+'" data-a="filt" data-s="mine">我的</button>':'')+
-      dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+s+'">'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
+      dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+esc(s)+'">'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
     if(vmode==="list"&&tid){const R2=(st&&st.roles)||{},mem=dSlots().filter(x=>R2[x]&&users[R2[x]]),jobs=[...new Set(dSlots().map(compOf).filter(Boolean))];
-      h+='<div class="lsel"><label><span class="lbl">依成員</span><select class="f" data-lf="mem"><option value="">選擇成員…</option>'+mem.map(x=>'<option value="'+x+'"'+(filt===x?" selected":"")+'>'+esc(nameOf(users[R2[x]]))+'（'+x+'）</option>').join("")+'</select></label>'+
+      h+='<div class="lsel"><label><span class="lbl">依成員</span><select class="f" data-lf="mem"><option value="">選擇成員…</option>'+mem.map(x=>'<option value="'+esc(x)+'"'+(filt===x?" selected":"")+'>'+esc(nameOf(users[R2[x]]))+'（'+x+'）</option>').join("")+'</select></label>'+
         '<label><span class="lbl">依職業</span><select class="f" data-lf="job"><option value="">選擇職業…</option>'+jobs.map(j=>'<option value="job:'+j+'"'+(filt==="job:"+j?" selected":"")+'>'+esc((JOB[j]||{}).n||j)+'</option>').join("")+'</select></label></div>';}
   }
   h+='</div><div class="gw'+(vmode==="list"&&duty?" lmode":"")+'" id="gw"></div>';
@@ -411,12 +413,12 @@ function renderList(){
     h+='<article class="litem'+(r.tag==="死刑"?" tk":r.tag==="全體AOE"?" hl":"")+'"><div class="ltime">'+tt+(r.t0?'<small>'+esc(r.t0)+' 讀條</small>':'')+'</div><div class="lbody">'+
       '<div class="lmech"><b>'+esc(r.mech||"（未命名機制）")+'</b>'+(r.tag?'<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>':'')+(r.ctag?'<span class="pill c">'+esc(r.ctag)+'</span>':'')+
         ((r.hits||[]).length?'<span class="ldmg">'+r.hits.map(x=>dIco(x.dtype)+esc(x.dmg||(DTYPE[x.dtype]?DTYPE[x.dtype].n:""))+(+x.n>1?"×"+(+x.n):"")).join(" → ")+'</span>':'')+'</div>'+
-      (sk.length?'<ul class="lsk">'+sk.map(o=>'<li data-r="'+r.id+'" data-s="'+o.x+'" data-k="'+o.k.id+'">'+skIco(o.j,o.k)+'<span><b>'+esc(o.k.name)+'</b>'+(V.length>1?'<small class="lslot">'+o.x+'</small>':'')+(o.tg?'<small>→ '+esc(o.tg)+'</small>':'')+(o.eo?'<small class="warn2">提前 '+o.eo+' 秒放</small>':'')+
+      (sk.length?'<ul class="lsk">'+sk.map(o=>'<li data-r="'+esc(r.id)+'" data-s="'+esc(o.x)+'" data-k="'+esc(o.k.id)+'">'+skIco(o.j,o.k)+'<span><b>'+esc(o.k.name)+'</b>'+(V.length>1?'<small class="lslot">'+o.x+'</small>':'')+(o.tg?'<small>→ '+esc(o.tg)+'</small>':'')+(o.eo?'<small class="warn2">提前 '+o.eo+' 秒放</small>':'')+
         (o.bad?'<small class="bad2">CD 還差 '+Math.ceil(o.bad)+' 秒</small>':o.short==="judge"?'<small class="bad2">效果在判定前就結束</small>':o.short==="tail"?'<small class="warn2">效果撐不到最後一下</small>':'')+'</span></li>').join("")+'</ul>':'')+
       (lb?'<p class="lflag"><img src="'+LB_ICON+'" alt="">'+esc(p.lb)+' 放 LB</p>':'')+
       ((p.burst||p.pot)?'<p class="lteam">'+(p.burst?'全隊 '+esc(p.burst)+' 爆發':'')+(p.burst&&p.pot?'・':'')+(p.pot?'吃爆發藥':'')+'</p>':(tb.act&&tb.v==="120"?'<p class="lteam">120 爆發中</p>':''))+
       (p.note?'<p class="lnote2"><b>解法</b>'+esc(p.note)+'</p>':'')+(r.desc?'<p class="lnote2"><b>說明</b>'+esc(r.desc)+'</p>':'')+
-      ((p.imgs||[]).length||(p.links||[]).length?'<button class="linkbtn" data-a="open" data-r="'+r.id+'">看站位圖與連結（'+((p.imgs||[]).length+(p.links||[]).length)+'）</button>':'')+
+      ((p.imgs||[]).length||(p.links||[]).length?'<button class="linkbtn" data-a="open" data-r="'+esc(r.id)+'">看站位圖與連結（'+((p.imgs||[]).length+(p.links||[]).length)+'）</button>':'')+
     '</div></article>';
   });
   rs.forEach(r=>{if(!r.virt)delete r._shown;});
@@ -439,23 +441,23 @@ function renderGrid(){
   h+='</tr></thead><tbody>';
   rs.forEach((r,i)=>{const vr=!!r.virt,head=r.kind==="head",p=prow(r.id),caR=ca&&!vr;
     if(vr){const names=[...new Set(r.all.map(x=>x.mech||"").filter(Boolean))],js=r.all.map(x=>x.t).filter(Boolean);
-      h+='<tr class="virt"><td class="ct">'+esc(r.t)+'</td><td class="cm"><button class="mb vb" data-a="open" data-r="'+r.of.id+'"><span class="vn"><span class="pill rd">讀條</span> '+esc(names.join("＋"))+'</span>'+(js.length?'<span class="dm">'+esc(js.join("、"))+' 判定</span>':'')+'</button></td>';}
+      h+='<tr class="virt"><td class="ct">'+esc(r.t)+'</td><td class="cm"><button class="mb vb" data-a="open" data-r="'+esc(r.of.id)+'"><span class="vn"><span class="pill rd">讀條</span> '+esc(names.join("＋"))+'</span>'+(js.length?'<span class="dm">'+esc(js.join("、"))+' 判定</span>':'')+'</button></td>';}
     else{h+='<tr class="'+(head?"head":"")+(r.tag==="死刑"?" tk":r.tag==="全體AOE"?" hl":"")+(sel===r.id?" on":"")+'">';
     const tt=r.t?esc(r.t):(E[i].v!=null?'<span class="est">~'+fmt(E[i].v)+'</span>':'<span class="est">—</span>');
-    h+='<td class="ct">'+tt+'</td><td class="cm"><button class="mb" data-a="open" data-r="'+r.id+'"><span class="n">'+esc(r.mech||"")+'</span><span class="meta">';
+    h+='<td class="ct">'+tt+'</td><td class="cm"><button class="mb" data-a="open" data-r="'+esc(r.id)+'"><span class="n">'+esc(r.mech||"")+'</span><span class="meta">';
     if(r.tag)h+='<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>';if(r.ctag)h+='<span class="pill c">'+esc(r.ctag)+'</span>';
     if(p.note)h+='<span class="pill x">解法</span>';if((p.imgs||[]).length)h+='<span class="pill x">圖'+p.imgs.length+'</span>';if((p.links||[]).length)h+='<span class="pill x">連結'+p.links.length+'</span>';
     const hs=r.hits||[],sp=hitSpan(r);h+='</span>'+(hs.length?'<span class="dm">'+hs.map(x=>dIco(x.dtype)+'<span>'+esc(x.dmg||(DTYPE[x.dtype]?DTYPE[x.dtype].n:""))+(+x.n>1?"×"+(+x.n):"")+'</span>').join('<span class="arr">→</span>')+(sp?'<span>（'+sp+' 秒內）</span>':'')+'</span>':'')+(r.desc?'<span class="desc">'+esc(r.desc)+'</span>':'')+'</button></td>';}
     const tb=T[r.id+"|B"]||{},tp=T[r.id+"|P"]||{};
-    h+='<td class="cell first'+(caR?" ed":"")+(tb.act&&!tb.use&&tb.v==="120"?" act-b120":"")+'" '+(caR?'data-a="bcell" ':'')+'data-r="'+r.id+'" title="'+esc(p.burst?p.burst+" 爆發"+(ca?"（點一下切換）":""):tb.act&&tb.v==="120"?"120 爆發中，剩約 "+Math.round(tb.left)+" 秒":ca?"點一下標 120，再點變 60":"")+'">'+(p.burst?'<span class="bx b'+esc(p.burst)+'">'+esc(p.burst)+'</span>':'')+'</td>';
-    h+='<td class="cell'+(caR?" ed":"")+(tp.bad?" bad":tp.act&&!tp.use?" act-pot":tp.cd?" cd":"")+'" '+(caR?'data-a="pcell" ':'')+'data-r="'+r.id+'" title="'+esc(tp.bad?"藥水 CD 還差 "+Math.ceil(tp.bad)+" 秒":tp.use?"吃爆發藥":tp.act?"藥水效果中，剩約 "+Math.round(tp.left)+" 秒":tp.cd?"藥水 CD 中，還要約 "+Math.round(tp.left)+" 秒":ca?"點一下標記吃藥":"")+'">'+(p.pot?'<img class="ico" src="'+POT_ICON+'" alt="爆發藥">':'')+'</td>';
-    h+='<td class="cell first'+(caR?" ed":"")+'" '+(caR?'data-a="lcell" ':'')+'data-r="'+r.id+'" title="'+esc(p.lb?"LB："+p.lb+(ca?"（點一下換人）":""):ca?"點一下標記 LB，再點換下一個位置":"")+'">'+(p.lb?'<span class="lb"><img src="'+LB_ICON+'" alt="LB"><b>'+esc(p.lb)+'</b></span>':'')+'</td>';
+    h+='<td class="cell first'+(caR?" ed":"")+(tb.act&&!tb.use&&tb.v==="120"?" act-b120":"")+'" '+(caR?'data-a="bcell" ':'')+'data-r="'+esc(r.id)+'" title="'+esc(p.burst?p.burst+" 爆發"+(ca?"（點一下切換）":""):tb.act&&tb.v==="120"?"120 爆發中，剩約 "+Math.round(tb.left)+" 秒":ca?"點一下標 120，再點變 60":"")+'">'+(p.burst?'<span class="bx b'+esc(p.burst)+'">'+esc(p.burst)+'</span>':'')+'</td>';
+    h+='<td class="cell'+(caR?" ed":"")+(tp.bad?" bad":tp.act&&!tp.use?" act-pot":tp.cd?" cd":"")+'" '+(caR?'data-a="pcell" ':'')+'data-r="'+esc(r.id)+'" title="'+esc(tp.bad?"藥水 CD 還差 "+Math.ceil(tp.bad)+" 秒":tp.use?"吃爆發藥":tp.act?"藥水效果中，剩約 "+Math.round(tp.left)+" 秒":tp.cd?"藥水 CD 中，還要約 "+Math.round(tp.left)+" 秒":ca?"點一下標記吃藥":"")+'">'+(p.pot?'<img class="ico" src="'+POT_ICON+'" alt="爆發藥">':'')+'</td>';
+    h+='<td class="cell first'+(caR?" ed":"")+'" '+(caR?'data-a="lcell" ':'')+'data-r="'+esc(r.id)+'" title="'+esc(p.lb?"LB："+p.lb+(ca?"（點一下換人）":""):ca?"點一下標記 LB，再點換下一個位置":"")+'">'+(p.lb?'<span class="lb"><img src="'+LB_ICON+'" alt="LB"><b>'+esc(p.lb)+'</b></span>':'')+'</td>';
     V.forEach(s=>{const j=compOf(s),l=jobSkills(j),ed=canSlot(s)&&!vr;if(!l.length){h+='<td class="cell first"></td>';return;}
       l.forEach((sk,k)=>{const c=C[r.id+"|"+s+"|"+sk.id]||{},role=(JOB[j]||{}).r||"dps";
         const cls="cell"+(k===0?" first":"")+(ed?" ed":"")+(c.bad?" bad":c.act?" act-"+role:c.cd?" cd":"")+(c.short?" short":"");
         const tg=(c.use||c.bad)?target(s,r.id,sk.id):"",tt=tgtOf(sk);
         const lab=s+" "+sk.name+(tg?" → "+tg:"")+(c.eo?"（提前 "+c.eo+" 秒開）":"")+(c.short==="judge"?"（開太早，判定時效果已結束）":c.short==="tail"?"（效果沒蓋到最後一段傷害）":"")+(c.bad?"（CD 還差 "+Math.ceil(c.bad)+" 秒）":c.use?"（使用）":c.act?"（效果中，剩約 "+Math.round(c.left)+" 秒）":c.cd?"（CD 中，還要約 "+Math.round(c.left)+" 秒）":"");
-        h+='<td class="'+cls+'" '+(ed?'data-a="cell" ':'')+'data-r="'+r.id+'" data-s="'+s+'" data-k="'+sk.id+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+(c.use||c.bad?skIco(j,sk)+(tg?(tt==="ally"?'<span class="tb">'+esc(tg)+'</span>':'<span class="tb en">!</span>'):'')+(c.eo?'<span class="eb">-'+c.eo+'</span>':''):"")+'</td>';});});
+        h+='<td class="'+cls+'" '+(ed?'data-a="cell" ':'')+'data-r="'+esc(r.id)+'" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+(c.use||c.bad?skIco(j,sk)+(tg?(tt==="ally"?'<span class="tb">'+esc(tg)+'</span>':'<span class="tb en">!</span>'):'')+(c.eo?'<span class="eb">-'+c.eo+'</span>':''):"")+'</td>';});});
     h+='</tr>';});
   h+='</tbody></table>';
   if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
@@ -469,7 +471,7 @@ function renderDrawer(){
   let dr=$("#dr");const r=sel&&rows().find(x=>x.id===sel);
   if(!r){sel=null;if(dr)dr.remove();return;}
   if(!dr){dr=document.createElement("aside");dr.id="dr";dr.className="dr";dr.setAttribute("aria-label","機制詳情");document.body.appendChild(dr);dr.addEventListener("click",onClick);dr.addEventListener("input",onDrInput);dr.addEventListener("change",onDrChange);}
-  const ae=document.activeElement&&dr.contains(document.activeElement)?document.activeElement:null,keepSel=ae?(ae.dataset.f?'[data-f="'+ae.dataset.f+'"]':ae.dataset.p?'[data-p="'+ae.dataset.p+'"]':ae.dataset.h?'[data-h="'+ae.dataset.h+'"][data-i="'+ae.dataset.i+'"]':ae.dataset.e?'[data-e="'+ae.dataset.e+'"][data-s="'+ae.dataset.s+'"]':ae.dataset.tg?'[data-tg="'+ae.dataset.tg+'"][data-s="'+ae.dataset.s+'"]':null):null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
+  const ae=document.activeElement&&dr.contains(document.activeElement)?document.activeElement:null,keepSel=ae?(ae.dataset.f?'[data-f="'+esc(ae.dataset.f)+'"]':ae.dataset.p?'[data-p="'+esc(ae.dataset.p)+'"]':ae.dataset.h?'[data-h="'+esc(ae.dataset.h)+'"][data-i="'+esc(ae.dataset.i)+'"]':ae.dataset.e?'[data-e="'+esc(ae.dataset.e)+'"][data-s="'+esc(ae.dataset.s)+'"]':ae.dataset.tg?'[data-tg="'+esc(ae.dataset.tg)+'"][data-s="'+esc(ae.dataset.s)+'"]':null):null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
   const cm=canMech(),ca=canAll(),p=prow(r.id),dis=cm?"":" disabled";
   let h='<div class="drh"><h2>'+(r.kind==="head"?"段落":"機制")+'詳情</h2><button class="ib" aria-label="關閉" data-a="dclose">'+IC.x+'</button></div><div class="drb">';
   if(cm)h+='<div class="seg"><button class="'+(r.kind!=="head"?"on":"")+'" data-a="kind" data-k="">機制</button><button class="'+(r.kind==="head"?"on":"")+'" data-a="kind" data-k="head">段落（小怪／階段）</button></div>';
@@ -477,36 +479,36 @@ function renderDrawer(){
   h+='<div class="two"><label class="fld"><span>判定時間</span><input class="f" data-f="t" inputmode="numeric" placeholder="0:00" value="'+esc(r.t)+'"'+dis+'></label><label class="fld"><span>讀條時間</span><input class="f" data-f="t0" inputmode="numeric" placeholder="可不填" value="'+esc(r.t0||"")+'"'+dis+'></label></div>';
   if(cm){const rs0=rows(),ix=rs0.findIndex(x=>x.id===r.id);let pv=null;for(let q=ix-1;q>=0;q--){if(rs0[q].t0){pv=rs0[q];break;}}
     h+='<p class="hint">同一次讀條有好幾個判定時，每個判定都填同一個讀條時間，表格會合併成一列讀條。'+(pv&&pv.t0!==r.t0?'</p><button class="btn" data-a="t0same" data-v="'+esc(pv.t0)+'">跟「'+esc(pv.mech||"上一個機制")+'」同一次讀條（'+esc(pv.t0)+'）</button>':'</p>');}
-  h+='<div class="two"><label class="fld"><span>類型</span><select class="f" data-f="tag"'+dis+'>'+TAGS.map(t=>'<option value="'+t+'"'+(r.tag===t?" selected":"")+'>'+(t||"—")+'</option>').join("")+'</select></label><label class="fld"><span>自訂標籤</span><input class="f" data-f="ctag" value="'+esc(r.ctag)+'" placeholder="例：左右刀、接線"'+dis+'></label></div>';
+  h+='<div class="two"><label class="fld"><span>類型</span><select class="f" data-f="tag"'+dis+'>'+TAGS.map(t=>'<option value="'+esc(t)+'"'+(r.tag===t?" selected":"")+'>'+(t||"—")+'</option>').join("")+'</select></label><label class="fld"><span>自訂標籤</span><input class="f" data-f="ctag" value="'+esc(r.ctag)+'" placeholder="例：左右刀、接線"'+dis+'></label></div>';
   h+='<label class="fld"><span>機制說明</span>'+(cm?'<textarea class="f" data-f="desc" style="min-height:60px" placeholder="例：設置骰子＋擊退預兆">'+esc(r.desc||"")+'</textarea>':'<div class="ro">'+(r.desc?esc(r.desc):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
   h+='<div class="fld"><span>傷害</span>';const hs=r.hits||[];
-  if(cm){h+=hs.map((x,i)=>'<div class="hit"><select class="f" data-h="dtype" data-i="'+i+'" aria-label="第 '+(i+1)+' 段傷害類型">'+[["","不確定"],["phys","物理"],["magic","魔法"],["true","真實"]].map(([k,n])=>'<option value="'+k+'"'+((x.dtype||"")===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-h="dmg" data-i="'+i+'" value="'+esc(x.dmg||"")+'" placeholder="例 80k" aria-label="傷害數值"><input class="f" data-h="n" data-i="'+i+'" value="'+esc(x.n||"")+'" placeholder="次數" inputmode="numeric" aria-label="次數"><input class="f" data-h="off" data-i="'+i+'" value="'+esc(x.off||"")+'" placeholder="+秒" inputmode="decimal" aria-label="距離第一段幾秒"><button class="ib" aria-label="刪除這段傷害" data-a="hdel" data-i="'+i+'">'+IC.x+'</button></div>').join("")+
+  if(cm){h+=hs.map((x,i)=>'<div class="hit"><select class="f" data-h="dtype" data-i="'+esc(i)+'" aria-label="第 '+(i+1)+' 段傷害類型">'+[["","不確定"],["phys","物理"],["magic","魔法"],["true","真實"]].map(([k,n])=>'<option value="'+esc(k)+'"'+((x.dtype||"")===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-h="dmg" data-i="'+esc(i)+'" value="'+esc(x.dmg||"")+'" placeholder="例 80k" aria-label="傷害數值"><input class="f" data-h="n" data-i="'+esc(i)+'" value="'+esc(x.n||"")+'" placeholder="次數" inputmode="numeric" aria-label="次數"><input class="f" data-h="off" data-i="'+esc(i)+'" value="'+esc(x.off||"")+'" placeholder="+秒" inputmode="decimal" aria-label="距離第一段幾秒"><button class="ib" aria-label="刪除這段傷害" data-a="hdel" data-i="'+esc(i)+'">'+IC.x+'</button></div>').join("")+
     '<button class="btn" data-a="hadd">＋ 新增一段傷害</button><p class="hint">多段傷害可以分開填類型。「+秒」是距離第一段幾秒，填了就會檢查減傷有沒有蓋到最後一下。</p>';}
   else h+=hs.length?'<div class="ro">'+hs.map(x=>dIco(x.dtype)+" "+esc((DTYPE[x.dtype]?DTYPE[x.dtype].n+" ":"")+(x.dmg||""))+(+x.n>1?"×"+(+x.n):"")+(+x.off?"（+"+x.off+" 秒）":"")).join("<br>")+'</div>':'<span class="hint">（沒有）</span>';
   h+='</div>';
   if(!cm)h+='<p class="hint">機制內容由網站管理員維護，所有固團共用。</p>';
   if(tid){
-    h+='<div class="sec">本團設定</div><div class="two"><label class="fld"><span>爆發</span><select class="f" data-p="burst"'+(ca?"":" disabled")+'>'+BURST.map(t=>'<option value="'+t+'"'+((p.burst||"")===t?" selected":"")+'>'+(t?t+" 爆發":"—")+'</option>').join("")+'</select></label><label class="fld"><span>藥水</span><select class="f" data-p="pot"'+(ca?"":" disabled")+'><option value="">—</option><option value="1"'+(p.pot?" selected":"")+'>吃爆發藥</option></select></label></div>';
-    h+='<label class="fld"><span>LB 施放者</span><select class="f" data-p="lb"'+(ca?"":" disabled")+'><option value="">—</option>'+dSlots().map(s=>'<option value="'+s+'"'+(p.lb===s?" selected":"")+'>'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</option>').join("")+'</select></label>';
+    h+='<div class="sec">本團設定</div><div class="two"><label class="fld"><span>爆發</span><select class="f" data-p="burst"'+(ca?"":" disabled")+'>'+BURST.map(t=>'<option value="'+esc(t)+'"'+((p.burst||"")===t?" selected":"")+'>'+(t?t+" 爆發":"—")+'</option>').join("")+'</select></label><label class="fld"><span>藥水</span><select class="f" data-p="pot"'+(ca?"":" disabled")+'><option value="">—</option><option value="1"'+(p.pot?" selected":"")+'>吃爆發藥</option></select></label></div>';
+    h+='<label class="fld"><span>LB 施放者</span><select class="f" data-p="lb"'+(ca?"":" disabled")+'><option value="">—</option>'+dSlots().map(s=>'<option value="'+esc(s)+'"'+(p.lb===s?" selected":"")+'>'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</option>').join("")+'</select></label>';
     h+='<div class="fld"><span>減傷分工</span><div class="uses">';
     dSlots().forEach(s=>{const j=compOf(s),l=jobSkills(j),role=(JOB[j]||{}).r||SLOT_ROLE[s],ed=canSlot(s),a=assign(s,r.id);
       h+='<div class="uj"><span class="jn '+role+'">'+s+' '+esc(j?((JOB[j]||{}).n||j):"")+'</span>';if(!l.length)h+='<span class="hint">沒有技能</span>';
-      l.forEach(sk=>{const on=a.includes(sk.id);h+='<button class="uk'+(on?" on":"")+'" '+(ed?'data-a="dtog" ':'disabled ')+'data-s="'+s+'" data-k="'+sk.id+'" aria-pressed="'+on+'" title="'+esc(sk.name)+'">'+skIco(j,sk)+'</button>';});h+='</div>';
+      l.forEach(sk=>{const on=a.includes(sk.id);h+='<button class="uk'+(on?" on":"")+'" '+(ed?'data-a="dtog" ':'disabled ')+'data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" aria-pressed="'+on+'" title="'+esc(sk.name)+'">'+skIco(j,sk)+'</button>';});h+='</div>';
       const tj=secs(r.t),t0=secs(r.t0),lead=(tj!=null&&t0!=null&&tj>t0)?tj-t0:null;
       l.filter(sk=>a.includes(sk.id)).forEach(sk=>{const eo=early(s,r.id,sk.id),tt=tgtOf(sk),tg=target(s,r.id,sk.id);if(!ed&&!eo&&!tg)return;
-        let th="";if(tt==="ally")th=ed?' 給 <select class="f" data-tg="'+sk.id+'" data-s="'+s+'" aria-label="'+esc(sk.name)+' 施放目標"><option value="">—</option>'+dSlots().map(x=>'<option'+(tg===x?" selected":"")+'>'+x+'</option>').join("")+'</select>':(tg?'：給 '+esc(tg):'');
-        else if(tt==="enemy")th=ed?' 目標 <input class="f tgi" data-tg="'+sk.id+'" data-s="'+s+'" maxlength="20" value="'+esc(tg)+'" placeholder="例：章魚（可不填）" aria-label="'+esc(sk.name)+' 施放目標">':(tg?'：目標 '+esc(tg):'');
+        let th="";if(tt==="ally")th=ed?' 給 <select class="f" data-tg="'+esc(sk.id)+'" data-s="'+esc(s)+'" aria-label="'+esc(sk.name)+' 施放目標"><option value="">—</option>'+dSlots().map(x=>'<option'+(tg===x?" selected":"")+'>'+x+'</option>').join("")+'</select>':(tg?'：給 '+esc(tg):'');
+        else if(tt==="enemy")th=ed?' 目標 <input class="f tgi" data-tg="'+esc(sk.id)+'" data-s="'+esc(s)+'" maxlength="20" value="'+esc(tg)+'" placeholder="例：章魚（可不填）" aria-label="'+esc(sk.name)+' 施放目標">':(tg?'：目標 '+esc(tg):'');
         if(th)h+='<div class="early">'+esc(sk.name)+th+'</div>';
         if(!ed&&!eo)return;
-        h+='<div class="early">'+esc(sk.name)+(ed?' 提前 <input class="f" data-e="'+sk.id+'" data-s="'+s+'" value="'+(eo||"")+'" placeholder="0" inputmode="numeric" aria-label="'+esc(sk.name)+' 提前幾秒"> 秒'+(lead?'<button class="btn" data-a="eset" data-s="'+s+'" data-k="'+sk.id+'" data-v="'+lead+'">讀條開始</button><button class="btn" data-a="eset" data-s="'+s+'" data-k="'+sk.id+'" data-v="'+Math.round(lead/2)+'">讀條一半</button>':'')+(eo?'<button class="btn" data-a="eset" data-s="'+s+'" data-k="'+sk.id+'" data-v="0">清除</button>':''):'：提前 '+eo+' 秒開')+'</div>';});});
+        h+='<div class="early">'+esc(sk.name)+(ed?' 提前 <input class="f" data-e="'+esc(sk.id)+'" data-s="'+esc(s)+'" value="'+(eo||"")+'" placeholder="0" inputmode="numeric" aria-label="'+esc(sk.name)+' 提前幾秒"> 秒'+(lead?'<button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="'+esc(lead)+'">讀條開始</button><button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="'+Math.round(lead/2)+'">讀條一半</button>':'')+(eo?'<button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="0">清除</button>':''):'：提前 '+eo+' 秒開')+'</div>';});});
     h+='</div></div>';
     h+='<label class="fld"><span>本團解法</span>'+(ca?'<textarea class="f" data-p="note" placeholder="例：分攤去 A 點，坦克站王前面">'+esc(p.note||"")+'</textarea>':'<div class="ro">'+(p.note?esc(p.note):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
-    h+='<div class="fld"><span>連結（攻略、站位圖）</span>'+(p.links||[]).map((l,i)=>'<div class="lk"><a href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>'+(ca?'<button class="ib" aria-label="刪除連結" data-a="ldel" data-i="'+i+'">'+IC.x+'</button>':'')+'</div>').join("");
+    h+='<div class="fld"><span>連結（攻略、站位圖）</span>'+(p.links||[]).map((l,i)=>'<div class="lk"><a href="'+esc(safeUrl(l.url))+'"" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>'+(ca?'<button class="ib" aria-label="刪除連結" data-a="ldel" data-i="'+esc(i)+'">'+IC.x+'</button>':'')+'</div>').join("");
     if(ca)h+='<div class="two"><input class="f" id="lkL" placeholder="名稱（可不填）"><input class="f" id="lkU" placeholder="https://…" inputmode="url"></div><button class="btn" data-a="ladd">新增連結</button>';
     else if(!(p.links||[]).length)h+='<span class="hint">（沒有）</span>';
     h+='<p class="hint">完整的攻略圖文可以整理在 Notion，公開分享後把「頁面」網址貼在這裡。</p></div>';
     const ims=p.imgs||[];h+='<div class="fld"><span>站位圖</span>';
-    if(ims.length)h+='<div class="imgs">'+ims.map((id,i)=>{loadImg(id);const src=imgCache[id];return '<div class="im">'+(src?'<img src="'+esc(src)+'" alt="'+esc(r.mech)+' 站位圖 '+(i+1)+'" data-a="zoom" data-id="'+id+'">':'<span class="hint">'+(src===""?"讀取失敗":"載入中…")+'</span>')+(ca?'<button class="ib" aria-label="移除這張圖" data-a="idel" data-id="'+id+'">'+IC.x+'</button>':'')+'</div>';}).join("")+'</div>';
+    if(ims.length)h+='<div class="imgs">'+ims.map((id,i)=>{loadImg(id);const src=imgCache[id];return '<div class="im">'+(src?'<img src="'+esc(src)+'" alt="'+esc(r.mech)+' 站位圖 '+(i+1)+'" data-a="zoom" data-id="'+esc(id)+'">':'<span class="hint">'+(src===""?"讀取失敗":"載入中…")+'</span>')+(ca?'<button class="ib" aria-label="移除這張圖" data-a="idel" data-id="'+esc(id)+'">'+IC.x+'</button>':'')+'</div>';}).join("")+'</div>';
     else if(!ca)h+='<span class="hint">（沒有）</span>';
     if(ca)h+='<label class="btn" style="text-align:center">'+(uploading?"上傳中…":"上傳圖片")+'<input type="file" accept="image/*" multiple id="up" hidden></label><p class="hint">會自動壓縮後存進網站，一張大約 100～300 KB。</p>';
     h+='</div>';
@@ -619,16 +621,16 @@ function renderModal(){
   if(modal.k==="skills"){
     h+='<h2>技能庫'+(duty?'<span class="sub">（目前副本 Lv'+esc(duty.level)+'）</span>':'')+'</h2><div class="scrollx">';
     const shown=JOBS.filter(j=>isOwner||allJobSkills(j.k).length||j.k===modal.j);
-    h+=shown.map(j=>'<button class="tab'+(modal.j===j.k?" on":"")+'" data-a="skjob" data-j="'+j.k+'">'+esc(j.n)+(allJobSkills(j.k).length?" "+allJobSkills(j.k).length:"")+'</button>').join("")+'</div>';
+    h+=shown.map(j=>'<button class="tab'+(modal.j===j.k?" on":"")+'" data-a="skjob" data-j="'+esc(j.k)+'">'+esc(j.n)+(allJobSkills(j.k).length?" "+allJobSkills(j.k).length:"")+'</button>').join("")+'</div>';
     const l=allJobSkills(modal.j);
     if(!l.length)h+='<p class="hint" style="margin-top:10px">'+esc((JOB[modal.j]||{}).n||modal.j)+' 還沒有技能。</p>';
     l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(tiersOf(s).length>1||(+tiersOf(s)[0].lv||1)>1?'<span class="hint">　'+tiersOf(s).map(t=>(+t.lv||1)>1?t.lv+"級":"初始").join("／")+'</span>':'')+(fxText(s)?'<br><span class="hint">'+esc(fxText(s))+'</span>':'')+(tgtOf(s)?'<span class="hint">　'+(tgtOf(s)==="ally"?"對隊友":"對敵人")+'</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
-      (isOwner?'<button class="ib" aria-label="編輯 '+esc(s.name)+'" data-a="skedit" data-id="'+s.id+'">✎</button><button class="ib" aria-label="上移" data-a="skup" data-i="'+i+'">'+IC.up+'</button><button class="ib" aria-label="刪除 '+esc(s.name)+'" data-a="skdel" data-i="'+i+'">'+IC.x+'</button>':'')+'</div>';});
+      (isOwner?'<button class="ib" aria-label="編輯 '+esc(s.name)+'" data-a="skedit" data-id="'+esc(s.id)+'">✎</button><button class="ib" aria-label="上移" data-a="skup" data-i="'+esc(i)+'">'+IC.up+'</button><button class="ib" aria-label="刪除 '+esc(s.name)+'" data-a="skdel" data-i="'+esc(i)+'">'+IC.x+'</button>':'')+'</div>';});
     if(isOwner)h+=skEditorHTML();
     h+='<div class="end"><button class="btn" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="text"){
     const tm=modal.slot||"all";
-    h+='<h2>文字小抄</h2><div class="scrollx" style="margin-bottom:8px"><span class="lbl">顯示</span><button class="tab'+(tm==="all"?" on":"")+'" data-a="tmode" data-s="all">全部機制</button>'+dSlots().map(s=>'<button class="tab'+(tm===s?" on":"")+'" data-a="tmode" data-s="'+s+'">'+(s===mySlot()?"我的（"+s+"）":"只看 "+s)+'</button>').join("")+'</div>'+
+    h+='<h2>文字小抄</h2><div class="scrollx" style="margin-bottom:8px"><span class="lbl">顯示</span><button class="tab'+(tm==="all"?" on":"")+'" data-a="tmode" data-s="all">全部機制</button>'+dSlots().map(s=>'<button class="tab'+(tm===s?" on":"")+'" data-a="tmode" data-s="'+esc(s)+'">'+(s===mySlot()?"我的（"+s+"）":"只看 "+s)+'</button>').join("")+'</div>'+
       (tm!=="all"?'<p class="hint" style="margin:0 0 8px">只列出 '+tm+' 需要放技能、或要放 LB 的機制。</p>':'')+
       '<label class="small" style="display:flex;gap:6px;align-items:center;margin:0 0 8px"><input type="checkbox" data-a="tcompact"'+(modal.compact?" checked":"")+' style="width:auto"> 精簡版（只有時間、機制、技能）</label>'+
       '<textarea class="f ta" readonly id="ta">'+esc(textSheet(tm==="all"?"":tm,modal.compact))+'</textarea><div class="end"><button class="btn" data-a="copy">複製</button><button class="btn primary" data-a="mclose">關閉</button></div>';
@@ -642,7 +644,7 @@ function renderModal(){
     const ca=canAll();
     h+='<h2>本團陣容</h2><p class="hint">預設依固團「陣容」裡每個位置的人與職業。這個副本想換職業時在這裡調整'+(ca?"":"（需要編輯全部的權限）")+'。</p>';
     dSlots().forEach(s=>{const u=((st&&st.roles)||{})[s],def=memberJob(u),c=(plan.comp||{})[s]||"";
-      h+='<div class="slotrow"><b>'+s+'</b><select class="f" data-comp="'+s+'"'+(ca?"":" disabled")+'><option value="">預設'+(def?"（"+esc((JOB[def]||{}).n||def)+"）":"（未設定）")+'</option>'+JOBS.map(j=>'<option value="'+j.k+'"'+(c===j.k?" selected":"")+'>'+esc(j.n)+(allJobSkills(j.k).length?"":"（無技能）")+'</option>').join("")+'</select><span class="hint" style="white-space:nowrap">'+esc(u&&users[u]?nameOf(users[u]):"")+'</span></div>';});
+      h+='<div class="slotrow"><b>'+s+'</b><select class="f" data-comp="'+esc(s)+'"'+(ca?"":" disabled")+'><option value="">預設'+(def?"（"+esc((JOB[def]||{}).n||def)+"）":"（未設定）")+'</option>'+JOBS.map(j=>'<option value="'+esc(j.k)+'"'+(c===j.k?" selected":"")+'>'+esc(j.n)+(allJobSkills(j.k).length?"":"（無技能）")+'</option>').join("")+'</select><span class="hint" style="white-space:nowrap">'+esc(u&&users[u]?nameOf(users[u]):"")+'</span></div>';});
     h+='<div class="end"><button class="btn" data-a="mclose">關閉</button>'+(ca?'<button class="btn primary" data-a="compsave">儲存</button>':'')+'</div>';
   }else if(modal.k==="duty"){
     if(!modal.stages){const d=modal.isNew?null:duty;modal.name=d?d.name:"";modal.id=d?d.id:"";modal.level=d?d.level:100;modal.slots=d?(d.slots||[]).slice():["MT","ST","H1","H2","D1","D2","D3","D4"];modal.stages=d?(d.stages||[]).map(s=>({id:s.id,name:s.name,rows:null})):[{id:"s"+uid(),name:"一王",rows:[]}];}
@@ -650,8 +652,8 @@ function renderModal(){
     if(!modal.isNew&&duty)h+='<div class="end" style="margin:0 0 8px;justify-content:flex-start"><button class="btn" data-a="dutynew">＋ 新增另一個副本</button></div>';
     h+='<div class="two"><label class="fld"><span>副本名稱</span><input class="f" id="dn" value="'+esc(modal.name)+'"></label><label class="fld"><span>等級</span><input class="f" id="dl" inputmode="numeric" value="'+esc(modal.level)+'"></label></div>';
     if(modal.isNew||!duty)h+='<label class="fld" style="margin-top:8px"><span>代號（網址用，英數字）</span><input class="f" id="did" value="'+esc(modal.id)+'" placeholder="例：aloalo"></label>';
-    h+='<div class="fld" style="margin-top:8px"><span>位置</span><div class="scrollx" style="flex-wrap:wrap">'+SLOTS.map(s=>'<label class="tab'+(modal.slots.includes(s)?" on":"")+'"><input type="checkbox" data-slot="'+s+'"'+(modal.slots.includes(s)?" checked":"")+' hidden>'+s+'</label>').join("")+'</div></div>';
-    h+='<div class="fld" style="margin-top:8px"><span>階段</span>'+modal.stages.map((s,i)=>'<div class="slotrow"><input class="f" data-stn="'+i+'" value="'+esc(s.name)+'" aria-label="階段名稱"><button class="ib" aria-label="上移" data-a="stup" data-i="'+i+'">'+IC.up+'</button><button class="ib" aria-label="刪除階段" data-a="stdel" data-i="'+i+'">'+IC.x+'</button></div>').join("")+'<button class="btn" data-a="stadd">＋ 新增階段</button></div>';
+    h+='<div class="fld" style="margin-top:8px"><span>位置</span><div class="scrollx" style="flex-wrap:wrap">'+SLOTS.map(s=>'<label class="tab'+(modal.slots.includes(s)?" on":"")+'"><input type="checkbox" data-slot="'+esc(s)+'"'+(modal.slots.includes(s)?" checked":"")+' hidden>'+s+'</label>').join("")+'</div></div>';
+    h+='<div class="fld" style="margin-top:8px"><span>階段</span>'+modal.stages.map((s,i)=>'<div class="slotrow"><input class="f" data-stn="'+esc(i)+'" value="'+esc(s.name)+'" aria-label="階段名稱"><button class="ib" aria-label="上移" data-a="stup" data-i="'+esc(i)+'">'+IC.up+'</button><button class="ib" aria-label="刪除階段" data-a="stdel" data-i="'+esc(i)+'">'+IC.x+'</button></div>').join("")+'<button class="btn" data-a="stadd">＋ 新增階段</button></div>';
     h+='<div class="end"><button class="btn" data-a="mclose">取消</button><button class="btn primary" data-a="dutysave">儲存</button></div>';
   }
   m.innerHTML=h+'</div>';
@@ -668,13 +670,13 @@ function newDraft(){return{name:"",tgt:"",desc:"",tiers:[{lv:"",cd:"",dur:"",fx:
 function skEditorHTML(){const D=modal.draft=modal.draft||newDraft(),ed=!!modal.edit;if(modal.ti==null||modal.ti>=D.tiers.length)modal.ti=0;const T=D.tiers[modal.ti];
   let h='<h2 style="margin-top:16px;font-size:15px">'+(ed?"編輯「"+esc(D.name)+"」":"新增技能")+'</h2><div class="addsk">'+
     '<input class="f w" data-d="name" placeholder="技能名稱" aria-label="技能名稱" value="'+esc(D.name)+'">'+
-    '<select class="f" data-d="tgt" aria-label="施放目標" style="grid-column:span 2">'+[["","施放目標：自動判斷"],["none","施放目標：無（自身或範圍）"],["ally","施放目標：隊友"],["enemy","施放目標：敵人"]].map(([k,n])=>'<option value="'+k+'"'+((D.tgt||"")===k?" selected":"")+'>'+n+'</option>').join("")+'</select>'+
+    '<select class="f" data-d="tgt" aria-label="施放目標" style="grid-column:span 2">'+[["","施放目標：自動判斷"],["none","施放目標：無（自身或範圍）"],["ally","施放目標：隊友"],["enemy","施放目標：敵人"]].map(([k,n])=>'<option value="'+esc(k)+'"'+((D.tgt||"")===k?" selected":"")+'>'+n+'</option>').join("")+'</select>'+
     '<label class="btn" style="text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">'+((modal.img||D.img)?'<img class="ico" style="width:24px;height:24px" src="'+esc(modal.img||D.img)+'" alt="">':'')+'圖示<input type="file" accept="image/*" id="skimg" hidden></label>'+
     '<input class="f w" data-d="desc" placeholder="簡短說明（可不填）" aria-label="簡短說明" value="'+esc(D.desc||"")+'"></div>';
-  h+='<div class="scrollx" style="margin-top:12px">'+D.tiers.map((t,i)=>'<button class="tab'+(i===modal.ti?" on":"")+'" data-a="tsel" data-i="'+i+'">'+((+t.lv||1)>1?esc(t.lv)+" 級":"初始")+'</button>').join("")+'<button class="tab" data-a="tadd">＋ 新增等級</button></div>';
+  h+='<div class="scrollx" style="margin-top:12px">'+D.tiers.map((t,i)=>'<button class="tab'+(i===modal.ti?" on":"")+'" data-a="tsel" data-i="'+esc(i)+'">'+((+t.lv||1)>1?esc(t.lv)+" 級":"初始")+'</button>').join("")+'<button class="tab" data-a="tadd">＋ 新增等級</button></div>';
   h+='<div class="tier"><div class="addsk"><label class="fld"><span>從幾級開始</span><input class="f" data-dt="lv" inputmode="numeric" placeholder="1" value="'+esc(T.lv)+'"></label><label class="fld"><span>CD 秒</span><input class="f" data-dt="cd" inputmode="numeric" value="'+esc(T.cd)+'"></label><label class="fld"><span>持續 秒</span><input class="f" data-dt="dur" inputmode="numeric" value="'+esc(T.dur)+'"></label></div>';
-  h+='<div class="fld" style="margin-top:10px"><span>效果</span>'+(T.fx||[]).map((f,i)=>'<div class="fxb"><div class="fx1"><select class="f" data-fx="k" data-i="'+i+'" aria-label="效果類型">'+Object.entries(FXK).map(([k,n])=>'<option value="'+k+'"'+(f.k===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="v" data-i="'+i+'" value="'+esc(f.v||"")+'" placeholder="'+(f.k==="mit"?"10（%）":f.k==="heal"?"250（恢復力）":"數值")+'" aria-label="數值"><input class="f" data-fx="d" data-i="'+i+'" value="'+esc(f.d||"")+'" placeholder="秒" inputmode="numeric" aria-label="效果秒數"><button class="ib" aria-label="刪除這個效果" data-a="fxdel" data-i="'+i+'">'+IC.x+'</button></div>'+
-    '<div class="fx2"><select class="f" data-fx="w" data-i="'+i+'" aria-label="對象">'+Object.entries(FXW).map(([k,n])=>'<option value="'+k+'"'+((f.w||"self")===k?" selected":"")+'>對象：'+n+'</option>').join("")+'</select><select class="f" data-fx="t" data-i="'+i+'" aria-label="適用傷害"'+(f.k==="mit"?"":" hidden")+'>'+Object.entries(FXT).map(([k,n])=>'<option value="'+k+'"'+((f.t||"all")===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="c" data-i="'+i+'" value="'+esc(f.c||"")+'" placeholder="條件（可不填），例：自身有鐵壁或預警" aria-label="條件"></div></div>').join("")+
+  h+='<div class="fld" style="margin-top:10px"><span>效果</span>'+(T.fx||[]).map((f,i)=>'<div class="fxb"><div class="fx1"><select class="f" data-fx="k" data-i="'+esc(i)+'" aria-label="效果類型">'+Object.entries(FXK).map(([k,n])=>'<option value="'+esc(k)+'"'+(f.k===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="v" data-i="'+esc(i)+'" value="'+esc(f.v||"")+'" placeholder="'+(f.k==="mit"?"10（%）":f.k==="heal"?"250（恢復力）":"數值")+'" aria-label="數值"><input class="f" data-fx="d" data-i="'+esc(i)+'" value="'+esc(f.d||"")+'" placeholder="秒" inputmode="numeric" aria-label="效果秒數"><button class="ib" aria-label="刪除這個效果" data-a="fxdel" data-i="'+esc(i)+'">'+IC.x+'</button></div>'+
+    '<div class="fx2"><select class="f" data-fx="w" data-i="'+esc(i)+'" aria-label="對象">'+Object.entries(FXW).map(([k,n])=>'<option value="'+esc(k)+'"'+((f.w||"self")===k?" selected":"")+'>對象：'+n+'</option>').join("")+'</select><select class="f" data-fx="t" data-i="'+esc(i)+'" aria-label="適用傷害"'+(f.k==="mit"?"":" hidden")+'>'+Object.entries(FXT).map(([k,n])=>'<option value="'+esc(k)+'"'+((f.t||"all")===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="c" data-i="'+esc(i)+'" value="'+esc(f.c||"")+'" placeholder="條件（可不填），例：自身有鐵壁或預警" aria-label="條件"></div></div>').join("")+
     '<button class="btn" data-a="fxadd">＋ 新增效果</button></div>';
   h+='<p class="hint" style="margin-top:8px">每個等級分頁填那個等級的完整數值。新增等級時會複製目前分頁，只要改有變動的地方。副本是幾等，就套用不超過那個等級的最後一頁；比第一頁等級還低的副本，不會出現這個技能。</p>'+
     (D.tiers.length>1?'<div class="end" style="justify-content:flex-start"><button class="btn danger" data-a="tdel">刪除這個等級分頁</button></div>':'')+'</div>';
@@ -683,9 +685,9 @@ function onModalInput(e){const t=e.target,D=modal&&modal.draft;if(!D)return;
   if(t.dataset.d)D[t.dataset.d]=t.value;
   else if(t.dataset.dt)D.tiers[modal.ti][t.dataset.dt]=t.value;
   else if(t.dataset.fx){const f=D.tiers[modal.ti].fx[+t.dataset.i];f[t.dataset.fx]=t.value;
-    if(t.dataset.fx==="k"){const v=document.querySelector('#modal [data-fx="v"][data-i="'+t.dataset.i+'"]');if(v)v.placeholder=t.value==="mit"?"10（%）":t.value==="heal"?"250（恢復力）":"數值";
-      const ty=document.querySelector('#modal [data-fx="t"][data-i="'+t.dataset.i+'"]');if(ty){ty.hidden=t.value!=="mit";if(t.value!=="mit"){ty.value="all";f.t="all";}}}}
-  if(t.dataset.dt==="lv"){const tb=document.querySelector('#modal [data-a="tsel"][data-i="'+modal.ti+'"]');if(tb)tb.textContent=(+t.value||1)>1?t.value+" 級":"初始";}}
+    if(t.dataset.fx==="k"){const v=document.querySelector('#modal [data-fx="v"][data-i="'+esc(t.dataset.i)+'"]');if(v)v.placeholder=t.value==="mit"?"10（%）":t.value==="heal"?"250（恢復力）":"數值";
+      const ty=document.querySelector('#modal [data-fx="t"][data-i="'+esc(t.dataset.i)+'"]');if(ty){ty.hidden=t.value!=="mit";if(t.value!=="mit"){ty.value="all";f.t="all";}}}}
+  if(t.dataset.dt==="lv"){const tb=document.querySelector('#modal [data-a="tsel"][data-i="'+esc(modal.ti)+'"]');if(tb)tb.textContent=(+t.value||1)>1?t.value+" 級":"初始";}}
 function skAdd(){if(!isOwner)return;const D=modal.draft;if(!D||!D.name.trim()){toast("請輸入技能名稱");return;}
   const ti=D.tiers.map((t,i)=>{const lv=parseInt(t.lv,10);return{lv:isNaN(lv)?(i===0?1:NaN):lv,cd:parseInt(t.cd,10)||0,dur:parseInt(t.dur,10)||0,
     fx:(t.fx||[]).filter(f=>String(f.v||"").trim()||String(f.c||"").trim()).map(f=>{const o={k:f.k||"mit",v:String(f.v||"").trim(),w:f.w||"self",t:f.t||"all"};const d=parseInt(f.d,10);if(d)o.d=d;if(String(f.c||"").trim())o.c=String(f.c).trim();return o;})};});

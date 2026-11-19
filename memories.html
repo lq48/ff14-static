@@ -257,7 +257,7 @@ function listHTML(){
   let h='<div class="top"><div><h1>飛地回憶錄</h1><div class="sub">一起走過的冒險，慢慢收進這本相簿。</div></div><a class="btn primary" href="?new=1" data-go="new=1">＋ 新增回憶</a></div>';
   if(!memsReady)return h+'<div class="loadbox" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在翻開回憶錄…</span></div>';
   if(memErr)return h+deniedHTML();
-  h+='<div class="chips kinds" role="group" aria-label="依類型篩選">'+[["all","全部"],...KINDS].map(([k,n])=>'<button class="chip" data-kind="'+k+'" aria-pressed="'+(kindF===k)+'">'+n+'</button>').join("")+'</div>';
+  h+='<div class="chips kinds" role="group" aria-label="依類型篩選">'+[["all","全部"],...KINDS].map(([k,n])=>'<button class="chip" data-kind="'+esc(k)+'" aria-pressed="'+(kindF===k)+'">'+n+'</button>').join("")+'</div>';
   const list=mems.filter(m=>kindF==="all"||m.kind===kindF);
   if(kindF==="first"&&list.length){
     const asc=list.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
@@ -302,7 +302,7 @@ function paintGallery(){
   const src=id=>imgCache[id];
   const main=src(ids[galIdx]);
   g.innerHTML='<div class="main">'+(main?'<img src="'+esc(main)+'" alt="'+esc(detail.title)+' 第 '+(galIdx+1)+' 張">':main===""?'<span class="muted">這張照片讀不到了</span>':'<span class="spin" role="status" aria-label="照片載入中"></span>')+'</div>'+
-    (ids.length>1?'<div class="rest">'+ids.map((id,i)=>'<button type="button" data-gi="'+i+'" aria-label="看第 '+(i+1)+' 張"'+(i===galIdx?' aria-current="true"':'')+'>'+(src(id)?'<img src="'+esc(src(id))+'" alt="">':'')+'</button>').join("")+'</div>':'');
+    (ids.length>1?'<div class="rest">'+ids.map((id,i)=>'<button type="button" data-gi="'+esc(i)+'" aria-label="看第 '+(i+1)+' 張"'+(i===galIdx?' aria-current="true"':'')+'>'+(src(id)?'<img src="'+esc(src(id))+'" alt="">':'')+'</button>').join("")+'</div>':'');
 }
 
 /* ===== 表單 ===== */
@@ -322,7 +322,7 @@ function formHTML(){
   return'<p><a class="back" href="'+(F.id?'?m='+encodeURIComponent(F.id):'memories.html')+'" data-go="'+(F.id?'m='+esc(F.id):'')+'">← 取消</a></p>'+
   '<div class="top"><div><h1>'+(F.id?"編輯回憶":"新增回憶")+'</h1><div class="sub">只有飛地成員看得到。照片會自動壓縮，最多 4 張。</div></div></div>'+
   '<div class="panel">'+
-    '<div class="fld"><span>類型</span><div class="kseg" role="group" aria-label="類型">'+KINDS.map(([k,n])=>'<button type="button" data-fk="'+k+'" aria-pressed="'+(F.kind===k)+'">'+n+'</button>').join("")+'</div></div>'+
+    '<div class="fld"><span>類型</span><div class="kseg" role="group" aria-label="類型">'+KINDS.map(([k,n])=>'<button type="button" data-fk="'+esc(k)+'" aria-pressed="'+(F.kind===k)+'">'+n+'</button>').join("")+'</div></div>'+
     '<div class="two"><label class="fld"><span>日期</span><input class="f" type="date" data-ff="date" value="'+esc(F.date)+'" required></label>'+
       '<label class="fld"><span>標題</span><input class="f" data-ff="title" maxlength="'+LIM.title+'" value="'+esc(F.title)+'" placeholder="例如：M8S 首通！" required></label></div>'+
     '<div class="fld" id="dutyRow"'+(F.kind==="first"?'':' hidden')+'><label class="fld" style="margin:0"><span>副本名稱</span><input class="f" data-ff="duty" maxlength="'+LIM.duty+'" value="'+esc(F.duty)+'" placeholder="例如：零式 M8S、絕伊甸"></label><p class="hint">首通日期由大家手動記錄，網站不會讀取遊戲內的通關紀錄。</p></div>'+
@@ -347,7 +347,7 @@ function refreshLists(){if(!form)return;const a=$("#selTid"),b=$("#selEid"),c=$(
 function renderPhotos(){
   const el=$("#phs");if(!el||!form)return;
   el.innerHTML=form.photos.map((p,i)=>'<div class="pitem">'+(p.data?'<img src="'+esc(p.data)+'" alt="第 '+(i+1)+' 張">':'<span class="spin" style="margin:auto" aria-label="載入中"></span>')+(i===0?'<span class="cv">封面</span>':'')+
-    '<span class="pb">'+(i>0?'<button type="button" data-pc="'+i+'" aria-label="設為封面">設為封面</button>':'')+'<button type="button" data-pr="'+i+'" aria-label="移除第 '+(i+1)+' 張">移除</button></span></div>').join("")+
+    '<span class="pb">'+(i>0?'<button type="button" data-pc="'+esc(i)+'" aria-label="設為封面">設為封面</button>':'')+'<button type="button" data-pr="'+esc(i)+'" aria-label="移除第 '+(i+1)+' 張">移除</button></span></div>').join("")+
     (form.photos.length<LIM.imgs?'<button type="button" class="padd" data-a="addPhoto">'+icon("photo",24)+'加入照片</button>':'');
 }
 const fstat=(t,err)=>{const e=$("#fstat");if(e){e.className="status"+(err?" err":"");e.innerHTML=t;}};
@@ -413,7 +413,7 @@ document.addEventListener("click",async e=>{
   const t=e.target;
   const g=t.closest("[data-go]");if(g&&!t.closest(".sitebar")){e.preventDefault();go(g.dataset.go);return;}
   const k=t.closest("[data-kind]");if(k){kindF=k.dataset.kind;render();return;}
-  const gi=t.closest("[data-gi]");if(gi){galIdx=+gi.dataset.gi;paintGallery();const b=document.querySelector('[data-gi="'+galIdx+'"]');if(b)b.focus();return;}
+  const gi=t.closest("[data-gi]");if(gi){galIdx=+gi.dataset.gi;paintGallery();const b=document.querySelector('[data-gi="'+esc(galIdx)+'"]');if(b)b.focus();return;}
   if(form){
     const fk=t.closest("[data-fk]");if(fk){form.kind=fk.dataset.fk;formDirty=true;document.querySelectorAll("[data-fk]").forEach(b=>b.setAttribute("aria-pressed",b===fk));
       $("#dutyRow").hidden=form.kind!=="first";$("#noteLab").textContent=form.kind==="first"?"紀念留言（選填）":"一句話（選填）";return;}

@@ -512,20 +512,20 @@ function renderTabs(){
 function gridHTML(sv){
   const hol=new Set(sv.holidays||[]);const ev=evMap(sv);
   let h='<table class="grid"><thead><tr><th class="corner pcol" style="--pbg:var(--surface)"></th><th class="corner2 tcol"></th>';
-  for(const d of sv.dates){const H=hol.has(d);h+='<th class="dh'+(H?' hol':'')+'" data-date="'+d+'"><span class="md">'+md(d)+'</span><span class="wd">'+WD[wd(d)]+'</span></th>';}
+  for(const d of sv.dates){const H=hol.has(d);h+='<th class="dh'+(H?' hol':'')+'" data-date="'+esc(d)+'"><span class="md">'+md(d)+'</span><span class="wd">'+WD[wd(d)]+'</span></th>';}
   h+='</tr></thead><tbody>';
   for(let i=0;i<48;i++){
     const p=periodOf(i);
     h+='<tr class="p-'+p.k+(i%2?' half':'')+(i===p.from&&i>0?' pstart':'')+'">';
-    if(i===p.from)h+='<th class="pcol" rowspan="12" data-period="'+p.k+'" title="'+p.n+'"><span>'+p.n+'</span></th>';
-    h+='<th class="tcol" data-slot="'+i+'">'+slotT(i)+'</th>';
+    if(i===p.from)h+='<th class="pcol" rowspan="12" data-period="'+esc(p.k)+'" title="'+p.n+'"><span>'+p.n+'</span></th>';
+    h+='<th class="tcol" data-slot="'+esc(i)+'">'+slotT(i)+'</th>';
     for(const d of sv.dates){
       const e=ev[d+"|"+i];
       if(e){
-        if(i===e.a){const n=e.b-e.a;h+='<td class="cell ev" rowspan="'+n+'" data-date="'+d+'" data-slot="'+i+'"><div class="evl" style="max-height:'+(n*22-6)+'px">'+esc(e.label)+'</div></td>';}
+        if(i===e.a){const n=e.b-e.a;h+='<td class="cell ev" rowspan="'+n+'" data-date="'+esc(d)+'" data-slot="'+esc(i)+'"><div class="evl" style="max-height:'+(n*22-6)+'px">'+esc(e.label)+'</div></td>';}
         continue;
       }
-      h+='<td class="cell'+(hol.has(d)?' hol':'')+'" data-date="'+d+'" data-slot="'+i+'"></td>';
+      h+='<td class="cell'+(hol.has(d)?' hol':'')+'" data-date="'+esc(d)+'" data-slot="'+esc(i)+'"></td>';
     }
     h+='</tr>';
   }
@@ -696,12 +696,12 @@ function rangeDates(){
 }
 function renderHolPick(){
   const ds=rangeDates();fHol=new Set([...fHol].filter(d=>ds.includes(d)));
-  $("#fHol").innerHTML=ds.length?ds.map(d=>'<button type="button" data-d="'+d+'" aria-pressed="'+fHol.has(d)+'">'+md(d)+'<br>'+WD[wd(d)]+'</button>').join(""):'<span class="muted">先選日期</span>';
+  $("#fHol").innerHTML=ds.length?ds.map(d=>'<button type="button" data-d="'+esc(d)+'" aria-pressed="'+fHol.has(d)+'">'+md(d)+'<br>'+WD[wd(d)]+'</button>').join(""):'<span class="muted">先選日期</span>';
 }
 function resetHol(){fHol=new Set(rangeDates().filter(d=>{const w=wd(d);return w===0||w===6;}));renderHolPick();renderEvDates();}
 function renderEvDates(){
   const ds=rangeDates();const sel=$("#eDate");const keep=sel.value;
-  sel.innerHTML=ds.map(d=>'<option value="'+d+'">'+md(d)+' '+WD[wd(d)]+'</option>').join("");
+  sel.innerHTML=ds.map(d=>'<option value="'+esc(d)+'">'+md(d)+' '+WD[wd(d)]+'</option>').join("");
   if(ds.includes(keep))sel.value=keep;
   const before=fEvents.length;fEvents=fEvents.filter(e=>ds.includes(e.d));
   if(fEvents.length!==before)toast("超出日期範圍的既定活動已移除");
@@ -709,12 +709,12 @@ function renderEvDates(){
 }
 function renderEvList(){
   fEvents.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
-  $("#eList").innerHTML=fEvents.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-erm="'+i+'" aria-label="移除">×</button></span>').join("");
+  $("#eList").innerHTML=fEvents.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-erm="'+esc(i)+'" aria-label="移除">×</button></span>').join("");
 }
 function setupEvEditor(){
-  let opts="";for(let i=0;i<48;i++)opts+='<option value="'+i+'">'+slotT(i)+'</option>';
+  let opts="";for(let i=0;i<48;i++)opts+='<option value="'+esc(i)+'">'+slotT(i)+'</option>';
   $("#eFrom").innerHTML=opts;
-  let opts2="";for(let i=1;i<=48;i++)opts2+='<option value="'+i+'">'+(i===48?'24:00':slotT(i))+'</option>';
+  let opts2="";for(let i=1;i<=48;i++)opts2+='<option value="'+esc(i)+'">'+(i===48?'24:00':slotT(i))+'</option>';
   $("#eTo").innerHTML=opts2;
   $("#eFrom").value="40";$("#eTo").value="44";
   $("#eFrom").addEventListener("change",()=>{const a=+$("#eFrom").value;if(+$("#eTo").value<=a)$("#eTo").value=String(Math.min(48,a+2));});
@@ -738,7 +738,7 @@ function renderMemEdit(){
   $("#fCount").textContent=fMembers.length;
   const rest=DIRECTORY.filter(p=>!fMembers.some(m=>dirFind(m.n)===p));
   $("#fDir").innerHTML=rest.length?'<span class="muted">常用團員：</span>'+rest.map(p=>'<button type="button" class="chip" data-dir="'+esc(p.n)+'">＋ '+esc(p.n)+'</button>').join(""):'';
-  $("#fMembers").innerHTML=fMembers.length?fMembers.map((m,i)=>'<div class="mrow"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-did="'+i+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(m.did||"")+'"'+(m.did&&!DID_RE.test(m.did)?' class="bad"':'')+'><button type="button" data-rm="'+i+'" aria-label="移除 '+esc(m.n)+'">×</button></div>').join(""):'<span class="muted">還沒有隊員</span>';
+  $("#fMembers").innerHTML=fMembers.length?fMembers.map((m,i)=>'<div class="mrow"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-did="'+esc(i)+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(m.did||"")+'"'+(m.did&&!DID_RE.test(m.did)?' class="bad"':'')+'><button type="button" data-rm="'+esc(i)+'" aria-label="移除 '+esc(m.n)+'">×</button></div>').join(""):'<span class="muted">還沒有隊員</span>';
 }
 function addMember(){
   const inp=$("#fNewMember");
@@ -903,21 +903,21 @@ function setupManage(){
 function didEditorHTML(s){
   const mem=memOf(s);const team=teams.find(t=>t.name===teamOf(s));
   return'<div class="didedit"><div class="flabel">補填「'+esc(teamOf(s))+'」的 Discord ID</div><div class="memedit">'+
-    mem.map((m,i)=>{const v=didBuf.vals[i]||"";return'<div class="mrow" style="grid-template-columns:minmax(80px,140px) 1fr"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-sdid="'+i+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(v)+'"'+(v&&!DID_RE.test(v)?' class="bad"':'')+'></div>';}).join("")+
+    mem.map((m,i)=>{const v=didBuf.vals[i]||"";return'<div class="mrow" style="grid-template-columns:minmax(80px,140px) 1fr"><span class="mname" title="'+esc(m.n)+'">'+esc(m.n)+'</span><input data-sdid="'+esc(i)+'" inputmode="numeric" maxlength="21" placeholder="Discord ID（選填）" value="'+esc(v)+'"'+(v&&!DID_RE.test(v)?' class="bad"':'')+'></div>';}).join("")+
     '</div><div class="acts">'+(team?'<label><input type="checkbox" id="didSync" checked> 同時更新常用團隊「'+esc(team.name)+'」</label>':'<span style="margin-right:auto"></span>')+
     '<button class="btn sm" data-op="didcancel" data-id="'+esc(s.id)+'">取消</button><button class="btn sm primary" data-op="didsave" data-id="'+esc(s.id)+'">儲存 Discord ID</button></div></div>';
 }
 function evEditorHTML(s){
   const f=evBuf.form;
   let fromOpts="",toOpts="";
-  for(let i=0;i<48;i++)fromOpts+='<option value="'+i+'"'+(i===f.a?' selected':'')+'>'+slotT(i)+'</option>';
-  for(let i=1;i<=48;i++)toOpts+='<option value="'+i+'"'+(i===f.b?' selected':'')+'>'+(i===48?'24:00':slotT(i))+'</option>';
+  for(let i=0;i<48;i++)fromOpts+='<option value="'+esc(i)+'"'+(i===f.a?' selected':'')+'>'+slotT(i)+'</option>';
+  for(let i=1;i<=48;i++)toOpts+='<option value="'+esc(i)+'"'+(i===f.b?' selected':'')+'>'+(i===48?'24:00':slotT(i))+'</option>';
   const list=[...evBuf.list].sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);evBuf.list=list;
   return'<div class="didedit"><div class="flabel">修改「'+esc(teamOf(s))+'｜'+esc(s.title||"出席調查")+'」的既定活動</div>'+
-    '<div class="evadd"><select data-evf="d" aria-label="活動日期">'+s.dates.map(d=>'<option value="'+d+'"'+(d===f.d?' selected':'')+'>'+md(d)+' '+WD[wd(d)]+'</option>').join("")+'</select>'+
+    '<div class="evadd"><select data-evf="d" aria-label="活動日期">'+s.dates.map(d=>'<option value="'+esc(d)+'"'+(d===f.d?' selected':'')+'>'+md(d)+' '+WD[wd(d)]+'</option>').join("")+'</select>'+
     '<select data-evf="a" aria-label="開始時間">'+fromOpts+'</select><span class="muted">到</span><select data-evf="b" aria-label="結束時間">'+toOpts+'</select>'+
     '<input data-evf="label" maxlength="20" placeholder="活動名稱" value="'+esc(f.label)+'"><button class="btn" data-op="evadd" data-id="'+esc(s.id)+'">加入</button></div>'+
-    '<div class="evlist">'+(list.length?list.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-op="evrm" data-i="'+i+'" data-id="'+esc(s.id)+'" aria-label="移除">×</button></span>').join(""):'<span class="muted">目前沒有既定活動</span>')+'</div>'+
+    '<div class="evlist">'+(list.length?list.map((e,i)=>'<span class="evchip">'+md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+'　'+esc(e.label)+'<button type="button" data-op="evrm" data-i="'+esc(i)+'" data-id="'+esc(s.id)+'" aria-label="移除">×</button></span>').join(""):'<span class="muted">目前沒有既定活動</span>')+'</div>'+
     '<div class="hint">新增活動後，團員在那段時間已勾的時間會自動不計入；移除活動後，那段時間會重新開放勾選。</div>'+
     '<div class="acts"><span style="margin-right:auto"></span><button class="btn sm" data-op="evcancel" data-id="'+esc(s.id)+'">取消</button><button class="btn sm primary" data-op="evsave" data-id="'+esc(s.id)+'">儲存既定活動</button></div></div>';
 }
@@ -1004,8 +1004,8 @@ function setupEvents(){
       return;
     }
     if(!editable())return;
-    const dh=e.target.closest("th.dh");if(dh){toggleCells([...document.querySelectorAll('#fillGrid td.cell[data-date="'+dh.dataset.date+'"]')]);return;}
-    const tc=e.target.closest("tbody th.tcol");if(tc){toggleCells([...document.querySelectorAll('#fillGrid td.cell[data-slot="'+tc.dataset.slot+'"]')]);return;}
+    const dh=e.target.closest("th.dh");if(dh){toggleCells([...document.querySelectorAll('#fillGrid td.cell[data-date="'+esc(dh.dataset.date)+'"]')]);return;}
+    const tc=e.target.closest("tbody th.tcol");if(tc){toggleCells([...document.querySelectorAll('#fillGrid td.cell[data-slot="'+esc(tc.dataset.slot)+'"]')]);return;}
     const pc=e.target.closest("tbody th.pcol");if(pc){const p=PERIODS.find(x=>x.k===pc.dataset.period);toggleCells([...document.querySelectorAll("#fillGrid td.cell")].filter(c=>+c.dataset.slot>=p.from&&+c.dataset.slot<p.to));}
   });
   $("#resultsView").addEventListener("click",e=>{
