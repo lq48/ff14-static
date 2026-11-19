@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=4">
+<link rel="stylesheet" href="cozy.css?v=5">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -411,7 +411,7 @@ let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null,phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
 let links={},linkFilter="全部",linkDraft=null,linkSrc={};
-let svs=[],svRs={},svSubs={},membersOpen=false,pendingJump=null,jumpUntil=0;
+let svs=[],svRs={},svSubs={},membersOpen=false,pendingJump=null,jumpUntil=0,quickPick=null;
 ["wheel","touchstart","keydown"].forEach(t=>addEventListener(t,()=>{pendingJump=null;},{passive:true}));
 const urlTeam=()=>new URLSearchParams(location.search).get("team");
 const urlMod=()=>new URLSearchParams(location.search).get("mod");
@@ -478,6 +478,8 @@ function syncDiscordInfo(){
 /* ---------- 導覽 ---------- */
 function go(v,tid){
   view=v;if(tid!==undefined)curTid=tid;
+  if((v==="team"||v==="mod"||v==="manage")&&curTid)lastTeamSet(curTid);
+  if(v!=="lobby")quickPick=null;
   if(v!=="mod")bisStop();
   const inTeam=(v==="team"||v==="manage"||v==="mod")&&curTid;
   const url=location.pathname+(inTeam?"?team="+encodeURIComponent(curTid)+(v==="mod"?"&mod=bis":""):"");
@@ -782,24 +784,44 @@ function todoPanelHTML(){
 }
 
 /* 常用功能 */
-function quickHTML(){
-  const mine=statics.filter(s=>myTeamIds().includes(s.id)),one=mine.length===1?mine[0]:null;
+/* 常用功能
+   「我的固定團」「裝備進度」「攻略與減傷」：能用的固定團只有一個就直接開；有好幾個就先讓你選（上次用的排第一） */
+const lastTeamGet=()=>{try{return localStorage.getItem("lastTeam")||"";}catch(_){return"";}};
+const lastTeamSet=id=>{try{if(id)localStorage.setItem("lastTeam",id);}catch(_){}};
+const QP={team:{n:"我的固定團",ask:"要打開哪一個固定團？"},bis:{n:"裝備進度",ask:"要看哪一團的裝備進度？"},mit:{n:"攻略與減傷",ask:"要看哪一團的減傷軸？"}};
+function qpTeams(k){
+  const mine=statics.filter(s=>myTeamIds().includes(s.id));
   /* 與 firestore.rules 一致：BiS 看 bisCanView（團長要有 modules 權限）；減傷軸看 mitCanView（列在 leaders 的團長都能看） */
-  const bisSt=mine.find(s=>canSee("bis",s)),mitSt=mine.find(s=>canSee("mit",s)||!!leaderOf(s));
+  const list=k==="bis"?mine.filter(s=>canSee("bis",s)):k==="mit"?mine.filter(s=>canSee("mit",s)||!!leaderOf(s)):mine;
+  const last=lastTeamGet();return list.slice().sort((a,b)=>(b.id===last)-(a.id===last));
+}
+const qpLink=(k,st)=>k==="bis"?{href:"?team="+encodeURIComponent(st.id)+"&mod=bis",act:"openBis"}:k==="mit"?{href:"mit.html?team="+encodeURIComponent(st.id),act:""}:{href:"?team="+encodeURIComponent(st.id),act:"openTeam"};
+function qpTile(k,ico,c,none){
+  const L=qpTeams(k);
+  if(!L.length)return{ico,c,n:QP[k].n,d:none,href:"#teams",jump:"teams"};
+  if(L.length===1){const l=qpLink(k,L[0]);return{ico,c,n:QP[k].n,d:L[0].name,href:l.href,act:l.act,tid:L[0].id};}
+  return{ico,c,n:QP[k].n,d:L.length+" 個固定團，點一下選擇",href:"#",pick:k};
+}
+function qpPanelHTML(){
+  if(!quickPick)return"";const L=qpTeams(quickPick);if(L.length<2)return"";const last=lastTeamGet();
+  return'<div class="qpick" id="qpick" role="region" aria-labelledby="qpickH"><div class="qpick-h"><b id="qpickH">'+QP[quickPick].ask+'</b><button type="button" class="linkbtn" data-act="qpickClose">關閉</button></div><div class="qpick-list">'+
+    L.map(st=>{const l=qpLink(quickPick,st),slot=Object.keys(st.roles||{}).find(k=>st.roles[k]===me.uid)||"",j=JOB[teamJob(st.id,me.uid)];
+      const sub=[slot,j?j.n:"",leaderOf(st)?"團長":""].filter(Boolean).join("・")||(((membersOf(st.id)[me.uid]||{}).status==="active")?"成員":"");
+      return'<a class="qp" href="'+esc(l.href)+'"'+(l.act?' data-act="'+l.act+'"':'')+' data-tid="'+esc(st.id)+'" data-remember="1"><span class="qp-n">'+esc(st.name)+(st.id===last?'<span class="stp info">上次</span>':'')+'</span>'+(sub?'<span class="qp-s">'+esc(sub)+'</span>':'')+'<span class="go">'+icon("right",16)+'</span></a>';}).join("")+'</div></div>';
+}
+function quickHTML(){
   const sv=svs.find(x=>svOpenFor(x)&&mySvKey(x));
   const T=[
     {ico:"check",c:"sage",n:"出席調查",d:sv?"「"+(sv.title||"出席調查")+"」":"填寫可以出團的時段",href:sv?"schedule.html?s="+encodeURIComponent(sv.id):"schedule.html"},
     {ico:"cal",c:"sky",n:"請假行事曆",d:"登記不在的日子",href:"away.html"},
     {ico:"event",c:"butter",n:"自由揪團",d:"找人打本、挖寶、聚會",href:"events.html"},
-    one?{ico:"team",c:"peach",n:"我的固定團",d:one.name,href:"?team="+encodeURIComponent(one.id),act:"openTeam",tid:one.id}
-       :{ico:"team",c:"peach",n:"我的固定團",d:mine.length?mine.length+" 個固定團":"看看有哪些固定團",href:"#teams",jump:"teams"},
-    bisSt?{ico:"sword",c:"peach",n:"裝備進度",d:bisSt.name+" 的 BiS",href:"?team="+encodeURIComponent(bisSt.id)+"&mod=bis",act:"openBis",tid:bisSt.id}
-         :{ico:"sword",c:"peach",n:"裝備進度",d:"加入固定團後可以用",href:"#teams",jump:"teams"},
-    mitSt?{ico:"shield",c:"sky",n:"攻略與減傷",d:mitSt.name+" 的減傷軸",href:"mit.html?team="+encodeURIComponent(mitSt.id)}
-         :{ico:"shield",c:"sky",n:"攻略與減傷",d:"加入固定團後可以用",href:"#teams",jump:"teams"},
+    qpTile("team","team","peach","看看有哪些固定團"),
+    qpTile("bis","sword","peach","加入固定團後可以用"),
+    qpTile("mit","shield","sky","加入固定團後可以用"),
   ];
-  return'<nav class="quick" aria-label="常用功能">'+T.map(x=>'<a class="qt" href="'+esc(x.href)+'"'+(x.act?' data-act="'+x.act+'" data-tid="'+esc(x.tid)+'"':'')+(x.jump?' data-jump="'+x.jump+'"':'')+'>'+
-    '<span class="qi ico-'+x.c+'">'+icon(x.ico,20)+'</span><span class="qn">'+x.n+'</span><span class="qd">'+esc(x.d)+'</span></a>').join("")+'</nav>';
+  return'<nav class="quick" aria-label="常用功能">'+T.map(x=>'<a class="qt'+(x.pick&&quickPick===x.pick?' on':'')+'" href="'+esc(x.href)+'"'+(x.act?' data-act="'+x.act+'" data-tid="'+esc(x.tid)+'" data-remember="1"':'')+(x.jump?' data-jump="'+x.jump+'"':'')+
+    (x.pick?' role="button" data-act="qpick" data-pick="'+x.pick+'" aria-expanded="'+(quickPick===x.pick)+'" aria-controls="qpick"':'')+'>'+
+    '<span class="qi ico-'+x.c+'">'+icon(x.ico,20)+'</span><span class="qn">'+x.n+'</span><span class="qd">'+esc(x.d)+'</span></a>').join("")+'</nav>'+qpPanelHTML();
 }
 
 /* 飛地成員：預設精簡顯示，可展開看完整靈魂水晶 */
@@ -1507,11 +1529,15 @@ document.addEventListener("click",async e=>{
   try{
     if(view==="mod"&&await bisClick(t,e))return;
     const jp=t.closest("[data-jump]");if(jp){e.preventDefault();jump(jp.dataset.jump);return;}
+    const rmb=t.closest("[data-remember]");if(rmb&&rmb.dataset.tid){lastTeamSet(rmb.dataset.tid);quickPick=null;}
     if(act){
       const a=act.dataset.act;
       if(a==="openManage"){e.preventDefault();go("manage",act.dataset.tid);return;}
       if(a==="openTeam"){e.preventDefault();go("team",act.dataset.tid);return;}
       if(a==="openBis"){e.preventDefault();bisTab="mine";go("mod",act.dataset.tid);return;}
+      if(a==="qpick"){e.preventDefault();const k=act.dataset.pick;quickPick=quickPick===k?null:k;render();
+        const f=quickPick&&document.querySelector("#qpick .qp");if(f)f.focus();else{const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();}return;}
+      if(a==="qpickClose"){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();return;}
       if(a==="membersToggle"){membersOpen=!membersOpen;render();const b=document.querySelector('[data-act="membersToggle"]');if(b)b.focus();return;}
       if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
       if(a==="glogin"){await signInWithPopup(auth,new GoogleAuthProvider());return;}
@@ -1610,6 +1636,7 @@ document.addEventListener("click",async e=>{
     }
   }catch(e2){console.error(e2);toast(e2&&e2.code==="permission-denied"?"沒有權限執行這個動作":"操作失敗，請再試一次");}
 });
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&quickPick){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();}});
 document.addEventListener("change",async e=>{
   const t=e.target;
   try{
