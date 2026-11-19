@@ -126,7 +126,10 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 [data-skin="cozy"] .mods{gap:14px}
 [data-skin="cozy"] .mod{padding:18px}
 [data-skin="cozy"] .slot{border:0;border-top:5px solid var(--rc);border-radius:18px;box-shadow:var(--shadow-sm)}
-[data-skin="cozy"] .person{border:0;background:var(--surface2)}
+[data-skin="cozy"] .others .person{border:0;background:var(--surface2)}
+/* 出席調查的回覆名單：已回覆（綠）／未回覆（虛線） */
+[data-skin="cozy"] .people .person.yes{background:var(--sage);color:var(--sage-ink);border-color:transparent}
+[data-skin="cozy"] .people .person.no{background:transparent;color:var(--muted);border-color:var(--line)}
 [data-skin="cozy"] .evi{border:0;border-left:0;border-radius:16px;background:var(--surface2);padding:12px 14px}
 [data-skin="cozy"] .evi:hover{background:var(--peach)}
 [data-skin="cozy"] .evi .evk{color:var(--peach-ink);background:var(--peach);border-radius:var(--r-pill);padding:0 8px}

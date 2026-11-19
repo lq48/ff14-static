@@ -236,6 +236,17 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .tip .tl{margin-top:4px}
 .tip .tl b{display:inline-block;min-width:3.2em;font-weight:700}
 .tip .tn{opacity:.7}
+/* Phase 2：個人狀態列、送出回饋、團長提醒 */
+.mystat{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:12px}
+.mprog{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:700}
+.mprog .bar{display:inline-block;width:90px;height:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.mprog .bar i{display:block;height:100%;background:var(--heal,#2E8B57);border-radius:inherit}
+.mprog.wide{display:flex;margin:0 0 10px}.mprog.wide .bar{flex:1;width:auto}
+.missline{margin:0 0 10px;font-size:14px}.missline b{margin-right:8px}.missline.done{color:var(--heal,#2E8B57);font-weight:700}
+.savebar .state.ok{color:var(--ink);font-weight:500}
+.savebar .okmark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--heal,#2E8B57);color:#fff;font-size:12px;font-weight:900;margin-right:4px}
+.dcnote{flex-basis:100%;display:grid;gap:2px;font-size:12.5px;color:var(--muted)}
+.besthint{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
 </style>
 <link rel="stylesheet" href="cozy.css?v=5">
 </head>
@@ -386,7 +397,7 @@ const canManageSurvey=sv=>!!sv&&(isOwner||(!!sv.tid&&leadTids.includes(sv.tid)))
 let surveys=[],resps={},teams=[],curSid=null,tab="fill",firstLoad=true;
 let draft={},dirty=false,draftKey=null,myMember=null,changingName=false;
 let noneOpen=false,noneText="";
-let postTag=true,posting=false;
+let postTag=true,posting=false,justSaved=0;
 let dragMode=false,picked=null,saving=false,leaveArmed=0;
 let fHol=new Set(),fMembers=[],fEvents=[];
 const armed={};
@@ -411,6 +422,26 @@ function armedTwice(key,btn,label){if(armed[key]&&Date.now()-armed[key]<4000)ret
 function confirmLeave(){if(!dirty)return true;if(Date.now()-leaveArmed<4000)return true;leaveArmed=Date.now();toast("還有未儲存的變更，再按一次放棄");return false;}
 function showErr(e){console.error(e);toast(e&&e.code==="permission-denied"?"讀取被拒絕，請確認 Firestore 規則已更新並發布":"讀取資料失敗");if(e&&e.code==="permission-denied"&&window.__loadHelp&&!$("#loadingBox").hidden)window.__loadHelp("rules");}
 function selectSurvey(id){curSid=id;if(id)store.set("ff14-last",id);dirty=false;picked=null;changingName=false;syncDraft();renderAll();window.scrollTo({top:0});}
+
+/* ---------- 回覆狀況（個人／團長共用） ---------- */
+function replyStat(sv){const R=surveyResps(sv.id),keys=new Set(memOf(sv).map(m=>m.k));const yes=Object.keys(R).filter(k=>keys.has(k));
+  return{R,yes,total:memOf(sv).length,missing:memOf(sv).filter(m=>!yes.includes(m.k))};}
+const hoursOf=r=>Object.values((r&&r.slots)||{}).reduce((a,x)=>a+(x?x.length:0),0)/2;
+function agoText(t){if(!t)return"";const m=Math.round((Date.now()-t)/6e4);if(m<1)return"剛剛";if(m<60)return m+" 分鐘前";const h=Math.round(m/60);if(h<24)return h+" 小時前";const d=new Date(t);return(d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+/* 「發布到 DC」：記在這台裝置，避免短時間內重複 tag 大家 */
+const DC_COOL=6*36e5;
+const dcLastGet=sid=>+(store.get("ff14-dcpost-"+sid)||0);
+const dcLastSet=sid=>store.set("ff14-dcpost-"+sid,String(Date.now()));
+/* 標題下方的個人狀態列：我回覆了沒、目前幾人回覆、還能不能改 */
+function mystatHTML(sv){
+  const st=replyStat(sv),k=myKeyFor(sv),r=k&&st.R[k],pct=st.total?Math.round(st.yes.length/st.total*100):0;
+  let me="";
+  if(k)me=r?'<span class="stp good">你已回覆'+(r.updatedAt?'・'+agoText(r.updatedAt):'')+'</span>'+(hoursOf(r)?'':'<span class="stp">你這次都無法參與</span>')
+           :'<span class="stp warm">你還沒回覆</span>';
+  const open=sv.closed?'<span class="stp">已截止，只能查看</span>':'<span class="stp info">開放填寫中・團長截止前都能修改</span>';
+  const go=!sv.closed&&k&&tab!=="fill"?'<button class="btn sm primary" data-act="goFill">'+(r?'修改我的回覆':'去填寫')+'</button>':'';
+  return'<div class="mystat">'+me+open+'<span class="mprog" title="'+st.yes.length+' / '+st.total+'"><span class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></span>'+st.yes.length+' / '+st.total+' 人已回覆</span>'+go+'</div>';
+}
 
 /* ---------- 草稿 ---------- */
 function syncDraft(){
@@ -465,7 +496,7 @@ function renderHero(){
     '<h1>'+esc(sv.title||"出席調查")+(sv.closed?'<span class="closedtag">已截止</span>':'')+'</h1>'+
     '<div class="range">'+md(a)+' '+WD[wd(a)]+' 到 '+md(b)+' '+WD[wd(b)]+'，共 '+sv.dates.length+' 天，'+memOf(sv).length+' 位隊員</div>'+
     (eventsOf(sv).length?'<div class="evnote"><b>既定活動</b>　'+eventsOf(sv).map(e=>md(e.d)+' '+WD[wd(e.d)]+' '+evTime(e)+' '+esc(e.label)).join('；')+'</div>':'')+
-    (sv.note?'<p class="note">'+esc(sv.note)+'</p>':'')+'</div>';
+    (sv.note?'<p class="note">'+esc(sv.note)+'</p>':'')+mystatHTML(sv)+'</div>';
 }
 function renderTabs(){
   const has=!!cur();
@@ -533,6 +564,8 @@ function updateSave(){
   const has=surveyResps(curSid)[myMember];
   let n=0;for(const d in draft)n+=draft[d].size;
   if(dirty){st.className="state dirty";st.textContent=n?"有未儲存的變更（已勾 "+(n/2)+" 小時）":"有未儲存的變更（沒勾任何時間，儲存後會記為此時段皆無法參與）";}
+  else if(has&&justSaved&&Date.now()-justSaved<10*6e4){const s=replyStat(cur());st.className="state ok";
+    st.innerHTML='<span class="okmark" aria-hidden="true">✓</span> 已送出'+(n?'，共 '+(n/2)+' 小時':'：此時段皆無法參與')+'。目前 '+s.yes.length+' / '+s.total+' 人已回覆 <button class="linkbtn" data-act="goResults">看大家的結果</button>';}
   else{st.className="state";st.textContent=has?(n?"已儲存，共 "+(n/2)+" 小時":"已回覆：此時段皆無法參與"+(has.note?"（"+has.note+"）":"")):"還沒送出";}
   $("#saveBtn").disabled=saving;
 }
@@ -552,7 +585,7 @@ async function postStatus(){
     const idToken=await authUser.getIdToken();
     const r=await fetch(NOTIFY_URL.replace(/\/+$/,"")+"/status",{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sid:curSid,idToken,tag:postTag})});
     const j=await r.json().catch(()=>({}));
-    if(j.ok)toast("已發布到 Discord"+(j.tagged?"，tag 了 "+j.tagged+" 人":""));
+    if(j.ok){dcLastSet(curSid);toast("已發布到 Discord"+(j.tagged?"，tag 了 "+j.tagged+" 人":""));}
     else toast("發布失敗："+(j.error||("HTTP "+r.status)));
   }catch(err){console.error(err);toast("發布失敗：連不到提醒機器人");}
   posting=false;renderResults();
@@ -568,7 +601,7 @@ async function save(note){
     const data={slots:serialize(),updatedAt:Date.now()};
     if(note)data.note=String(note).slice(0,100);
     await setDoc(doc(db,"surveys",curSid,"responses",myMember),data);
-    dirty=false;toast("已儲存");notifyWorker(curSid);
+    dirty=false;justSaved=Date.now();toast("已儲存");notifyWorker(curSid);renderHero();
   }catch(err){console.error(err);toast(err&&err.code==="permission-denied"?"無法儲存：調查可能已截止":"儲存失敗，請稍後再試");}
   saving=false;updateSave();
 }
@@ -599,9 +632,13 @@ function renderResults(){
   ranges.sort((x,y)=>(y.b-y.a)-(x.b-x.a));
   const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
 
-  let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2><div class="people">'+
-    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&canManageSurvey(sv)?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div></div>'+
-    (canManageSurvey(sv)&&NOTIFY_URL?'<div class="postdc"><label><input type="checkbox" id="postTag"'+(postTag?' checked':'')+'> 順便 tag 還沒填的人</label><button class="btn sm primary" data-act="postdc"'+(posting?' disabled':'')+'>'+(posting?'發送中…':'發布目前狀況到 DC')+'</button></div>':'')+
+  const missing=MEM.filter(m=>!responders.includes(m.k)),pctR=TOTAL?Math.round(responders.length/TOTAL*100):0;
+  let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2>'+
+    '<div class="mprog wide"><span class="bar" aria-hidden="true"><i style="width:'+pctR+'%"></i></span>'+pctR+'%</div>'+
+    (missing.length?'<p class="missline"><b>還沒回覆（'+missing.length+'）</b>'+esc(missing.map(m=>m.n).join("、"))+'</p>':'<p class="missline done">大家都回覆了 🎉</p>')+
+    '<div class="people">'+
+    MEM.map(m=>{const yes=responders.includes(m.k);const none=yes&&!Object.values((surveyResps(sv.id)[m.k]||{}).slots||{}).some(a=>a&&a.length);const note=none&&(surveyResps(sv.id)[m.k]||{}).note;return'<span class="person '+(yes?'yes':'no')+'"'+(note?' title="'+esc(note)+'"':'')+'>'+esc(m.n)+(none?'<span class="done">（無法參與）</span>':'')+(yes&&canManageSurvey(sv)?'<button data-remove="'+esc(m.k)+'" title="清除這位的回覆">清除</button>':'')+'</span>';}).join("")+'</div>'+
+    (canManageSurvey(sv)&&NOTIFY_URL?dcBoxHTML(sv,missing):'')+
     '</div>';
   const outs=MEM.filter(m=>{const r=surveyResps(sv.id)[m.k];return r&&responders.includes(m.k)&&!Object.values(r.slots||{}).some(x=>x&&x.length);});
   if(outs.length)side+='<div class="panel"><h2>此時段皆無法參與（'+outs.length+'）</h2><ul class="reasons">'+outs.map(m=>{const n=(surveyResps(sv.id)[m.k]||{}).note;return'<li><b>'+esc(m.n)+'</b>'+(n?'：'+esc(n):'<span class="muted">（沒有填原因）</span>')+'</li>';}).join("")+'</ul></div>';
@@ -609,7 +646,8 @@ function renderResults(){
     (max===0?'<p class="muted">還沒有人勾選時間。</p>':'<ul class="ranges">'+top.map(r=>{
       const miss=MEM.filter(m=>!r.people.includes(m.k)).map(m=>m.n);
       return'<li><div class="when'+(hol.has(r.d)?' hol':'')+'">'+md(r.d)+' '+WD[wd(r.d)]+'　'+slotT(r.a)+'–'+(r.b===48?'24:00':slotT(r.b))+'</div><div class="muted" style="font-size:13px">'+((r.b-r.a)/2)+' 小時</div>'+(miss.length?'<div class="miss">缺：'+esc(miss.join("、"))+'</div>':'')+'</li>';
-    }).join("")+'</ul>'+(ranges.length>8?'<p class="muted" style="font-size:13px;margin:8px 0 0">只列出最長的 8 段。</p>':''))+'</div>';
+    }).join("")+'</ul>'+(ranges.length>8?'<p class="muted" style="font-size:13px;margin:8px 0 0">只列出最長的 8 段。</p>':'')+
+    '<p class="besthint">這是大家勾選的空檔統計，<b>不代表已經確定開團</b>。'+(canManageSurvey(sv)?'確定時間後，可以到「發起與管理調查」把它登記成既定活動，大廳就會顯示。':'實際開團時間以團長公告為準。')+'</p>')+'</div>';
   let det='<div class="panel detail"><h2>這個時段誰有空</h2>';
   if(picked&&sv.dates.includes(picked.d)){
     const s=who[picked.d+"|"+picked.i]||new Set();
@@ -625,6 +663,19 @@ function renderResults(){
     if(n){c.textContent=n;const pct=Math.round(n/TOTAL*88);c.style.setProperty("--pct",pct+"%");if(pct>50)c.classList.add("strong");if(n===TOTAL)c.classList.add("full");}
     if(picked&&picked.d===c.dataset.date&&picked.i===+c.dataset.slot)c.classList.add("picked");
   });
+}
+/* 團長：發布目前狀況到 Discord（沿用 Worker 的 /status），會 tag 誰、上次什麼時候發過都先講清楚 */
+function dcBoxHTML(sv,missing){
+  const last=dcLastGet(sv.id),recent=last&&Date.now()-last<DC_COOL;
+  const canTag=missing.filter(m=>m.did),noDid=missing.filter(m=>!m.did);
+  const tagOn=postTag&&missing.length>0;
+  return'<div class="postdc">'+
+    (missing.length?'<label><input type="checkbox" id="postTag"'+(postTag?' checked':'')+'> 順便 tag 還沒填的人</label>':'<span class="muted" style="font-size:13px;margin-right:auto">大家都回覆了，發布時不會 tag 任何人</span>')+
+    '<button class="btn sm primary" data-act="postdc"'+(posting?' disabled':'')+'>'+(posting?'發送中…':recent?'再發布一次到 DC':'發布目前狀況到 DC')+'</button>'+
+    '<div class="dcnote">'+
+      (tagOn?(canTag.length?'會 tag：'+esc(canTag.map(m=>m.n).join("、")):'還沒回覆的人都沒有設定 Discord ID，不會 tag 到人')+(noDid.length&&canTag.length?'（'+esc(noDid.map(m=>m.n).join("、"))+' 沒有 Discord ID，不會被 tag）':''):'')+
+      (last?'<span>這台裝置上次發布：'+agoText(last)+(recent?'。6 小時內再發，需要按兩次確認，避免大家被重複 tag。':'')+'</span>':'')+
+    '</div></div>';
 }
 async function removeResp(k,btn){
   if(!canManageSurvey(cur())||!armedTwice("r"+k,btn,"確定？"))return;
@@ -882,10 +933,11 @@ function renderSList(force){
 
 /* ---------- 事件 ---------- */
 function setupEvents(){
-  $("#tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;tab=t.dataset.tab;renderTabs();});
+  $("#tabs").addEventListener("click",e=>{const t=e.target.closest(".tab");if(!t)return;tab=t.dataset.tab;renderTabs();renderHero();});
   $("#hero").addEventListener("click",e=>{
     const c=e.target.closest("[data-sid]");if(c){if(!confirmLeave())return;selectSurvey(c.dataset.sid);return;}
     const sw=e.target.closest('[data-act="switch"]');if(sw){if(!confirmLeave())return;if(tab==="manage")tab="fill";selectSurvey(null);}
+    if(e.target.closest('[data-act="goFill"]')){tab="fill";renderTabs();renderHero();const g=$("#fillGrid");if(g)g.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});}
   });
   $("#foot").addEventListener("click",async e=>{
     const a=e.target.closest("[data-act]");if(!a)return;
@@ -924,6 +976,7 @@ function setupEvents(){
     if(act){
       const a=act.dataset.act;
       if(a==="save")save();
+      else if(a==="goResults"){tab="results";renderTabs();renderHero();window.scrollTo({top:0});}
       else if(a==="changeName"){changingName=true;renderFill();}
       else if(a==="cancelName"){changingName=false;renderFill();}
       else if(a==="drag"){dragMode=!dragMode;renderFill();}
@@ -952,7 +1005,7 @@ function setupEvents(){
   $("#resultsView").addEventListener("click",e=>{
     const rm=e.target.closest("[data-remove]");if(rm){removeResp(rm.dataset.remove,rm);return;}
     if(e.target.id==="postTag"){postTag=e.target.checked;return;}
-    if(e.target.closest('[data-act="postdc"]')){postStatus();return;}
+    const pb=e.target.closest('[data-act="postdc"]');if(pb){const last=dcLastGet(curSid);if(last&&Date.now()-last<DC_COOL&&!armedTwice("dc"+curSid,pb,"確定再發一次？"))return;postStatus();return;}
     const c=e.target.closest("td.cell");if(!c||c.classList.contains("ev"))return;
     picked={d:c.dataset.date,i:+c.dataset.slot};renderResults();
   });
