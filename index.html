@@ -784,7 +784,8 @@ function todoPanelHTML(){
 /* 常用功能 */
 function quickHTML(){
   const mine=statics.filter(s=>myTeamIds().includes(s.id)),one=mine.length===1?mine[0]:null;
-  const bisSt=mine.find(s=>canSee("bis",s)),mitSt=mine.find(s=>canSee("mit",s));
+  /* 與 firestore.rules 一致：BiS 看 bisCanView（團長要有 modules 權限）；減傷軸看 mitCanView（列在 leaders 的團長都能看） */
+  const bisSt=mine.find(s=>canSee("bis",s)),mitSt=mine.find(s=>canSee("mit",s)||!!leaderOf(s));
   const sv=svs.find(x=>svOpenFor(x)&&mySvKey(x));
   const T=[
     {ico:"check",c:"sage",n:"出席調查",d:sv?"「"+(sv.title||"出席調查")+"」":"填寫可以出團的時段",href:sv?"schedule.html?s="+encodeURIComponent(sv.id):"schedule.html"},
