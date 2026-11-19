@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=8">
+<link rel="stylesheet" href="cozy.css?v=9">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -326,11 +326,11 @@ a{color:var(--accent)}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 import { initAwayMini } from "./away-mini.js?v=gr3";
-import { startIcons, icon } from "./icons.js?v=4";
-import { mountNav, setNavUser, setNavActive } from "./nav.js?v=1";
+import { startIcons, icon } from "./icons.js?v=5";
+import { mountNav, setNavUser, setNavActive } from "./nav.js?v=2";
 import { undoToast } from "./ui.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- 常數 ---------- */
@@ -412,7 +412,7 @@ let users={},statics=[],mem={},curTid=null,view="lobby",mgTab="";
 let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null,phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
 let links={},linkFilter="全部",linkDraft=null,linkSrc={};
-let svs=[],svRs={},svSubs={},membersOpen=false,pendingJump=null,jumpUntil=0,quickPick=null;
+let recentMems=[],memState="loading",svs=[],svRs={},svSubs={},membersOpen=false,pendingJump=null,jumpUntil=0,quickPick=null;
 /* 表單有改動但還沒儲存（靈魂水晶、分享連結、建立固定團、團隊資料、BiS 本期設定） */
 let formDirty=false,leaveArmedAt=0;
 const FORM_SEL=".form,.phform,#tgtList";
@@ -470,6 +470,9 @@ function subscribe(){
   unsub.push(()=>{Object.values(evSubs).forEach(f=>f());evSubs={};evRs={};});
   unsub.push(onSnapshot(collection(db,"surveys"),s=>{svs=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>Array.isArray(x.dates)&&x.dates.length);syncSvRs();render(true);},e=>{console.warn("surveys",e&&e.code);svs=[];}));
   unsub.push(()=>{Object.values(svSubs).forEach(f=>f());svSubs={};svRs={};});
+  /* 飛地回憶：只讀最新 3 筆（含小縮圖）；規則還沒發布時安靜顯示「準備中」 */
+  unsub.push(onSnapshot(query(collection(db,"memories"),orderBy("date","desc"),limit(3)),s=>{recentMems=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));memState="ok";render(true);},
+    e=>{console.warn("memories",e&&e.code);recentMems=[];memState=e&&e.code==="permission-denied"?"denied":"error";render(true);}));
   unsub.push(onSnapshot(collectionGroup(db,"members"),s=>{
     mem={};s.docs.forEach(d=>{const p=d.ref.parent.parent;if(!p)return;(mem[p.id]||(mem[p.id]={}))[d.id]=d.data();});ready.mem=true;render(true);
   },err));
@@ -870,6 +873,17 @@ function agendaPanelHTML(){
     '<p class="ag-foot">接下來 14 天。固定團時間以團長登記的既定活動為準，出席調查裡最多人有空的時段不會當成開團時間。完整內容在 <a href="schedule.html">出席調查</a>・<a href="events.html">揪團活動</a>・<a href="away.html">請假行事曆</a>。</p></section>';
 }
 
+/* 飛地回憶：大廳只放最新 3 筆，完整內容在 memories.html */
+const MEM_KIND={first:"首通",prog:"開荒紀念",gather:"團聚",festival:"節日",daily:"日常",other:"其他"};
+function memoriesPanelHTML(){
+  const head='<div class="panel" id="memories"><div class="phead"><h2>飛地回憶</h2><div class="phead-acts"><a class="btn sm primary" href="memories.html?new=1">＋ 新增回憶</a><a class="btn sm" href="memories.html">全部回憶</a></div></div>';
+  if(memState==="loading")return head+'<p class="muted" style="margin:0">載入中…</p></div>';
+  if(memState!=="ok")return head+'<p class="muted" style="margin:0">回憶錄還在準備中。'+(isOwner&&memState==="denied"?'（需要先在 Firebase 發布新版規則）':'')+'</p></div>';
+  if(!recentMems.length)return head+'<div class="empty-state"><p class="big">還沒有回憶</p><p>下次團聚或首通，拍張合照收進來吧。</p></div></div>';
+  return head+'<div class="mem-mini">'+recentMems.map(m=>{const d=String(m.date||"").split("-");
+    return'<a class="mm" href="memories.html?m='+encodeURIComponent(m.id)+'"><span class="mm-ph">'+(m.thumb?'<img src="'+esc(m.thumb)+'" alt="" loading="lazy">':icon("photo",24))+'</span>'+
+      '<span class="mm-b"><span class="mm-m"><b>'+(d.length===3?(+d[1])+'/'+(+d[2]):'')+'</b><span class="ag-k mk-'+esc(m.kind)+'">'+esc(MEM_KIND[m.kind]||"其他")+'</span></span><span class="mm-t">'+esc(m.title||"")+'</span></span></a>';}).join("")+'</div></div>';
+}
 /* 飛地成員：預設精簡顯示，可展開看完整靈魂水晶 */
 function membersPanelHTML(){
   const ids=Object.keys(users).sort((a,b)=>(a===me.uid?-1:b===me.uid?1:nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")));
@@ -892,7 +906,7 @@ function lobbyHTML(){
     '<div class="panel" id="away"><div class="phead"><h2>請假行事曆</h2><div class="phead-acts"><a class="btn sm primary" href="away.html?new=1">＋ 我要請假</a><a class="btn sm" href="away.html">完整行事曆</a></div></div><div id="awayMini" class="am"><p class="muted" style="margin:0">載入中…</p></div></div>'+
     '<div class="panel" id="teams"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
       (statics.length?'<div class="teams">'+statics.map(teamCardHTML).join("")+'</div>':'<p class="muted">還沒有固定團。</p>')+'</div>'+
-    '<h2 class="sec-title">飛地的大家</h2>'+groupFigure()+
+    '<h2 class="sec-title">飛地的大家</h2>'+groupFigure()+memoriesPanelHTML()+
     membersPanelHTML()+
     linksPanelHTML();
 }

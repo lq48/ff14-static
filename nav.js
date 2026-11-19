@@ -1,12 +1,12 @@
 /* =====================================================================
    全站共用導覽：桌面版頂部列＋手機版底部導覽＋使用者選單
    用法（每頁一行）：
-     import { mountNav } from "./nav.js?v=1";
+     import { mountNav } from "./nav.js?v=2";
      mountNav({ page:"events", auth });          // auth 可省略（例如莫古試算）
    大廳另外用 setNavUser() 帶入暱稱，用 setNavActive() 切換目前所在位置。
    這個模組只負責顯示與登出，不會讀寫 Firestore。
    ===================================================================== */
-import { icon } from "./icons.js?v=4";
+import { icon } from "./icons.js?v=5";
 import { OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
 const FB_AUTH="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"; // 只有傳入 auth 的頁面才會載入
 
@@ -15,6 +15,7 @@ const ITEMS=[
   {k:"team",  href:"index.html#teams", ico:"team",  n:"固定團", full:"固定團"},
   {k:"events",href:"events.html",      ico:"event", n:"揪團",   full:"揪團活動"},
   {k:"away",  href:"away.html",        ico:"cal",   n:"請假",   full:"請假日曆"},
+  {k:"memories",href:"memories.html", ico:"photo", n:"回憶",   full:"回憶", desk:true}, // 只在桌面導覽；手機從大廳進入
   {k:"tools", href:"index.html#tools", ico:"link",  n:"工具",   full:"工具"},
 ];
 const S={page:"",active:"",auth:null,user:null,over:null,open:false,opts:{},bottom:true};
@@ -50,7 +51,7 @@ export function setNavUser(over){const k=JSON.stringify(over||null);if(k===S.ove
 export function setNavActive(k){if(S.active===k)return;S.active=k;paint();}
 
 function navLinks(cls){
-  return ITEMS.map(it=>{const cur=it.k===S.active;
+  return ITEMS.filter(it=>cls!=="b"||!it.desk).map(it=>{const cur=it.k===S.active;
     return '<a href="'+it.href+'"'+(cur?' aria-current="page"':'')+' data-navk="'+it.k+'">'+
       (cls==="b"?'<span class="bi">'+icon(it.ico,22)+'</span><span>'+it.n+'</span>':icon(it.ico,18)+'<span>'+it.full+'</span>')+'</a>';}).join("");
 }

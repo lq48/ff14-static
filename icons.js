@@ -22,6 +22,7 @@ const P={
   down:'<path d="M6 9l6 6 6-6"/>',
   refresh:'<path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  photo:'<path d="M15 8h.01"/><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 16l5-5c.93-.9 2.07-.9 3 0l5 5"/><path d="M14 14l1-1c.93-.9 2.07-.9 3 0l3 3"/>',
 };
 /* 標題關鍵字 → 圖示、底色 */
 const RULES=[
@@ -29,6 +30,7 @@ const RULES=[
   [/工具|網站|連結/,"link","sage"],[/減傷/,"shield","sky"],[/出席|調查/,"check","sage"],[/攻略/,"book","butter"],
   [/BiS|配裝/,"sword","peach"],[/復盤|紀錄/,"note","sky"],[/莫古|收集|道具/,"gift","butter"],[/目標|進度/,"target","peach"],
   [/權限/,"key","butter"],
+  [/回憶/,"photo","peach"],
 ];
 const svg=(k,size)=>'<svg class="svgi" viewBox="0 0 24 24" width="'+(size||18)+'" height="'+(size||18)+'" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+(P[k]||"")+'</svg>';
 /* 其他模組直接取用：icon("cal")、icon("team",22) */

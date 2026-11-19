@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="skin.js?v=2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>飛地回憶錄｜光之戰士飛地</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23DD7655%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.1%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21 12l-9-9-9 9h2v7a2 2 0 0 0 2 2h6%27/%3E%3Cpath d=%27M9 21v-6a2 2 0 0 1 2-2h2%27/%3E%3Cpath d=%27M18 22l3.35-3.284a2.143 2.143 0 0 0 .005-3.071 2.242 2.242 0 0 0-3.129-.006l-.224.22-.223-.22a2.242 2.242 0 0 0-3.128-.006 2.143 2.143 0 0 0-.006 3.071L18 22z%27/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#E8ECF3; --surface:#F7F9FC; --surface2:#EDF1F7; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
+  --accent:#2F63C9; --accent-ink:#FFFFFF; --danger:#C23A4F; --gold:#B8860B;
+  --yes:#2E8B57; --yes-bg:#DDF0E4; --mb:#B7791F; --mb-bg:#F8EBD3; --no:#5F6B7D; --no-bg:#E3E7EE;
+  --tank:#2F63C9; --heal:#2E8B57; --dps:#B5452F;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111622; --surface:#192031; --surface2:#202940; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+    --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --gold:#E9BE4B;
+    --yes:#5FCB8E; --yes-bg:#1C3328; --mb:#F0B04A; --mb-bg:#3A2E18; --no:#97A0B3; --no-bg:#262E40;
+    --tank:#6E9BFF; --heal:#5FCB8E; --dps:#FF8F75;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111622; --surface:#192031; --surface2:#202940; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+  --accent:#6E9BFF; --accent-ink:#0D1320; --danger:#FF7D8F; --gold:#E9BE4B;
+  --yes:#5FCB8E; --yes-bg:#1C3328; --mb:#F0B04A; --mb-bg:#3A2E18; --no:#97A0B3; --no-bg:#262E40;
+  --tank:#6E9BFF; --heal:#5FCB8E; --dps:#FF8F75;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+.back{font-size:13px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--accent)}
+h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:26px;margin:4px 0 2px;line-height:1.25}
+h2{font-size:16px;margin:0 0 10px}
+.sub{font-size:13px;color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger)}
+.btn.sm{min-height:30px;padding:3px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:0 0 14px}
+.f{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:36px;width:100%}
+textarea.f{min-height:110px;resize:vertical;line-height:1.6}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fld>span{font-size:12.5px;color:var(--muted);font-weight:700}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:12.5px;margin:4px 0 0}
+.muted{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;min-height:32px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60;max-width:90vw}
+
+/* ===== 回憶錄：相簿／旅行手帳 ===== */
+.wrap{max-width:1000px}
+.intro{margin:0 0 14px;color:var(--muted);font-size:14px}
+.kinds{margin:0 0 18px}
+@media (max-width:640px){.kinds{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.kinds .chip{flex:none}}
+.cnt2{display:block}
+.yr{display:flex;align-items:center;gap:10px;margin:26px 0 6px;font-size:22px;font-weight:900;letter-spacing:.04em}
+.yr::after{content:"";flex:1;height:1px;background:var(--line)}
+.mo{margin:14px 0 10px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.12em}
+.album{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px 16px}
+.mcard{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);background:var(--surface);border-radius:14px;padding:10px 10px 14px;box-shadow:0 1px 2px rgba(80,50,30,.12),0 10px 24px -18px rgba(80,50,30,.5);border:1px solid var(--line)}
+.mcard:hover{box-shadow:0 2px 4px rgba(80,50,30,.14),0 16px 30px -18px rgba(80,50,30,.55)}
+.ph{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph.none{aspect-ratio:16/5;background:repeating-linear-gradient(135deg,var(--surface2) 0 10px,transparent 10px 20px)}
+.ph.none .nophoto{flex-direction:row}
+.ph .nophoto{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px}
+.ph .cnt{position:absolute;right:8px;bottom:8px;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff}
+.mmeta{display:flex;align-items:center;gap:8px;margin:12px 4px 4px;font-size:12.5px;color:var(--muted)}
+.stamp{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink)}
+.kd{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 9px;background:var(--surface2);color:var(--muted)}
+.kd.k-first{background:var(--peach,#F8D9C6);color:var(--peach-ink,#9A3E24)}
+.kd.k-prog{background:var(--butter,#F7E6B5);color:var(--butter-ink,#7A5810)}
+.kd.k-gather{background:var(--sage,#D7E6DA);color:var(--sage-ink,#36634D)}
+.kd.k-festival{background:var(--sky,#D9E4F0);color:var(--sky-ink,#35587E)}
+.mtitle{margin:0 4px;font-size:16px;font-weight:900;line-height:1.35}
+.mdesc{margin:4px 4px 0;font-size:13.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.avs{display:flex;align-items:center;margin:10px 4px 0}
+.avs img{width:24px;height:24px;border-radius:50%;border:2px solid var(--surface);margin-left:-6px;background:var(--surface2)}
+.avs img:first-child{margin-left:0}
+.avs span{font-size:12px;color:var(--muted);margin-left:6px}
+.more{display:flex;justify-content:center;margin:24px 0 8px}
+/* 首通里程碑 */
+.miles{list-style:none;margin:0 0 6px;padding:4px 0 8px;display:flex;gap:0;overflow-x:auto}
+.miles li{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;min-width:120px;position:relative;padding-top:18px;text-align:center}
+.miles li::before{content:"";position:absolute;top:7px;left:0;right:0;height:2px;background:var(--line)}
+.miles li::after{content:"";position:absolute;top:2px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--peach-ink,#9A3E24);box-shadow:0 0 0 3px var(--surface)}
+.miles a{color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;padding:0 8px}
+.miles small{font-size:12px;color:var(--muted)}
+/* 詳情 */
+.mdet{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 16px}
+.gal{display:grid;gap:8px}
+.gal .main{border-radius:10px;overflow:hidden;background:var(--surface2);min-height:180px;display:flex;align-items:center;justify-content:center}
+.gal .main img{width:100%;height:auto;display:block;max-height:72vh;object-fit:contain;background:#000}
+.gal .rest{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gal .rest button{padding:0;border:0;border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:var(--surface2)}
+.gal .rest img{width:100%;height:100%;object-fit:cover;display:block}
+.gal .rest button[aria-current="true"]{outline:3px solid var(--accent);outline-offset:-3px}
+.dbody{padding:14px 6px 4px;display:grid;gap:12px}
+.dbody h1{margin:0}
+.dmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+.ddesc{white-space:pre-wrap;font-size:15px;line-height:1.75;margin:0}
+.note{position:relative;margin:4px 0;padding:14px 16px 14px 18px;border-radius:4px 14px 14px 4px;background:var(--butter,#F7E6B5);color:var(--butter-ink,#5f4610);font-size:15px;line-height:1.7;white-space:pre-wrap;box-shadow:inset 4px 0 0 rgba(0,0,0,.08)}
+.note b{display:block;font-size:12px;opacity:.8;margin-bottom:2px}
+.people{display:flex;flex-wrap:wrap;gap:6px}
+.people span{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;background:var(--surface2);font-size:13px}
+.people img{width:24px;height:24px;border-radius:50%}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;padding-top:6px;border-top:1px dashed var(--line)}
+.spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:sp .9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+/* 表單 */
+.kseg{display:flex;flex-wrap:wrap;gap:6px}
+.kseg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;min-height:36px;padding:4px 14px;font-weight:700;color:var(--muted)}
+.kseg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+.cnt2{font-size:12px;color:var(--muted);text-align:right}
+.phs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.pitem{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:4/3;background:var(--surface2)}
+.pitem img{width:100%;height:100%;object-fit:cover;display:block}
+.pitem .cv{position:absolute;left:6px;top:6px;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff}
+.pitem .pb{position:absolute;bottom:6px;display:flex;gap:4px;right:6px}
+.pitem .pb button{border:0;border-radius:999px;min-height:30px;min-width:30px;padding:0 10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px}
+.padd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--line);border-radius:10px;aspect-ratio:4/3;color:var(--muted);cursor:pointer;font-size:13px;background:transparent}
+.padd:hover{border-color:var(--accent);color:var(--accent)}
+.pick{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow:auto;padding:2px}
+.pick button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px 3px 3px;min-height:34px;font-size:13px}
+.pick button img{width:26px;height:26px;border-radius:50%}
+.pick button[aria-pressed="true"]{background:var(--sage,#D7E6DA);border-color:transparent;color:var(--sage-ink,#36634D);font-weight:700}
+.status{font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center;margin-top:8px}
+.err{color:var(--danger)}
+</style>
+<link rel="stylesheet" href="cozy.css?v=9">
+</head>
+<body>
+<header class="sitebar" id="sitebar"></header>
+<div class="wrap" id="app"><div class="loadbox" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在翻開回憶錄…</span></div></div>
+<script type="module">
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { mountNav } from "./nav.js?v=2";
+import { undoToast } from "./ui.js?v=1";
+import { icon } from "./icons.js?v=5";
+import { compressFile, makeThumb } from "./photo.js?v=1";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* Discord 大頭貼失效時改用預設頭像 */
+document.addEventListener("error",e=>{const i=e.target;if(!i||i.tagName!=="IMG"||i.dataset.fb)return;const m=/cdn\.discordapp\.com\/avatars\/(\d+)\//.exec(i.src||"");if(!m)return;let n=0;try{n=Number((BigInt(m[1])>>22n)%6n);}catch(_){}i.dataset.fb="1";i.src="https://cdn.discordapp.com/embed/avatars/"+n+".png";},true);
+
+const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
+mountNav({page:"memories",auth});
+
+/* ===== 常數（要和 firestore.rules 的 validMemory 一致） ===== */
+const KINDS=[["first","首通"],["prog","開荒紀念"],["gather","團聚"],["festival","節日"],["daily","日常"],["other","其他"]];
+const KN=Object.fromEntries(KINDS);
+const LIM={title:40,desc:300,duty:40,note:200,members:24,imgs:4};
+const PAGE=24,WK="日一二三四五六";
+
+/* ===== 狀態 ===== */
+let me=null,claims={},isOwner=false,users={},statics=[],events={},mems=[],memsReady=false,memErr=null,lim=PAGE,kindF="all";
+let view={},form=null,formDirty=false,leaveAt=0,saving=false,detail=null,detailUnsub=null,imgCache={},galIdx=0,memUnsub=null,started=false;
+
+/* ===== 小工具 ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nameOf=u=>u?(u.nick||u.dcName||"未命名"):"已離開的成員";
+function avatarUrl(u){if(!u||!u.dc)return "https://cdn.discordapp.com/embed/avatars/0.png";if(u.avatar)return "https://cdn.discordapp.com/avatars/"+u.dc+"/"+u.avatar+".png?size=64";let i=0;try{i=Number((BigInt(u.dc)>>22n)%6n);}catch(_){}return "https://cdn.discordapp.com/embed/avatars/"+i+".png";}
+function toast(m){let el=$("#toast");if(!el){el=document.createElement("div");el.id="toast";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);}el.textContent=m;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{el.hidden=true;},2800);}
+const pd=n=>String(n).padStart(2,"0");
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+pd(d.getMonth()+1)+"-"+pd(d.getDate());};
+const pdate=s=>{const[a,b,c]=String(s).split("-").map(Number);return new Date(a,(b||1)-1,c||1);};
+const longDate=s=>{const d=pdate(s);return d.getFullYear()+" 年 "+(d.getMonth()+1)+" 月 "+d.getDate()+" 日（"+WK[d.getDay()]+"）";};
+const shortDate=s=>{const d=pdate(s);return(d.getMonth()+1)+"/"+d.getDate();};
+const enclave=()=>!!(me&&(claims.dc||isOwner));
+const canEdit=m=>!!(me&&m&&(isOwner||m.by===me.uid));
+const errText=e=>e&&e.code==="permission-denied"?"沒有權限（可能是資料庫規則還沒更新）":"請稍後再試";
+const sortMems=a=>a.sort((x,y)=>(y.date||"").localeCompare(x.date||"")||(y.createdAt||0)-(x.createdAt||0));
+function go(q){if(!leaveOk())return false;history.pushState(null,"","memories.html"+(q?"?"+q:""));view=readView();form=null;render();window.scrollTo(0,0);return true;}
+function readView(){const q=new URLSearchParams(location.search);return q.get("m")?{m:q.get("m")}:q.get("edit")?{edit:q.get("edit")}:q.has("new")?{nw:1}:{};}
+/* 表單沒存就離開：關分頁提醒，頁內切換要按兩次 */
+function leaveOk(){if(!form||!formDirty)return true;if(Date.now()-leaveAt<4000){formDirty=false;return true;}leaveAt=Date.now();toast("回憶還沒儲存，再按一次就放棄");return false;}
+window.addEventListener("beforeunload",e=>{if(form&&formDirty){e.preventDefault();e.returnValue="";}});
+window.addEventListener("popstate",()=>{form=null;formDirty=false;view=readView();render();});
+
+/* ===== 讀取 ===== */
+function watchMems(){
+  if(memUnsub)memUnsub();
+  memUnsub=onSnapshot(query(collection(db,"memories"),orderBy("date","desc"),limit(lim)),s=>{
+    mems=sortMems(s.docs.map(d=>({id:d.id,...d.data()})));memsReady=true;memErr=null;if(!form)render();
+  },e=>{console.error(e);memErr=e;memsReady=true;if(!form)render();});
+}
+function start(){
+  onSnapshot(collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});if(!form)render();else refreshLists();},()=>{});
+  onSnapshot(collection(db,"statics"),s=>{statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));if(!form)render();else refreshLists();},()=>{});
+  onSnapshot(collection(db,"events"),s=>{events={};s.forEach(d=>{events[d.id]=d.data();});if(form)refreshLists();},()=>{});
+  watchMems();
+}
+async function loadImg(id){
+  if(imgCache[id])return imgCache[id];
+  const s=await getDoc(doc(db,"memoryImgs",id));
+  imgCache[id]=s.exists()?(s.data().data||""):"";return imgCache[id];
+}
+function watchDetail(id){
+  if(detail&&detail.id===id)return;
+  if(detailUnsub)detailUnsub();detail={id,loading:true};galIdx=0;
+  detailUnsub=onSnapshot(doc(db,"memories",id),s=>{
+    detail=s.exists()?{id,...s.data()}:{id,missing:true};if(!form)render();
+    (detail.imgs||[]).forEach(i=>{if(imgCache[i]===undefined)loadImg(i).then(()=>{if(view.m===id&&!form)paintGallery();}).catch(()=>{imgCache[i]="";});});
+  },e=>{console.error(e);detail={id,err:e};if(!form)render();});
+}
+
+/* ===== 畫面 ===== */
+function render(){
+  const app=$("#app");
+  if(!me){app.innerHTML='<div class="empty"><p>回憶錄只有飛地成員看得到，請先登入。</p><p><a class="btn primary" href="index.html">前往首頁登入</a></p></div>';return;}
+  if(!enclave()){app.innerHTML='<div class="empty"><p>回憶錄只有用 Discord 登入的飛地成員看得到。</p></div>';return;}
+  if(view.nw||view.edit){app.innerHTML=formHTML();return;}
+  if(view.m){watchDetail(view.m);app.innerHTML=detailHTML();paintGallery();return;}
+  app.innerHTML=listHTML();
+}
+function deniedHTML(){
+  return'<div class="panel empty"><p style="font-size:16px;color:var(--ink);font-weight:700">回憶錄還在準備中</p>'+
+    (isOwner?'<p>資料庫拒絕讀取回憶錄。請到 Firebase 主控台發布新版 firestore.rules（含 memories、memoryImgs 兩段），發布後重新整理就好。</p>':'<p>總團長還在準備，晚點再來看看。</p>')+'</div>';
+}
+function cardHTML(m){
+  const n=(m.members||[]).length,av=(m.members||[]).slice(0,6).map(u=>'<img src="'+esc(avatarUrl(users[u]))+'" alt="" loading="lazy">').join("");
+  return'<a class="mcard" href="?m='+encodeURIComponent(m.id)+'" data-go="m='+esc(m.id)+'">'+
+    '<div class="ph'+(m.thumb?'':' none')+'">'+(m.thumb?'<img src="'+esc(m.thumb)+'" alt="" loading="lazy">':'<span class="nophoto">'+icon("photo",26)+'沒有照片</span>')+((m.imgs||[]).length>1?'<span class="cnt">'+m.imgs.length+' 張</span>':'')+'</div>'+
+    '<div class="mmeta"><span class="stamp">'+esc(shortDate(m.date))+'</span><span class="kd k-'+esc(m.kind)+'">'+esc(KN[m.kind]||"其他")+'</span>'+(m.kind==="first"&&m.duty?'<span>'+esc(m.duty)+'</span>':'')+'</div>'+
+    '<h3 class="mtitle">'+esc(m.title)+'</h3>'+(m.desc?'<p class="mdesc">'+esc(m.desc)+'</p>':'')+
+    (n?'<div class="avs">'+av+(n>6?'<span>+'+(n-6)+'</span>':'')+'</div>':'')+'</a>';
+}
+function listHTML(){
+  let h='<div class="top"><div><h1>飛地回憶錄</h1><div class="sub">一起走過的冒險，慢慢收進這本相簿。</div></div><a class="btn primary" href="?new=1" data-go="new=1">＋ 新增回憶</a></div>';
+  if(!memsReady)return h+'<div class="loadbox" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在翻開回憶錄…</span></div>';
+  if(memErr)return h+deniedHTML();
+  h+='<div class="chips kinds" role="group" aria-label="依類型篩選">'+[["all","全部"],...KINDS].map(([k,n])=>'<button class="chip" data-kind="'+k+'" aria-pressed="'+(kindF===k)+'">'+n+'</button>').join("")+'</div>';
+  const list=mems.filter(m=>kindF==="all"||m.kind===kindF);
+  if(kindF==="first"&&list.length){
+    const asc=list.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+    h+='<div class="panel"><h2>首通里程碑</h2><ol class="miles">'+asc.map(m=>'<li><a href="?m='+encodeURIComponent(m.id)+'" data-go="m='+esc(m.id)+'">'+esc(m.duty||m.title)+'</a><small>'+esc(m.date)+'</small></li>').join("")+'</ol><p class="hint">依團員手動記錄的首通日期排列。</p></div>';
+  }
+  if(!mems.length)return h+'<div class="panel empty"><p style="font-size:16px;color:var(--ink);font-weight:700">還沒有回憶</p><p>第一張照片，就從最近一次團聚或首通開始吧。</p><p><a class="btn primary" href="?new=1" data-go="new=1">＋ 新增第一筆回憶</a></p></div>';
+  if(!list.length)return h+'<div class="panel empty"><p>目前載入的回憶裡沒有「'+esc(KN[kindF])+'」。</p>'+(mems.length>=lim?'<button class="btn" data-a="more">載入更早的回憶</button>':'')+'</div>';
+  let y="",mo="",open=false;
+  list.forEach(m=>{const d=pdate(m.date),yy=String(d.getFullYear()),mm=(d.getMonth()+1)+" 月";
+    if(yy!==y){if(open)h+='</div>';h+='<h2 class="yr">'+yy+'</h2>';y=yy;mo="";open=false;}
+    if(mm!==mo){if(open)h+='</div>';h+='<div class="mo">'+mm+'</div><div class="album">';mo=mm;open=true;}
+    h+=cardHTML(m);});
+  if(open)h+='</div>';
+  if(mems.length>=lim)h+='<div class="more"><button class="btn" data-a="more">載入更早的回憶</button></div>';
+  return h;
+}
+function detailHTML(){
+  const back='<p><a class="back" href="memories.html" data-go="">← 回憶錄</a></p>';
+  const m=detail;
+  if(!m||m.loading)return back+'<div class="loadbox" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>載入中…</span></div>';
+  if(m.err)return back+(m.err.code==="permission-denied"?deniedHTML():'<div class="panel empty">讀取失敗，'+errText(m.err)+'。<p><button class="btn" onclick="location.reload()">重新整理</button></p></div>');
+  if(m.missing)return back+'<div class="panel empty">找不到這筆回憶，可能已經被刪除了。</div>';
+  const st=m.tid&&statics.find(s=>s.id===m.tid),ev=m.eid&&events[m.eid],mine=me&&(m.members||[]).includes(me.uid);
+  let h=back+'<article class="mdet"><div class="gal" id="gal"></div><div class="dbody">'+
+    '<div class="dmeta"><span class="kd k-'+esc(m.kind)+'">'+esc(KN[m.kind]||"其他")+'</span><span>'+esc(longDate(m.date))+'</span>'+(m.kind==="first"&&m.duty?'<span>・'+esc(m.duty)+'</span>':'')+'</div>'+
+    '<h1>'+esc(m.title)+'</h1>'+(m.desc?'<p class="ddesc">'+esc(m.desc)+'</p>':'')+
+    (m.note?'<div class="note"><b>'+(m.kind==="first"?"紀念留言":"一句話")+'</b>'+esc(m.note)+'</div>':'')+
+    ((m.members||[]).length?'<div><h2>一起的人（'+m.members.length+'）</h2><div class="people">'+m.members.map(u=>'<span><img src="'+esc(avatarUrl(users[u]))+'" alt="" loading="lazy">'+esc(nameOf(users[u]))+'</span>').join("")+'</div></div>':'')+
+    (st||ev?'<div class="links">'+(st?'<a class="btn sm" href="index.html?team='+encodeURIComponent(st.id)+'">'+icon("team",16)+esc(st.name)+'</a>':'')+(ev?'<a class="btn sm" href="events.html?e='+encodeURIComponent(m.eid)+'">'+icon("event",16)+esc(ev.title||"揪團活動")+'</a>':'')+'</div>':'')+
+    '<p class="hint">由 '+esc(nameOf(users[m.by]))+' 記錄'+(m.updatedAt&&m.updatedAt-(m.createdAt||0)>60000?'・最後更新 '+esc(new Date(m.updatedAt).toLocaleDateString("zh-TW")):'')+'</p>';
+  const acts=[];
+  if(canEdit(m))acts.push('<a class="btn" href="?edit='+encodeURIComponent(m.id)+'" data-go="edit='+esc(m.id)+'">編輯</a>','<button class="btn danger" data-a="del">刪除</button>');
+  if(mine&&m.by!==me.uid)acts.push('<button class="btn" data-a="untag">把我從名單移除</button>');
+  if(acts.length)h+='<div class="acts">'+acts.join("")+'</div>';
+  return h+'</div></article>';
+}
+function paintGallery(){
+  const g=$("#gal");if(!g||!detail||!detail.imgs)return;
+  const ids=detail.imgs||[];
+  if(!ids.length){g.innerHTML=detail.thumb?'<div class="main"><img src="'+esc(detail.thumb)+'" alt=""></div>':'';return;}
+  if(galIdx>=ids.length)galIdx=0;
+  const src=id=>imgCache[id];
+  const main=src(ids[galIdx]);
+  g.innerHTML='<div class="main">'+(main?'<img src="'+esc(main)+'" alt="'+esc(detail.title)+' 第 '+(galIdx+1)+' 張">':main===""?'<span class="muted">這張照片讀不到了</span>':'<span class="spin" role="status" aria-label="照片載入中"></span>')+'</div>'+
+    (ids.length>1?'<div class="rest">'+ids.map((id,i)=>'<button type="button" data-gi="'+i+'" aria-label="看第 '+(i+1)+' 張"'+(i===galIdx?' aria-current="true"':'')+'>'+(src(id)?'<img src="'+esc(src(id))+'" alt="">':'')+'</button>').join("")+'</div>':'');
+}
+
+/* ===== 表單 ===== */
+function newForm(){const d=today();return{id:"",title:"",date:d,kind:"gather",desc:"",tid:"",eid:"",duty:"",members:me?[me.uid]:[],note:"",photos:[],old:null};}
+function editForm(m){return{id:m.id,title:m.title||"",date:m.date||today(),kind:m.kind||"other",desc:m.desc||"",tid:m.tid||"",eid:m.eid||"",duty:m.duty||"",members:(m.members||[]).slice(),note:m.note||"",
+  photos:(m.imgs||[]).map(id=>({id,data:imgCache[id]||""})),old:m};}
+function formHTML(){
+  if(view.edit&&!form){
+    const m=(detail&&detail.id===view.edit&&!detail.loading)?detail:mems.find(x=>x.id===view.edit);
+    if(!m){watchDetail(view.edit);return'<div class="loadbox" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>載入中…</span></div>';}
+    if(m.missing||m.err)return'<div class="panel empty">找不到這筆回憶。</div>';
+    if(!canEdit(m))return'<div class="panel empty">只有記錄的人和總團長可以編輯這筆回憶。</div>';
+    form=editForm(m);(m.imgs||[]).forEach(id=>loadImg(id).then(v=>{const p=form&&form.photos.find(x=>x.id===id);if(p){p.data=v;renderPhotos();}}).catch(()=>{}));
+  }
+  if(!form)form=newForm();
+  const F=form;
+  return'<p><a class="back" href="'+(F.id?'?m='+encodeURIComponent(F.id):'memories.html')+'" data-go="'+(F.id?'m='+esc(F.id):'')+'">← 取消</a></p>'+
+  '<div class="top"><div><h1>'+(F.id?"編輯回憶":"新增回憶")+'</h1><div class="sub">只有飛地成員看得到。照片會自動壓縮，最多 4 張。</div></div></div>'+
+  '<div class="panel">'+
+    '<div class="fld"><span>類型</span><div class="kseg" role="group" aria-label="類型">'+KINDS.map(([k,n])=>'<button type="button" data-fk="'+k+'" aria-pressed="'+(F.kind===k)+'">'+n+'</button>').join("")+'</div></div>'+
+    '<div class="two"><label class="fld"><span>日期</span><input class="f" type="date" data-ff="date" value="'+esc(F.date)+'" required></label>'+
+      '<label class="fld"><span>標題</span><input class="f" data-ff="title" maxlength="'+LIM.title+'" value="'+esc(F.title)+'" placeholder="例如：M8S 首通！" required></label></div>'+
+    '<div class="fld" id="dutyRow"'+(F.kind==="first"?'':' hidden')+'><label class="fld" style="margin:0"><span>副本名稱</span><input class="f" data-ff="duty" maxlength="'+LIM.duty+'" value="'+esc(F.duty)+'" placeholder="例如：零式 M8S、絕伊甸"></label><p class="hint">首通日期由大家手動記錄，網站不會讀取遊戲內的通關紀錄。</p></div>'+
+    '<div class="fld"><span>照片（最多 '+LIM.imgs+' 張，第一張是封面）</span><div class="phs" id="phs"></div><input type="file" id="pfile" accept="image/*" multiple hidden></div>'+
+    '<label class="fld"><span>寫點什麼（選填）</span><textarea class="f" data-ff="desc" maxlength="'+LIM.desc+'" placeholder="那天發生了什麼？">'+esc(F.desc)+'</textarea><span class="cnt2" id="c-desc">'+F.desc.length+' / '+LIM.desc+'</span></label>'+
+    '<label class="fld"><span id="noteLab">'+(F.kind==="first"?"紀念留言（選填）":"一句話（選填）")+'</span><input class="f" data-ff="note" maxlength="'+LIM.note+'" value="'+esc(F.note)+'" placeholder="想留給大家的話"></label>'+
+    '<div class="two"><label class="fld"><span>相關固定團（選填）</span><select class="f" data-ff="tid" id="selTid">'+tidOpts()+'</select></label>'+
+      '<label class="fld"><span>相關揪團（選填）</span><select class="f" data-ff="eid" id="selEid">'+eidOpts()+'</select></label></div>'+
+    '<div class="fld" id="memBox">'+memBoxHTML()+'</div>'+
+    '<div class="foot"><span class="status" id="fstat" role="status"></span><a class="btn" href="'+(F.id?'?m='+encodeURIComponent(F.id):'memories.html')+'" data-go="'+(F.id?'m='+esc(F.id):'')+'">取消</a><button class="btn primary" data-a="save">'+(F.id?"儲存修改":"收進回憶錄")+'</button></div>'+
+  '</div>';
+}
+function tidOpts(){const F=form;return'<option value="">不指定</option>'+statics.map(s=>'<option value="'+esc(s.id)+'"'+(s.id===F.tid?' selected':'')+'>'+esc(s.name)+'</option>').join("");}
+function eidOpts(){const F=form,ev=Object.entries(events).filter(([,e])=>e&&e.title).map(([id,e])=>{const s=(e.slots||[]).find(x=>x.id===e.fixed)||(e.slots||[])[0]||{};return{id,t:e.title,d:s.d||""};}).sort((a,b)=>b.d.localeCompare(a.d)).slice(0,40);
+  return'<option value="">不指定</option>'+ev.map(e=>'<option value="'+esc(e.id)+'"'+(e.id===F.eid?' selected':'')+'>'+esc((e.d?e.d.slice(5).replace("-","/")+" ":"")+e.t)+'</option>').join("");}
+function memBoxHTML(){const F=form,uids=Object.keys(users).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"));
+  return'<span>一起的人（'+F.members.length+' / '+LIM.members+'）</span><div class="row" style="margin-bottom:6px">'+(F.tid?'<button type="button" class="btn sm" data-a="teamMembers">帶入這個固定團的成員</button>':'')+'<button type="button" class="btn sm" data-a="clearMembers">全部取消</button></div>'+
+    (uids.length?'<div class="pick" role="group" aria-label="一起的人">'+uids.map(u=>'<button type="button" data-mu="'+esc(u)+'" aria-pressed="'+F.members.includes(u)+'"><img src="'+esc(avatarUrl(users[u]))+'" alt="">'+esc(nameOf(users[u]))+'</button>').join("")+'</div>':'<p class="muted" style="margin:0">成員名單載入中…</p>')+
+    '<p class="hint">被標記的人之後可以自己把名字移除。</p>';}
+/* 表單打開時資料才到：只更新清單，不重畫整張表單（避免打斷輸入） */
+function refreshLists(){if(!form)return;const a=$("#selTid"),b=$("#selEid"),c=$("#memBox");if(a)a.innerHTML=tidOpts();if(b)b.innerHTML=eidOpts();if(c)c.innerHTML=memBoxHTML();}
+function renderPhotos(){
+  const el=$("#phs");if(!el||!form)return;
+  el.innerHTML=form.photos.map((p,i)=>'<div class="pitem">'+(p.data?'<img src="'+esc(p.data)+'" alt="第 '+(i+1)+' 張">':'<span class="spin" style="margin:auto" aria-label="載入中"></span>')+(i===0?'<span class="cv">封面</span>':'')+
+    '<span class="pb">'+(i>0?'<button type="button" data-pc="'+i+'" aria-label="設為封面">設為封面</button>':'')+'<button type="button" data-pr="'+i+'" aria-label="移除第 '+(i+1)+' 張">移除</button></span></div>').join("")+
+    (form.photos.length<LIM.imgs?'<button type="button" class="padd" data-a="addPhoto">'+icon("photo",24)+'加入照片</button>':'');
+}
+const fstat=(t,err)=>{const e=$("#fstat");if(e){e.className="status"+(err?" err":"");e.innerHTML=t;}};
+async function addFiles(files){
+  const room=LIM.imgs-form.photos.length;const list=[...files].slice(0,room);
+  if(files.length>room)toast("最多 "+LIM.imgs+" 張，只加入前 "+room+" 張");
+  for(let i=0;i<list.length;i++){
+    fstat('<span class="spin"></span>正在壓縮照片 '+(i+1)+' / '+list.length+'…');
+    try{const r=await compressFile(list[i]);form.photos.push({id:"",data:r.data,w:r.w,h:r.h});formDirty=true;renderPhotos();}
+    catch(e){fstat(esc(e.message||"照片處理失敗"),true);return;}
+  }
+  fstat("");
+}
+async function save(btn){
+  const F=form;if(saving)return;
+  const title=F.title.trim();if(!title){fstat("請填標題",true);return;}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(F.date)){fstat("請選日期",true);return;}
+  if(F.photos.some(p=>!p.data)){fstat("照片還在載入，請稍等",true);return;}
+  saving=true;btn.disabled=true;
+  const mid=F.id||doc(collection(db,"memories")).id,now=Date.now(),uploaded=[];
+  try{
+    const fresh=F.photos.filter(p=>!p.id);
+    for(let i=0;i<fresh.length;i++){
+      fstat('<span class="spin"></span>上傳照片 '+(i+1)+' / '+fresh.length+'…');
+      const id=doc(collection(db,"memoryImgs")).id;
+      await setDoc(doc(db,"memoryImgs",id),{mid,data:fresh[i].data,w:fresh[i].w||0,h:fresh[i].h||0,by:me.uid,createdAt:now});
+      fresh[i].id=id;uploaded.push(id);imgCache[id]=fresh[i].data;
+    }
+    fstat('<span class="spin"></span>儲存中…');
+    const cover=F.photos[0],old=F.old||{};
+    const thumb=cover?(cover.id===(old.imgs||[])[0]&&old.thumb?old.thumb:await makeThumb(cover.data)):"";
+    const data={title:title.slice(0,LIM.title),date:F.date,kind:KN[F.kind]?F.kind:"other",desc:F.desc.trim().slice(0,LIM.desc),
+      tid:F.tid||"",eid:F.eid||"",duty:F.kind==="first"?F.duty.trim().slice(0,LIM.duty):"",members:[...new Set(F.members)].filter(u=>users[u]).slice(0,LIM.members),
+      note:F.note.trim().slice(0,LIM.note),thumb,imgs:F.photos.map(p=>p.id),by:F.id?old.by:me.uid,createdAt:F.id?(old.createdAt||now):now,updatedAt:now};
+    await setDoc(doc(db,"memories",mid),data);
+    const gone=(old.imgs||[]).filter(id=>!data.imgs.includes(id));
+    await Promise.all(gone.map(id=>deleteDoc(doc(db,"memoryImgs",id)).catch(e=>console.warn("舊照片沒刪掉",id,e))));
+    saving=false;formDirty=false;form=null;detail=null;toast(F.id?"已更新":"已收進回憶錄");go("m="+encodeURIComponent(mid));
+  }catch(e){
+    console.error(e);saving=false;btn.disabled=false;
+    if(!F.id)await Promise.all(uploaded.map(id=>deleteDoc(doc(db,"memoryImgs",id)).catch(()=>{})));
+    F.photos.forEach(p=>{if(uploaded.includes(p.id))p.id="";});
+    fstat("儲存失敗："+esc(errText(e))+"。填好的內容都還在，可以再按一次。",true);
+  }
+}
+async function removeMemory(btn){
+  const m=detail;if(!m||!canEdit(m))return;
+  if(btn.dataset.armed!=="1"){btn.dataset.armed="1";btn.textContent=m.by===me.uid?"再按一次刪除":"這是別人的回憶，再按一次刪除（無法復原）";setTimeout(()=>{if(btn.isConnected){btn.dataset.armed="";btn.textContent="刪除";}},4000);return;}
+  btn.disabled=true;
+  try{
+    const keep={...m};delete keep.id;delete keep.loading;
+    const imgs=await Promise.all((m.imgs||[]).map(async id=>{const s=await getDoc(doc(db,"memoryImgs",id));return s.exists()?{id,d:s.data()}:null;}));
+    await deleteDoc(doc(db,"memories",m.id));
+    await Promise.all((m.imgs||[]).map(id=>deleteDoc(doc(db,"memoryImgs",id)).catch(()=>{})));
+    const id=m.id,canUndo=m.by===me.uid;
+    detail=null;go("");
+    undoToast("已刪除「"+m.title+"」",canUndo?async()=>{for(const x of imgs.filter(Boolean))await setDoc(doc(db,"memoryImgs",x.id),x.d);await setDoc(doc(db,"memories",id),{...keep,updatedAt:Date.now()});}:null);
+  }catch(e){console.error(e);btn.disabled=false;toast("刪除失敗："+errText(e));}
+}
+
+/* ===== 事件 ===== */
+document.addEventListener("click",async e=>{
+  const t=e.target;
+  const g=t.closest("[data-go]");if(g&&!t.closest(".sitebar")){e.preventDefault();go(g.dataset.go);return;}
+  const k=t.closest("[data-kind]");if(k){kindF=k.dataset.kind;render();return;}
+  const gi=t.closest("[data-gi]");if(gi){galIdx=+gi.dataset.gi;paintGallery();const b=document.querySelector('[data-gi="'+galIdx+'"]');if(b)b.focus();return;}
+  if(form){
+    const fk=t.closest("[data-fk]");if(fk){form.kind=fk.dataset.fk;formDirty=true;document.querySelectorAll("[data-fk]").forEach(b=>b.setAttribute("aria-pressed",b===fk));
+      $("#dutyRow").hidden=form.kind!=="first";$("#noteLab").textContent=form.kind==="first"?"紀念留言（選填）":"一句話（選填）";return;}
+    const mu=t.closest("[data-mu]");if(mu){const u=mu.dataset.mu,i=form.members.indexOf(u);if(i>=0)form.members.splice(i,1);else{if(form.members.length>=LIM.members){toast("最多標記 "+LIM.members+" 人");return;}form.members.push(u);}
+      formDirty=true;mu.setAttribute("aria-pressed",i<0);$("#memBox>span").textContent="一起的人（"+form.members.length+" / "+LIM.members+"）";return;}
+    const pr=t.closest("[data-pr]");if(pr){form.photos.splice(+pr.dataset.pr,1);formDirty=true;renderPhotos();return;}
+    const pc=t.closest("[data-pc]");if(pc){const i=+pc.dataset.pc;form.photos.unshift(form.photos.splice(i,1)[0]);formDirty=true;renderPhotos();return;}
+  }
+  const a=t.closest("[data-a]");if(!a)return;const act=a.dataset.a;
+  if(act==="more"){lim+=PAGE;a.disabled=true;a.textContent="載入中…";watchMems();}
+  else if(act==="addPhoto")$("#pfile").click();
+  else if(act==="save")save(a);
+  else if(act==="del")removeMemory(a);
+  else if(act==="teamMembers"&&form){const st=statics.find(s=>s.id===form.tid);if(!st)return;
+    a.disabled=true;getDocs(collection(db,"statics",st.id,"members")).then(s=>{if(!form)return;let n=0;s.forEach(d=>{if(d.data().status==="active"&&users[d.id]&&!form.members.includes(d.id)&&form.members.length<LIM.members){form.members.push(d.id);n++;}});formDirty=true;refreshLists();toast(n?"已帶入 "+n+" 位成員":"這團的成員都已經在名單裡");}).catch(()=>{a.disabled=false;toast("讀不到這團的成員");});}
+  else if(act==="clearMembers"&&form){form.members=[];formDirty=true;refreshLists();}
+  else if(act==="untag"){const m=detail;if(!m)return;a.disabled=true;
+    try{await updateDoc(doc(db,"memories",m.id),{members:(m.members||[]).filter(u=>u!==me.uid),updatedAt:Date.now()});toast("已經把你從名單移除");}
+    catch(err){console.error(err);a.disabled=false;toast("移除失敗："+errText(err));}}
+});
+document.addEventListener("input",e=>{const t=e.target;if(!form||!t.dataset||!t.dataset.ff)return;form[t.dataset.ff]=t.value;formDirty=true;
+  if(t.dataset.ff==="desc"){const c=$("#c-desc");if(c)c.textContent=t.value.length+" / "+LIM.desc;}});
+document.addEventListener("change",e=>{const t=e.target;
+  if(t.id==="pfile"&&form){addFiles(t.files).then(()=>{t.value="";});return;}
+  if(form&&t.dataset&&t.dataset.ff){form[t.dataset.ff]=t.value;formDirty=true;if(t.dataset.ff==="tid")refreshLists();}});
+
+/* ===== 啟動 ===== */
+view=readView();
+onAuthStateChanged(auth,async u=>{
+  me=u;claims={};isOwner=false;
+  if(u){try{claims=(await u.getIdTokenResult()).claims||{};}catch(_){}isOwner=claims.dc===OWNER_DISCORD_ID||(!!u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase());}
+  if(u&&enclave()&&!started){started=true;start();}
+  render();
+});
+/* 表單畫面每次重畫後補上照片區 */
+const mo=new MutationObserver(()=>{if(form&&$("#phs")&&!$("#phs").childElementCount)renderPhotos();});
+mo.observe(document.getElementById("app"),{childList:true});
+</script>
+</body>
+</html>
