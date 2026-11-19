@@ -140,5 +140,8 @@ export function initAwayMini({db,getCtx}){
   function todayOff(){const d=ymd(new Date()),{ids}=rowIds();return {off:ids.filter(id=>dayState(id,d)==="off"),maybe:ids.filter(id=>dayState(id,d)==="maybe")};}
   /* 某一天、某些成員的請假狀況（大廳「下一場冒險」用）；full=false 表示只看得到自己和代填對象 */
   function dayInfo(d,ids){const r={off:[],maybe:[],full:canList&&allLoaded};(ids||[]).forEach(id=>{const s=dayState(id,d);if(s==="off")r.off.push(id);else if(s==="maybe")r.maybe.push(id);});return r;}
-  return {paint,todayOff,dayInfo,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
+  /* 某段期間內看得到的請假紀錄（大廳「近期安排」用）；只回傳依權限已經載入的資料 */
+  function entriesBetween(from,to){const out=[];Object.entries(away).forEach(([uid,a])=>((a||{}).entries||[]).forEach(e=>{if(e&&e.from&&e.to&&e.from<=to&&e.to>=from)out.push({uid,from:e.from,to:e.to,kind:e.kind==="off"?"off":"maybe"});}));return out;}
+  const loaded=()=>canList?allLoaded:true;
+  return {paint,todayOff,dayInfo,entriesBetween,loaded,stop(){Object.keys(subs).forEach(unsub);window.removeEventListener("resize",onR);}};
 }

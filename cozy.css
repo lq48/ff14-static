@@ -299,6 +299,27 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .qp-n{display:flex;align-items:center;gap:8px;font-weight:700;flex:1;min-width:0}
 .qp-s{font-size:12.5px;color:var(--muted);order:3;flex-basis:100%;margin-top:-6px}
 .qp .go{color:var(--muted);flex:none}
+/* 近期安排：固定團（桃）、揪團（奶油黃）、揪團候選（虛線）、請假（霧藍） */
+.ag-legend{display:flex;gap:6px;flex-wrap:wrap}
+.ag-k{display:inline-flex;align-items:center;font-size:12px;font-weight:700;border-radius:var(--r-pill);padding:1px 9px;white-space:nowrap;flex:none}
+.k-team,.ag-team .ag-k{background:var(--peach);color:var(--peach-ink)}
+.k-ev,.ag-ev .ag-k{background:var(--butter);color:var(--butter-ink)}
+.ag-evc .ag-k{background:transparent;color:var(--butter-ink);box-shadow:inset 0 0 0 1px var(--butter-ink);border:0}
+.k-away,.ag-away .ag-k{background:var(--sky);color:var(--sky-ink)}
+.agenda{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ag-day{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}
+.ag-day:first-child{border-top:0}
+.ag-date{display:flex;flex-direction:column;line-height:1.25;padding-top:6px}
+.ag-date b{font-size:16px;font-variant-numeric:tabular-nums}.ag-date span{font-size:12.5px;color:var(--muted)}.ag-date small{font-size:12px;color:var(--peach-ink);font-weight:700}
+.ag-items{list-style:none;margin:0;padding:0;display:grid;gap:6px;min-width:0}
+.ag{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-height:40px;padding:8px 12px;border-radius:var(--r-md);background:var(--surface2);color:var(--ink);text-decoration:none;font-size:14.5px}
+.ag:hover{background:var(--peach)}
+.ag-evc{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.ag-t{font-weight:700;font-variant-numeric:tabular-nums}
+.ag-n{flex:1;min-width:12em}.ag-n small{display:block;font-size:12.5px;color:var(--muted)}
+.ag-away .ag-n{font-size:14px}
+.ag-foot{margin:12px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+@media (max-width:480px){.ag-day{grid-template-columns:52px 1fr;gap:8px}.ag-n{min-width:0;flex-basis:100%}}
 .sec-title{display:flex;align-items:center;gap:10px;margin:28px 0 12px;font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--muted)}
 .sec-title::after{content:"";flex:1;height:1px;background:var(--line)}
 .mchips{display:flex;flex-wrap:wrap;gap:8px}

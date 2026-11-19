@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=5">
+<link rel="stylesheet" href="cozy.css?v=6">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -325,7 +325,7 @@ a{color:var(--accent)}
 </script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
-import { initAwayMini } from "./away-mini.js?v=gr2";
+import { initAwayMini } from "./away-mini.js?v=gr3";
 import { startIcons, icon } from "./icons.js?v=4";
 import { mountNav, setNavUser, setNavActive } from "./nav.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -661,7 +661,7 @@ function greetLine(){
   if(!parts.length)return act.length?"今天沒有排定的團，看看大家在揪什麼吧。":"今天沒有排定的行程，想打本的話來發起一場揪團吧。";
   return parts.join("，")+"。";
 }
-window.addEventListener("awaymini",()=>{const el=document.getElementById("greetLine");if(el)el.innerHTML=greetLine();const nb=document.getElementById("nextBody");if(nb)nb.innerHTML=nextBodyHTML();});
+window.addEventListener("awaymini",()=>{const el=document.getElementById("greetLine");if(el)el.innerHTML=greetLine();const nb=document.getElementById("nextBody");if(nb)nb.innerHTML=nextBodyHTML();const ab=document.getElementById("agendaBody");if(ab)ab.innerHTML=agendaBodyHTML();});
 /* =====================================================================
    今日飛地（大廳 Dashboard）
    資料來源全部是既有的訂閱：users、statics、members、events/rsvp、surveys/responses、away（請假預覽模組）
@@ -824,6 +824,44 @@ function quickHTML(){
     '<span class="qi ico-'+x.c+'">'+icon(x.ico,20)+'</span><span class="qn">'+x.n+'</span><span class="qd">'+esc(x.d)+'</span></a>').join("")+'</nav>'+qpPanelHTML();
 }
 
+/* 近期安排：把「固定團既定活動」「揪團」「請假」整理成 14 天的時間表
+   - 固定團時間只用團長在出席調查登記的「既定活動」，不把最多人有空的時段當成開團時間
+   - 請假只用依權限已經載入的資料（view／lead 看得到全部，其他人只有自己和代填對象） */
+const AG_DAYS=14;let agendaMore=false;
+function agendaItems(){
+  const t=new Date(),from=ymdOf(t),e=new Date(t);e.setDate(t.getDate()+AG_DAYS-1);const to=ymdOf(e);
+  const days={},add=(d,x)=>{if(d<from||d>to)return;(days[d]=days[d]||[]).push(x);};
+  svUpcoming().forEach(x=>add(x.d,{k:"team",sort:"0"+slotHM(x.a),time:slotHM(x.a)+"–"+slotHM(x.b),title:x.e.label||"固定團活動",sub:svTeamName(x.sv),href:"schedule.html?s="+encodeURIComponent(x.sv.id)}));
+  evs.filter(ev=>ev.status!=="closed").forEach(ev=>{
+    const fx=ev.status==="fixed"&&(ev.slots||[]).find(s=>s.id===ev.fixed);
+    (fx?[fx]:(ev.slots||[])).forEach(s=>{if(!s||!s.d)return;add(s.d,{k:fx?"ev":"evc",sort:"1"+(s.t||"99"),time:s.t||"",title:ev.title||"揪團",sub:fx?(ev.kind||"揪團")+"・已定案":(ev.kind||"揪團")+"・候選時間，還在調查",href:"events.html?e="+encodeURIComponent(ev.id)});});
+  });
+  const ents=awayMini&&awayMini.entriesBetween?awayMini.entriesBetween(from,to):[];
+  for(let i=0;i<AG_DAYS;i++){const x=new Date(t);x.setDate(t.getDate()+i);const d=ymdOf(x);
+    const off=[],mb=[];ents.forEach(en=>{if(en.from<=d&&d<=en.to&&users[en.uid]){(en.kind==="off"?off:mb).push(en.uid);}});
+    const uniq=a=>[...new Set(a)].filter(id=>!(a===mb&&off.includes(id)));
+    const O=uniq(off),Mb=uniq(mb);
+    if(O.length||Mb.length)add(d,{k:"away",sort:"2",time:"",title:(O.length?O.map(id=>nameOf(users[id])).join("、"):"")+(O.length&&Mb.length?"；":"")+(Mb.length?"可能不在："+Mb.map(id=>nameOf(users[id])).join("、"):""),sub:"",href:"away.html"});}
+  return Object.keys(days).sort().map(d=>({d,items:days[d].sort((a,b)=>a.sort.localeCompare(b.sort))}));
+}
+const AG_LABEL={team:"固定團",ev:"揪團",evc:"揪團候選",away:"請假"};
+function agendaBodyHTML(){
+  const list=agendaItems();
+  if(!list.length)return'<div class="empty-state"><p class="big">接下來兩週沒有排定的活動或請假</p><p>固定團的時間由團長在出席調查登記「既定活動」後才會出現。</p></div>';
+  const shown=agendaMore?list:list.slice(0,6);
+  return'<ol class="agenda">'+shown.map(g=>{const dt=parseYmd(g.d),rel=relDay(g.d);
+    return'<li class="ag-day"><div class="ag-date"><b>'+(dt.getMonth()+1)+'/'+dt.getDate()+'</b><span>週'+WKD2[dt.getDay()]+'</span>'+(rel?'<small>'+rel+'</small>':'')+'</div><ul class="ag-items">'+
+      g.items.map(x=>'<li><a class="ag ag-'+x.k+'" href="'+esc(x.href)+'"><span class="ag-k">'+AG_LABEL[x.k]+'</span>'+(x.time?'<span class="ag-t">'+esc(x.time)+'</span>':'')+
+        '<span class="ag-n">'+esc(x.title)+(x.sub?'<small>'+esc(x.sub)+'</small>':'')+'</span></a></li>').join("")+'</ul></li>';}).join("")+'</ol>'+
+    (list.length>6?'<div class="morebar"><button type="button" class="btn sm" data-act="agendaMore" aria-expanded="'+agendaMore+'">'+(agendaMore?'收起':'再顯示 '+(list.length-6)+' 天')+'</button></div>':'');
+}
+function agendaPanelHTML(){
+  return'<section class="panel" id="agenda" aria-labelledby="agendaH"><div class="phead"><h2 class="dash-h" id="agendaH" data-ico="1">'+icb("cal","sky")+'近期安排</h2>'+
+    '<div class="ag-legend" aria-hidden="true"><span class="ag-k k-team">固定團</span><span class="ag-k k-ev">揪團</span><span class="ag-k k-away">請假</span></div></div>'+
+    '<div id="agendaBody">'+agendaBodyHTML()+'</div>'+
+    '<p class="ag-foot">接下來 14 天。固定團時間以團長登記的既定活動為準，出席調查裡最多人有空的時段不會當成開團時間。完整內容在 <a href="schedule.html">出席調查</a>・<a href="events.html">揪團活動</a>・<a href="away.html">請假行事曆</a>。</p></section>';
+}
+
 /* 飛地成員：預設精簡顯示，可展開看完整靈魂水晶 */
 function membersPanelHTML(){
   const ids=Object.keys(users).sort((a,b)=>(a===me.uid?-1:b===me.uid?1:nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")));
@@ -841,6 +879,7 @@ function lobbyHTML(){
       '<h1>'+greetHello(p)+'</h1><p class="greet-line" id="greetLine">'+greetLine()+'</p></section>'+
     '<div class="dash-top">'+nextPanelHTML()+todoPanelHTML()+'</div>'+
     quickHTML()+
+    agendaPanelHTML()+
     eventsPanelHTML()+
     '<div class="panel" id="away"><div class="phead"><h2>請假行事曆</h2><div class="phead-acts"><a class="btn sm primary" href="away.html?new=1">＋ 我要請假</a><a class="btn sm" href="away.html">完整行事曆</a></div></div><div id="awayMini" class="am"><p class="muted" style="margin:0">載入中…</p></div></div>'+
     '<div class="panel" id="teams"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
@@ -1538,6 +1577,7 @@ document.addEventListener("click",async e=>{
       if(a==="qpick"){e.preventDefault();const k=act.dataset.pick;quickPick=quickPick===k?null:k;render();
         const f=quickPick&&document.querySelector("#qpick .qp");if(f)f.focus();else{const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();}return;}
       if(a==="qpickClose"){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();return;}
+      if(a==="agendaMore"){agendaMore=!agendaMore;render();const b=document.querySelector('[data-act="agendaMore"]');if(b)b.focus();return;}
       if(a==="membersToggle"){membersOpen=!membersOpen;render();const b=document.querySelector('[data-act="membersToggle"]');if(b)b.focus();return;}
       if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
       if(a==="glogin"){await signInWithPopup(auth,new GoogleAuthProvider());return;}
