@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=5">
+<link rel="stylesheet" href="cozy.css?v=8">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -325,9 +325,10 @@ a{color:var(--accent)}
 </script>
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
-import { initAwayMini } from "./away-mini.js?v=gr2";
+import { initAwayMini } from "./away-mini.js?v=gr3";
 import { startIcons, icon } from "./icons.js?v=4";
 import { mountNav, setNavUser, setNavActive } from "./nav.js?v=1";
+import { undoToast } from "./ui.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -412,6 +413,12 @@ let unsub=[],ready={users:false,statics:false,mem:false};
 let profileDraft=null,tgtDraft=null,phDraft={did:"",nick:"",job:"",charName:"",server:"",welcome:false};
 let links={},linkFilter="全部",linkDraft=null,linkSrc={};
 let svs=[],svRs={},svSubs={},membersOpen=false,pendingJump=null,jumpUntil=0,quickPick=null;
+/* 表單有改動但還沒儲存（靈魂水晶、分享連結、建立固定團、團隊資料、BiS 本期設定） */
+let formDirty=false,leaveArmedAt=0;
+const FORM_SEL=".form,.phform,#tgtList";
+document.addEventListener("input",e=>{const t=e.target;if(t&&t.closest&&t.closest("#view")&&t.closest(FORM_SEL)&&!t.closest(".bistable,.bislink"))formDirty=true;});
+window.addEventListener("beforeunload",e=>{if(formDirty){e.preventDefault();e.returnValue="";}});
+function leaveOk(){if(!formDirty)return true;if(Date.now()-leaveArmedAt<4000){formDirty=false;return true;}leaveArmedAt=Date.now();toast("還有未儲存的變更，再按一次就放棄並離開");return false;}
 ["wheel","touchstart","keydown"].forEach(t=>addEventListener(t,()=>{pendingJump=null;},{passive:true}));
 const urlTeam=()=>new URLSearchParams(location.search).get("team");
 const urlMod=()=>new URLSearchParams(location.search).get("mod");
@@ -436,7 +443,7 @@ mountNav({page:"lobby",auth,
   onNavigate:k=>{if(k==="lobby"){jump(null);return true;}if(k==="team"){jump("teams");return true;}if(k==="tools"){jump("tools");return true;}}});
 startIcons();
 onAuthStateChanged(auth,async u=>{
-  me=u;claims={};
+  me=u;claims={};formDirty=false;
   unsub.forEach(f=>f());unsub=[];if(awayMini){awayMini.stop();awayMini=null;}
   users={};statics=[];mem={};links={};linkSrc={};svs=[];ready={users:false,statics:false,mem:false};
   if(u){try{claims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
@@ -477,6 +484,7 @@ function syncDiscordInfo(){
 
 /* ---------- 導覽 ---------- */
 function go(v,tid){
+  if(!leaveOk())return;
   view=v;if(tid!==undefined)curTid=tid;
   if((v==="team"||v==="mod"||v==="manage")&&curTid)lastTeamSet(curTid);
   if(v!=="lobby")quickPick=null;
@@ -548,7 +556,7 @@ function render(fromSnapshot){
 const loadHTML=()=>'<div class="loadbox" data-loading role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在打開飛地的大門…</span></div>';
 /* 跳到大廳的某個區塊（導覽列的「固定團」「工具」） */
 function jump(id){
-  if(view!=="lobby"||curTid)go("lobby",null);
+  if(view!=="lobby"||curTid){if(!leaveOk())return;go("lobby",null);}
   if(!id){window.scrollTo(0,0);return;}
   const el=document.getElementById(id);if(!el)return;
   const smooth=!matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -619,7 +627,7 @@ async function saveProfile(btn){
       nick,charName,server,job:d.job,subJobs:d.subJobs.filter(k=>k!==d.job).slice(0,10),bio:d.bio.trim(),
       createdAt:p&&p.createdAt?p.createdAt:Date.now(),updatedAt:Date.now()};
     await setDoc(doc(db,"users",me.uid),data);
-    users[me.uid]=data;profileDraft=null;view=curTid?"team":"lobby";
+    users[me.uid]=data;profileDraft=null;formDirty=false;view=curTid?"team":"lobby";
     toast(p&&!p.placeholder?"已更新靈魂水晶":"靈魂水晶建立完成！");render();
   }catch(e){console.error(e);toast("儲存失敗，請再試一次");btn.disabled=false;}
 }
@@ -661,7 +669,7 @@ function greetLine(){
   if(!parts.length)return act.length?"今天沒有排定的團，看看大家在揪什麼吧。":"今天沒有排定的行程，想打本的話來發起一場揪團吧。";
   return parts.join("，")+"。";
 }
-window.addEventListener("awaymini",()=>{const el=document.getElementById("greetLine");if(el)el.innerHTML=greetLine();const nb=document.getElementById("nextBody");if(nb)nb.innerHTML=nextBodyHTML();});
+window.addEventListener("awaymini",()=>{const el=document.getElementById("greetLine");if(el)el.innerHTML=greetLine();const nb=document.getElementById("nextBody");if(nb)nb.innerHTML=nextBodyHTML();const ab=document.getElementById("agendaBody");if(ab)ab.innerHTML=agendaBodyHTML();});
 /* =====================================================================
    今日飛地（大廳 Dashboard）
    資料來源全部是既有的訂閱：users、statics、members、events/rsvp、surveys/responses、away（請假預覽模組）
@@ -824,6 +832,44 @@ function quickHTML(){
     '<span class="qi ico-'+x.c+'">'+icon(x.ico,20)+'</span><span class="qn">'+x.n+'</span><span class="qd">'+esc(x.d)+'</span></a>').join("")+'</nav>'+qpPanelHTML();
 }
 
+/* 近期安排：把「固定團既定活動」「揪團」「請假」整理成 14 天的時間表
+   - 固定團時間只用團長在出席調查登記的「既定活動」，不把最多人有空的時段當成開團時間
+   - 請假只用依權限已經載入的資料（view／lead 看得到全部，其他人只有自己和代填對象） */
+const AG_DAYS=14;let agendaMore=false;
+function agendaItems(){
+  const t=new Date(),from=ymdOf(t),e=new Date(t);e.setDate(t.getDate()+AG_DAYS-1);const to=ymdOf(e);
+  const days={},add=(d,x)=>{if(d<from||d>to)return;(days[d]=days[d]||[]).push(x);};
+  svUpcoming().forEach(x=>add(x.d,{k:"team",sort:"0"+slotHM(x.a),time:slotHM(x.a)+"–"+slotHM(x.b),title:x.e.label||"固定團活動",sub:svTeamName(x.sv),href:"schedule.html?s="+encodeURIComponent(x.sv.id)}));
+  evs.filter(ev=>ev.status!=="closed").forEach(ev=>{
+    const fx=ev.status==="fixed"&&(ev.slots||[]).find(s=>s.id===ev.fixed);
+    (fx?[fx]:(ev.slots||[])).forEach(s=>{if(!s||!s.d)return;add(s.d,{k:fx?"ev":"evc",sort:"1"+(s.t||"99"),time:s.t||"",title:ev.title||"揪團",sub:fx?(ev.kind||"揪團")+"・已定案":(ev.kind||"揪團")+"・候選時間，還在調查",href:"events.html?e="+encodeURIComponent(ev.id)});});
+  });
+  const ents=awayMini&&awayMini.entriesBetween?awayMini.entriesBetween(from,to):[];
+  for(let i=0;i<AG_DAYS;i++){const x=new Date(t);x.setDate(t.getDate()+i);const d=ymdOf(x);
+    const off=[],mb=[];ents.forEach(en=>{if(en.from<=d&&d<=en.to&&users[en.uid]){(en.kind==="off"?off:mb).push(en.uid);}});
+    const uniq=a=>[...new Set(a)].filter(id=>!(a===mb&&off.includes(id)));
+    const O=uniq(off),Mb=uniq(mb);
+    if(O.length||Mb.length)add(d,{k:"away",sort:"2",time:"",title:(O.length?O.map(id=>nameOf(users[id])).join("、"):"")+(O.length&&Mb.length?"；":"")+(Mb.length?"可能不在："+Mb.map(id=>nameOf(users[id])).join("、"):""),sub:"",href:"away.html"});}
+  return Object.keys(days).sort().map(d=>({d,items:days[d].sort((a,b)=>a.sort.localeCompare(b.sort))}));
+}
+const AG_LABEL={team:"固定團",ev:"揪團",evc:"揪團候選",away:"請假"};
+function agendaBodyHTML(){
+  const list=agendaItems();
+  if(!list.length)return'<div class="empty-state"><p class="big">接下來兩週沒有排定的活動或請假</p><p>固定團的時間由團長在出席調查登記「既定活動」後才會出現。</p></div>';
+  const shown=agendaMore?list:list.slice(0,6);
+  return'<ol class="agenda">'+shown.map(g=>{const dt=parseYmd(g.d),rel=relDay(g.d);
+    return'<li class="ag-day"><div class="ag-date"><b>'+(dt.getMonth()+1)+'/'+dt.getDate()+'</b><span>週'+WKD2[dt.getDay()]+'</span>'+(rel?'<small>'+rel+'</small>':'')+'</div><ul class="ag-items">'+
+      g.items.map(x=>'<li><a class="ag ag-'+x.k+'" href="'+esc(x.href)+'"><span class="ag-k">'+AG_LABEL[x.k]+'</span>'+(x.time?'<span class="ag-t">'+esc(x.time)+'</span>':'')+
+        '<span class="ag-n">'+esc(x.title)+(x.sub?'<small>'+esc(x.sub)+'</small>':'')+'</span></a></li>').join("")+'</ul></li>';}).join("")+'</ol>'+
+    (list.length>6?'<div class="morebar"><button type="button" class="btn sm" data-act="agendaMore" aria-expanded="'+agendaMore+'">'+(agendaMore?'收起':'再顯示 '+(list.length-6)+' 天')+'</button></div>':'');
+}
+function agendaPanelHTML(){
+  return'<section class="panel" id="agenda" aria-labelledby="agendaH"><div class="phead"><h2 class="dash-h" id="agendaH" data-ico="1">'+icb("cal","sky")+'近期安排</h2>'+
+    '<div class="ag-legend" aria-hidden="true"><span class="ag-k k-team">固定團</span><span class="ag-k k-ev">揪團</span><span class="ag-k k-away">請假</span></div></div>'+
+    '<div id="agendaBody">'+agendaBodyHTML()+'</div>'+
+    '<p class="ag-foot">接下來 14 天。固定團時間以團長登記的既定活動為準，出席調查裡最多人有空的時段不會當成開團時間。完整內容在 <a href="schedule.html">出席調查</a>・<a href="events.html">揪團活動</a>・<a href="away.html">請假行事曆</a>。</p></section>';
+}
+
 /* 飛地成員：預設精簡顯示，可展開看完整靈魂水晶 */
 function membersPanelHTML(){
   const ids=Object.keys(users).sort((a,b)=>(a===me.uid?-1:b===me.uid?1:nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")));
@@ -841,6 +887,7 @@ function lobbyHTML(){
       '<h1>'+greetHello(p)+'</h1><p class="greet-line" id="greetLine">'+greetLine()+'</p></section>'+
     '<div class="dash-top">'+nextPanelHTML()+todoPanelHTML()+'</div>'+
     quickHTML()+
+    agendaPanelHTML()+
     eventsPanelHTML()+
     '<div class="panel" id="away"><div class="phead"><h2>請假行事曆</h2><div class="phead-acts"><a class="btn sm primary" href="away.html?new=1">＋ 我要請假</a><a class="btn sm" href="away.html">完整行事曆</a></div></div><div id="awayMini" class="am"><p class="muted" style="margin:0">載入中…</p></div></div>'+
     '<div class="panel" id="teams"><div class="phead"><h2>固定團</h2>'+(isOwner?'<button class="btn sm" data-act="create">＋ 建立固定團</button>':'')+'</div>'+
@@ -940,7 +987,7 @@ async function saveLink(btn){
     }else{
       await addDoc(collection(db,"links"),{...data,by:me.uid,byName:nameOf(users[me.uid])||"總團長",status:isOwner?"approved":"pending",pinned:false,createdAt:Date.now()});
     }
-    toast(isOwner?"已儲存":"已送出，等待總團長審核");linkDraft=null;go("lobby",null);
+    toast(isOwner?"已儲存":"已送出，等待總團長審核");linkDraft=null;formDirty=false;go("lobby",null);
   }catch(e){console.error(e);toast(e&&e.code==="permission-denied"?"沒有權限或格式不符":"儲存失敗，請再試一次");btn.disabled=false;}
 }
 async function seedLinks(btn){
@@ -1064,6 +1111,15 @@ function bisParse(text,t){
 }
 
 /* ---- 寫入 ---- */
+/* 批次覆蓋（貼上配裝表、一鍵套用、複製）：按鈕顯示處理中，完成後可以復原成原本的設定 */
+async function bisBulk(btn,who,patch,msg){
+  const rec=recOf(who),prev={};
+  Object.keys(patch).forEach(k=>{const[set,slot]=k.split(".");prev[k]=((rec[set]||{})[slot])||{};});
+  const tierAt=bisTierId;if(btn){btn.disabled=true;btn.dataset.label=btn.textContent;btn.textContent="處理中…";}
+  try{await bisPatch(who,patch);}
+  finally{if(btn&&btn.isConnected){btn.disabled=false;btn.textContent=btn.dataset.label||btn.textContent;}}
+  undoToast(msg,async()=>{if(bisTierId!==tierAt)throw new Error("tier changed");await bisPatch(who,prev);});
+}
 async function ensureRec(uid){
   const id=recId(uid);if(bisRecs[id])return;
   const base={tier:bisTierId,uid,prog:{},final:{},links:{},coll:{},createdAt:Date.now(),updatedAt:Date.now(),updatedBy:me.uid};
@@ -1075,10 +1131,69 @@ async function bisPatch(uid,patch){
   await updateDoc(doc(db,"statics",curTid,"bis",recId(uid)),p);
 }
 
+/* ---- 完成度摘要：只看「畢業目標」（final），開荒（過渡）裝不算 ----
+   每個部位分成：done 已完成（點數裝需強化的要強化完）、part 已取得待強化、need 尚缺、unset 未設定來源 */
+function bisSummary(uid){
+  const f=(recOf(uid).final)||{},res={done:0,part:0,need:0,unset:0,slots:{},need_:{raid:[],tome:[],craft:[],other:[]},aug:[]};
+  BIS_SLOTS.forEach(s=>{const sl=f[s.k]||{};const st=!sl.src?"unset":slotDone(sl)?"done":slotPartial(sl)?"part":"need";
+    res[st]++;res.slots[s.k]=st;if(st==="need")(res.need_[sl.src]||res.need_.other).push(s);if(st==="part")res.aug.push(s);});
+  return res;
+}
+const floorsFor=(t,key)=>(t.floors||[]).filter((f,i)=>((t.drops||{})["f"+i]||[]).includes(key));
+const BS_LABEL={done:"已完成",part:"已取得・待強化",need:"尚缺",unset:"未設定"};
+function bisBar(sm){const w=n=>(n/11*100).toFixed(1)+"%";
+  return'<span class="bbar" aria-hidden="true"><i class="b-done" style="width:'+w(sm.done)+'"></i><i class="b-part" style="width:'+w(sm.part)+'"></i><i class="b-need" style="width:'+w(sm.need)+'"></i></span>';}
+/* 我的 BiS：完成度、武器、缺件依取得方式整理 */
+function bisMineSumHTML(t,uid,edit){
+  const sm=bisSummary(uid);
+  if(sm.unset===11)return'<div class="bsum empty"><p class="big">還沒有設定畢業 BiS</p><p class="muted">完成度會依「畢業」的設定計算。'+(edit?'可以在下方切到「畢業」，用「貼上配裝表」或「一鍵套用常見畢業配置」快速設定。':'請本人或團長幫忙設定。')+'</p>'+
+    (edit&&bisSet!=="final"?'<button class="btn sm primary" data-bisset="final">切到「畢業」開始設定</button>':'')+'</div>';
+  const nm=list=>list.map(s=>s.n).join("、");
+  const raidByFloor={};sm.need_.raid.forEach(s=>{const fl=floorsFor(t,s.d);(fl.length?fl:["（掉落表沒有這個部位）"]).forEach(f=>(raidByFloor[f]=raidByFloor[f]||[]).push(s));});
+  const augByMat={};sm.aug.forEach(s=>{const k=MAT_OF[s.g];(augByMat[k]=augByMat[k]||[]).push(s);});
+  const wst=sm.slots.weapon,wsl=bslot(recOf(uid),"final","weapon");
+  let rows="";
+  [...(t.floors||[]),"（掉落表沒有這個部位）"].filter(f=>raidByFloor[f]).forEach(f=>rows+='<li><span class="ag-k k-team">零式 '+esc(f)+'</span>'+esc(nm(raidByFloor[f]))+'</li>');
+  if(sm.need_.tome.length)rows+='<li><span class="ag-k k-away">點數兌換</span>'+esc(nm(sm.need_.tome))+'</li>';
+  Object.keys(augByMat).forEach(k=>{const fl=floorsFor(t,k);rows+='<li><span class="ag-k k-ev">強化</span>'+esc(nm(augByMat[k]))+'<small>需要 '+esc((t.mats||{})[k]||k)+(fl.length?'（'+esc(fl.join("、"))+'）':'')+'</small></li>';});
+  if(sm.need_.craft.length)rows+='<li><span class="ag-k">製作</span>'+esc(nm(sm.need_.craft))+'</li>';
+  if(sm.need_.other.length)rows+='<li><span class="ag-k">其他</span>'+esc(nm(sm.need_.other))+'</li>';
+  return'<div class="bsum">'+
+    '<div class="bsum-top"><div class="bsum-num"><b>'+sm.done+'</b> / 11<span>畢業 BiS 完成</span></div>'+bisBar(sm)+
+      '<div class="bsum-chips">'+(sm.part?'<span class="stp soft">待強化 '+sm.part+'</span>':'')+(sm.need?'<span class="stp warm">尚缺 '+sm.need+'</span>':'')+(sm.unset?'<span class="stp">未設定 '+sm.unset+'</span>':'')+(sm.done===11?'<span class="stp good">畢業了 🎉</span>':'')+'</div></div>'+
+    '<p class="bsum-key"><b>武器</b>'+(wst==="unset"?'<span class="stp">未設定</span>':wst==="done"?'<span class="stp good">已取得</span>':wst==="part"?'<span class="stp soft">已取得・待強化</span>':
+      '<span class="stp warm">尚缺</span><span class="muted">'+esc(BIS_SRC[wsl.src]||"")+(wsl.src==="raid"&&floorsFor(t,"weapon").length?'・'+esc(floorsFor(t,"weapon").join("、"))+' 掉落':'')+'</span>')+'</p>'+
+    (sm.unset&&sm.unset<11?'<p class="bsum-warn">還有 '+sm.unset+' 個部位沒有設定畢業裝（'+esc(nm(BIS_SLOTS.filter(s=>sm.slots[s.k]==="unset")))+'），這些部位不算在完成度裡，也不會出現在缺件清單。</p>':'')+
+    (rows?'<div class="bsum-need"><div class="flabel">還缺什麼</div><ul>'+rows+'</ul></div>':'')+
+    '<p class="hint" style="margin:8px 0 0">完成＝畢業目標的裝備已取得；點數裝勾了「需強化」要強化完才算。開荒（過渡）裝不算進完成度。</p></div>';
+}
+/* 全團摘要：每人卡片＋各層還有誰需要 */
+function bisTeamSumHTML(t){
+  const ms=bisMembers();if(!ms.length)return"";
+  const S=ms.map(m=>({m,sm:bisSummary(m.id)}));
+  const tot=k=>S.reduce((a,x)=>a+x.sm[k],0);
+  const setUp=S.filter(x=>x.sm.unset<11),wDone=S.filter(x=>x.sm.slots.weapon==="done").length,wSet=S.filter(x=>x.sm.slots.weapon!=="unset").length;
+  let h='<div class="panel"><div class="phead"><h2>全團畢業進度</h2></div>'+
+    '<div class="tsum-line"><span><b>'+tot("done")+'</b> / '+(ms.length*11)+' 件完成</span>'+(tot("part")?'<span class="stp soft">待強化 '+tot("part")+'</span>':'')+'<span class="stp warm">尚缺 '+tot("need")+'</span>'+(tot("unset")?'<span class="stp">未設定 '+tot("unset")+'</span>':'')+
+      '<span class="tsum-w">武器：'+wDone+' / '+ms.length+' 人已取得'+(wSet<ms.length?'（'+(ms.length-wSet)+' 人未設定）':'')+'</span></div>'+
+    '<div class="bcards">'+S.map(({m,sm})=>{const u=users[m.id],j=JOB[teamJob(curTid,m.id)];const miss=BIS_SLOTS.filter(s=>sm.slots[s.k]==="need"||sm.slots[s.k]==="part");
+      return'<button type="button" class="bcard" data-bisgo="'+m.id+'"><span class="bc-h"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span><b>'+esc(nameOf(u))+'</b><small>'+esc(m.slot||"替補")+(j?'・'+esc(j.n):'')+'</small></span>'+
+        (sm.unset===11?'<span class="stp">BiS 未設定</span>':'<span class="bc-n">'+sm.done+'<small>/11</small></span>')+'</span>'+
+        (sm.unset===11?'':bisBar(sm))+
+        '<span class="bc-f"><span class="stp '+({done:"good",part:"soft",need:"warm",unset:""})[sm.slots.weapon]+'">武器'+({done:"✓",part:"待強化",need:"缺",unset:"未設定"})[sm.slots.weapon]+'</span>'+
+        (sm.unset&&sm.unset<11?'<span class="stp">未設定 '+sm.unset+'</span>':'')+
+        (miss.length&&sm.unset<11?'<span class="bc-miss">缺：'+esc(miss.map(s=>s.n).join("、"))+'</span>':sm.done===11?'<span class="bc-miss">畢業了</span>':'')+'</span></button>';}).join("")+'</div>';
+  const fl=t.floors||[];
+  const floorRows=fl.map((f,i)=>{const keys=((t.drops||{})["f"+i])||[];const parts=keys.map(k=>{const n=needers(t,k).reduce((a,x)=>a+x.count,0);return n?esc(dropLabel(t,k))+' ×'+n:"";}).filter(Boolean);
+    return parts.length?'<li><span class="ag-k k-team">'+esc(f)+'</span>'+parts.join("、")+'</li>':"";}).filter(Boolean);
+  if(floorRows.length)h+='<div class="bsum-need" style="margin-top:14px"><div class="flabel">各層還需要的掉落（全團合計）</div><ul>'+floorRows.join("")+'</ul></div>';
+  return h+'<p class="hint" style="margin:8px 0 0">一律依「畢業」目標計算，開荒裝不算；沒有設定來源的部位列為「未設定」，不算尚缺。點卡片可以看那個人的明細。</p></div>';
+}
+
 /* ---- 畫面 ---- */
 function bisHTML(st){
   const back='<div style="margin-bottom:12px"><button class="linkbtn" data-act="team">← 回 '+esc(st.name)+'</button></div>';
-  if(!bisReady.tiers||!bisReady.recs)return back+'<div class="center muted">載入 BiS 資料中…</div>';
+  if(!bisReady.tiers||!bisReady.recs)return back+'<div class="loadbox" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>載入 BiS 資料中…</span></div>';
   const t=bisTier();
   let h=back+'<div class="bishead"><h1>BiS 裝備獲取表</h1>';
   if(bisTiers.length>1)h+='<select class="sel" data-bistier style="max-width:200px">'+bisTiers.map(x=>'<option value="'+esc(x.id)+'"'+(x.id===bisTierId?' selected':'')+'>'+esc(x.name)+'</option>').join("")+'</select>';
@@ -1110,22 +1225,23 @@ function bisMineHTML(t){
   h+='</div>';
   h+='<div class="bisstats"><div class="box"><div class="lab">開荒</div><div class="num">'+countDone(r,"prog")+' / 11</div></div><div class="box"><div class="lab">畢業</div><div class="num">'+countDone(r,"final")+' / 11</div></div>'+
     (t.colls||[]).map(c=>'<label class="box coll"><span class="lab">'+esc(c.n)+'</span><span><input type="checkbox" data-biscoll="'+esc(c.id)+'"'+((r.coll||{})[c.id]?' checked':'')+(edit?'':' disabled')+'> '+((r.coll||{})[c.id]?'已取得':'未取得')+'</span></label>').join("")+'</div>';
+  h+=bisMineSumHTML(t,bisWho,edit);
   h+='<div class="chips" style="margin:6px 0 12px">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div>';
   const link=(r.links||{})[bisSet]||"";
   h+='<div class="bislink">'+(edit?'<input class="sel" data-bislink placeholder="配裝連結（選填）：neko7ina、xivgear 都可以" value="'+esc(link)+'">':'')+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">開啟配裝 ↗</a>':(edit?'':'<span class="muted small">沒有配裝連結</span>'))+'</div>';
-  h+='<div class="mtable"><table class="bistable"><thead><tr><th>部位</th><th>裝備名稱</th><th>來源</th><th>狀態</th>'+(bisSet==="prog"?'<th>同畢業</th>':'')+'</tr></thead><tbody>';
+  h+='<div class="mtable bmine"><table class="bistable"><thead><tr><th>部位</th><th>裝備名稱</th><th>來源</th><th>狀態</th>'+(bisSet==="prog"?'<th>同畢業</th>':'')+'</tr></thead><tbody>';
   for(const s of BIS_SLOTS){
     const sl=bslot(r,bisSet,s.k);const same=bisSet==="prog"&&sl.same;const eff=same?bslot(r,"final",s.k):sl;
     const done=doneOf(r,bisSet,s.k);
     const upg=bisSet==="prog"&&finalHas(r,s.k);
     const st=upg?"✓ 已換成畢業裝":same?"跟畢業一起拿":sl.st==="aug"?"✓ 已強化":sl.st==="got"?(sl.src==="tome"&&sl.aug?"已取得・待強化":"✓ 已取得"):"未取得";
-    h+='<tr class="'+(done?'done':slotPartial(sl)?'part':'')+'"><td>'+s.n+'</td>'+
-      '<td>'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+s.k+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
-      '<td>'+(same?'<span class="src s-'+(eff.src||"")+'">'+(BIS_SRC[eff.src]||"—")+'</span>':
+    h+='<tr class="'+(done?'done':slotPartial(sl)?'part':'')+'"><td class="bt-slot">'+s.n+'</td>'+
+      '<td data-label="名稱">'+(same?'<span class="muted">'+esc(eff.name||"（同畢業）")+'</span>':edit?'<input class="nm-in" data-bisname="'+s.k+'" maxlength="40" value="'+esc(sl.name||"")+'" placeholder="（選填）">':esc(sl.name||""))+'</td>'+
+      '<td data-label="來源">'+(same?'<span class="src s-'+(eff.src||"")+'">'+(BIS_SRC[eff.src]||"—")+'</span>':
         '<button class="src s-'+(sl.src||"none")+'" data-bissrc="'+s.k+'"'+(edit?'':' disabled')+'>'+(BIS_SRC[sl.src]||"設定來源")+'</button>'+
         (sl.src==="tome"?'<label class="augck"><input type="checkbox" data-bisaug="'+s.k+'"'+(sl.aug?' checked':'')+(edit?'':' disabled')+'>需強化</label>':''))+'</td>'+
-      '<td>'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+s.k+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
-      (bisSet==="prog"?'<td><input type="checkbox" data-bissame="'+s.k+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
+      '<td data-label="狀態">'+(same||upg?'<span class="small'+(upg?'':' muted')+'">'+st+'</span>':'<button class="stbtn" data-bisst="'+s.k+'"'+(edit&&sl.src?'':' disabled')+'>'+st+'</button>')+'</td>'+
+      (bisSet==="prog"?'<td data-label="同畢業"><input type="checkbox" data-bissame="'+s.k+'"'+(sl.same?' checked':'')+(edit?'':' disabled')+' aria-label="同畢業"></td>':'')+'</tr>';
   }
   h+='</tbody></table></div>';
   if(edit){
@@ -1141,7 +1257,7 @@ function bisMineHTML(t){
 }
 function bisAllHTML(t){
   const ms=bisMembers();
-  let h='<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
+  let h=bisTeamSumHTML(t)+'<div class="panel"><div class="phead"><h2>全團總表</h2><div class="chips">'+[["prog","開荒"],["final","畢業"]].map(([k,n])=>'<button class="chip" data-bisset="'+k+'" aria-pressed="'+(bisSet===k)+'">'+n+'</button>').join("")+'</div></div>';
   h+='<div class="bislegend"><span><span class="sw" style="background:color-mix(in srgb,var(--raid) 24%,transparent);color:var(--raid)">零</span>零式</span>'+
     '<span><span class="sw" style="background:color-mix(in srgb,var(--tome) 24%,transparent);color:var(--tome)">點</span>點數</span>'+
     '<span><span class="sw" style="background:color-mix(in srgb,var(--craft) 24%,transparent);color:var(--craft)">製</span>製作</span>'+
@@ -1230,7 +1346,7 @@ async function bisClick(t,e){
   const T=bisTier();
   const go2=x=>t.closest(x);
   let el;
-  if((el=go2("[data-bistab]"))){bisTab=el.dataset.bistab;bisDraft=null;render();return true;}
+  if((el=go2("[data-bistab]"))){if(bisTab==="settings"&&el.dataset.bistab!=="settings"&&!leaveOk())return true;bisTab=el.dataset.bistab;bisDraft=null;render();return true;}
   if((el=go2("[data-bisset]"))){bisSet=el.dataset.bisset;render();return true;}
   if((el=go2("[data-bisfloor]"))){bisFloor=+el.dataset.bisfloor;render();return true;}
   if((el=go2("[data-bisgo]"))){bisWho=el.dataset.bisgo;bisTab="mine";render();return true;}
@@ -1252,39 +1368,41 @@ async function bisClick(t,e){
     const ref=await addDoc(collection(db,"statics",curTid,"bisTiers"),d);bisTierId=ref.id;bisDraft=null;toast("已新增，請在設定裡填寫名稱與掉落表");return true;}
   if(act==="bisParse"){
     const r=bisParse($("#bisPaste").value,T);if(r.error){toast(r.error);return true;}
-    const rec=recOf(bisWho),patch={};
+    const who=bisWho,rec=recOf(who),patch={};
     r.items.forEach(it=>{const sl=bslot(rec,bisSet,it.k);patch[bisSet+"."+it.k]={...sl,name:it.name,src:it.src,aug:it.aug,st:sl.st||"none",same:false};});
-    await bisPatch(bisWho,patch);toast("已套用 "+r.items.length+" 件，請檢查來源是否正確");return true;
+    await bisBulk(go2("[data-act]"),who,patch,"已套用 "+r.items.length+" 件，請檢查來源是否正確");return true;
   }
   if(act==="bisTemplate"){
     const btn=go2("[data-act]");if(!armedTwice("tpl"+bisSet,btn,"再按一次確認套用"))return true;
-    const rec=recOf(bisWho),patch={};
+    const who=bisWho,rec=recOf(who),patch={};
     BIS_SLOTS.forEach(s=>{const sl=bslot(rec,bisSet,s.k);const tp=bisSet==="final"?FINAL_TEMPLATE[s.k]:["tome",0];
       patch[bisSet+"."+s.k]={...sl,src:tp[0],aug:!!tp[1],st:sl.st==="aug"&&!tp[1]?"got":(sl.st||"none"),same:false};});
-    await bisPatch(bisWho,patch);toast("已套用，請依實際配裝微調");return true;
+    await bisBulk(btn,who,patch,"已套用常見配置，請依實際配裝微調");return true;
   }
   if(act==="bisCopy"){
     const from=$("#bisCopyFrom").value;if(!from){toast("請先選擇成員");return true;}
-    const src=recOf(from)[bisSet]||{},rec=recOf(bisWho),patch={};
+    const who=bisWho,src=recOf(from)[bisSet]||{},rec=recOf(who),patch={};
     BIS_SLOTS.forEach(s=>{const o=src[s.k];if(!o)return;const sl=bslot(rec,bisSet,s.k);
       patch[bisSet+"."+s.k]={...sl,src:o.src||"",aug:!!o.aug,name:o.name||"",same:!!o.same,st:sl.st||"none"};});
-    await bisPatch(bisWho,patch);toast("已複製 "+nameOf(users[from])+" 的設定");return true;
+    await bisBulk(go2("[data-act]"),who,patch,"已複製 "+nameOf(users[from])+" 的設定");return true;
   }
   if(act==="lootAdd"){
     const d=bisDraft;if(!d.item||!d.to){toast("請選擇物品和成員");return true;}
-    await addDoc(collection(db,"statics",curTid,"loot"),{tier:bisTierId,week:d.week,floor:+d.floor,item:d.item,to:d.to,by:me.uid,createdAt:Date.now()});
-    // 自動更新進度
-    const rec=recOf(d.to);let msg="已記錄";
-    if(d.item.startsWith("c:")){await bisPatch(d.to,{["coll."+d.item.slice(2)]:true});msg+="，已勾選收藏品";}
+    const lb=go2("[data-act]");lb.disabled=true;lb.textContent="記錄中…";
+    const lref=await addDoc(collection(db,"statics",curTid,"loot"),{tier:bisTierId,week:d.week,floor:+d.floor,item:d.item,to:d.to,by:me.uid,createdAt:Date.now()});
+    // 自動更新進度（同時記下原本的值，讓「復原」可以改回去）
+    const rec=recOf(d.to),to=d.to,tierAt=bisTierId,undoP={};let msg="已記錄";
+    if(d.item.startsWith("c:")){const ck="coll."+d.item.slice(2);undoP[ck]=!!(rec.coll||{})[d.item.slice(2)];await bisPatch(d.to,{[ck]:true});msg+="，已勾選收藏品";}
     else if(d.item.startsWith("mat")){
       const sl=BIS_SLOTS.filter(s=>MAT_OF[s.g]===d.item&&(()=>{const f=bslot(rec,"final",s.k);return f.src==="tome"&&f.aug&&f.st!=="aug";})());
       msg+=sl.length?"。可以強化："+sl.map(s=>s.n).join("、")+"（強化後請到我的 BiS 勾選）":"";
     }else{
       const s=BIS_SLOTS.find(x=>x.d===d.item&&(()=>{const f=bslot(rec,"final",x.k);return f.src==="raid"&&f.st!=="got"&&f.st!=="aug";})());
-      if(s){await bisPatch(d.to,{["final."+s.k]:{...bslot(rec,"final",s.k),st:"got"}});msg+="，已勾選畢業的"+s.n;}
+      if(s){undoP["final."+s.k]=bslot(rec,"final",s.k);await bisPatch(d.to,{["final."+s.k]:{...bslot(rec,"final",s.k),st:"got"}});msg+="，已勾選畢業的"+s.n;}
       else msg+="（提醒：他的畢業目標這格不是零式或已經有了）";
     }
-    bisDraft={...d,to:""};toast(msg);render();return true;
+    bisDraft={...d,to:""};render();
+    undoToast(msg,async()=>{await deleteDoc(lref);if(Object.keys(undoP).length&&bisTierId===tierAt)await bisPatch(to,undoP);});return true;
   }
   if(act==="bisCollAdd"){bisDraft.colls.push({id:"c"+Date.now().toString(36),n:""});render();return true;}
   if(act==="bisSaveTier"){
@@ -1292,7 +1410,7 @@ async function bisClick(t,e){
     const colls=d.colls.filter(c=>c.n.trim()).map(c=>({id:c.id,n:c.n.trim()}));const ids=colls.map(c=>"c:"+c.id);
     const drops={};d.floors.forEach((f,i)=>drops["f"+i]=((d.drops["f"+i])||[]).filter(k=>!k.startsWith("c:")||ids.includes(k)));
     await updateDoc(doc(db,"statics",curTid,"bisTiers",T.id),{name:d.name.trim()||"零式",floors:d.floors.map(f=>f.trim()||"?"),drops,mats:d.mats,colls,kw:d.kw,confirmed:!!d.confirmed});
-    bisDraft=null;toast("已儲存設定");render();return true;
+    bisDraft=null;formDirty=false;toast("已儲存設定");render();return true;
   }
   if((el=go2("[data-bcollrm]"))){bisDraft.colls.splice(+el.dataset.bcollrm,1);render();return true;}
   return false;
@@ -1331,7 +1449,7 @@ async function createStatic(btn){
   try{
     const ref=await addDoc(collection(db,"statics"),{name,slogan:"",intro:"",targets:DEFAULT_TARGETS,roles:{},leaders:{},
       modules:{guide:"owner",bis:"owner",mit:"owner",review:"owner"},createdAt:Date.now()});
-    toast("已建立「"+name+"」");go("team",ref.id);
+    toast("已建立「"+name+"」");formDirty=false;go("team",ref.id);
   }catch(e){console.error(e);toast("建立失敗：請確認 Firestore 規則已更新");btn.disabled=false;}
 }
 
@@ -1538,17 +1656,18 @@ document.addEventListener("click",async e=>{
       if(a==="qpick"){e.preventDefault();const k=act.dataset.pick;quickPick=quickPick===k?null:k;render();
         const f=quickPick&&document.querySelector("#qpick .qp");if(f)f.focus();else{const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();}return;}
       if(a==="qpickClose"){const k=quickPick;quickPick=null;render();const b=document.querySelector('[data-pick="'+k+'"]');if(b)b.focus();return;}
+      if(a==="agendaMore"){agendaMore=!agendaMore;render();const b=document.querySelector('[data-act="agendaMore"]');if(b)b.focus();return;}
       if(a==="membersToggle"){membersOpen=!membersOpen;render();const b=document.querySelector('[data-act="membersToggle"]');if(b)b.focus();return;}
       if(a==="dclogin"){location.href=W+"/auth/discord/login?return="+encodeURIComponent(location.origin+location.pathname+location.search);return;}
       if(a==="glogin"){await signInWithPopup(auth,new GoogleAuthProvider());return;}
       if(a==="logout"){await signOut(auth);go("lobby",null);return;}
       if(a==="lobby"){e.preventDefault();go("lobby",null);return;}
       if(a==="profile"){profileDraft=null;view="profile";render();return;}
-      if(a==="cancelProfile"){profileDraft=null;view=curTid?"team":"lobby";render();return;}
+      if(a==="cancelProfile"){profileDraft=null;formDirty=false;view=curTid?"team":"lobby";render();return;}
       if(a==="saveProfile")return saveProfile(act);
       if(a==="create"){go("create",null);return;}
       if(a==="linkNew"){linkDraft={url:"",title:"",desc:"",cat:LINK_CATS[0],lang:"繁中"};view="linkform";window.scrollTo(0,0);render();return;}
-      if(a==="linkCancel"){linkDraft=null;go("lobby",null);return;}
+      if(a==="linkCancel"){linkDraft=null;formDirty=false;go("lobby",null);return;}
       if(a==="linkSave")return saveLink(act);
       if(a==="seedLinks")return seedLinks(act);
       if(a==="createStatic")return createStatic(act);
@@ -1583,7 +1702,7 @@ document.addEventListener("click",async e=>{
         act.disabled=true;
         const size=$("#tSize").value==="4"?4:8,cs=cur(),hid=size===4?["ST","H2","D3","D4"].filter(k=>(cs.roles||{})[k]):[];
         await updateDoc(doc(db,"statics",curTid),{name,slogan:$("#tSlogan").value.trim(),intro:$("#tIntro").value.trim(),targets,size});
-        tgtDraft=null;toast(hid.length?"已儲存；原本在 "+hid.join("、")+" 的成員會先列為替補":"已儲存");act.disabled=false;return;
+        tgtDraft=null;formDirty=false;toast(hid.length?"已儲存；原本在 "+hid.join("、")+" 的成員會先列為替補":"已儲存");act.disabled=false;return;
       }
       if(a==="leaderAdd"){
         const id=$("#leaderAdd").value;if(!id){toast("請先選擇成員");return;}
