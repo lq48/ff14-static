@@ -239,6 +239,7 @@ textarea.f{min-height:96px;resize:vertical}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
+import { JOBS as JOBS_ALL, safeUrl } from "./common.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -247,13 +248,8 @@ const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
 mountNav({page:"team",auth,bottom:false});
 
 /* ===== 常數 ===== */
-const JOBS=[
-  {k:"PLD",n:"騎士",r:"tank"},{k:"WAR",n:"戰士",r:"tank"},{k:"DRK",n:"暗黑騎士",r:"tank"},{k:"GNB",n:"絕槍戰士",r:"tank"},
-  {k:"WHM",n:"白魔道士",r:"heal"},{k:"SCH",n:"學者",r:"heal"},{k:"AST",n:"占星術師",r:"heal"},{k:"SGE",n:"賢者",r:"heal"},
-  {k:"MNK",n:"武僧",r:"dps"},{k:"DRG",n:"龍騎士",r:"dps"},{k:"NIN",n:"忍者",r:"dps"},{k:"SAM",n:"武士",r:"dps"},{k:"RPR",n:"奪魂者",r:"dps"},{k:"VPR",n:"毒蛇劍士",r:"dps"},
-  {k:"BRD",n:"吟遊詩人",r:"dps"},{k:"MCH",n:"機工士",r:"dps"},{k:"DNC",n:"舞者",r:"dps"},
-  {k:"BLM",n:"黑魔道士",r:"dps"},{k:"SMN",n:"召喚士",r:"dps"},{k:"RDM",n:"赤魔道士",r:"dps"},{k:"PCT",n:"繪靈法師",r:"dps"}
-];
+/* 職業表在 common.js（全站共用）；減傷軸用全名 */
+const JOBS=JOBS_ALL.map(j=>({k:j.k,n:j.n,r:j.r}));
 const SHORT={DRK:"暗騎",GNB:"絕槍",WHM:"白魔",AST:"占星",DRG:"龍騎",RPR:"奪魂",VPR:"毒蛇",BRD:"詩人",MCH:"機工",BLM:"黑魔",SMN:"召喚",RDM:"赤魔",PCT:"繪靈"};
 const JOB=Object.fromEntries(JOBS.map(j=>[j.k,{...j,s:SHORT[j.k]||j.n}]));
 let showNames=true;try{showNames=localStorage.getItem("mitNames")!=="0";}catch(e){}
@@ -284,8 +280,6 @@ let unDuty=null,unPlan=null,unSlots=null,ready={duties:false,lib:false};
 /* ===== 小工具 ===== */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-/* 連結只接受 http(s)，其他（例如 javascript:）一律不給連 */
-const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"#";
 const uid=()=>Math.random().toString(36).slice(2,9);
 const clone=o=>JSON.parse(JSON.stringify(o));
 function secs(t){if(!t)return null;const m=String(t).trim().match(/^(\d+)(?::(\d{1,2}))?$/);if(!m)return null;return m[2]!=null?(+m[1])*60+(+m[2]):+m[1];}

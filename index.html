@@ -329,18 +329,14 @@ import { initAwayMini } from "./away-mini.js?v=gr3";
 import { startIcons, icon } from "./icons.js?v=5";
 import { mountNav, setNavUser, setNavActive } from "./nav.js?v=2";
 import { undoToast } from "./ui.js?v=1";
+import { JOBS as JOBS_ALL, readyState, bestSlot, cleanRsvp, safeUrl } from "./common.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- 常數 ---------- */
-const JOBS=[
-  {k:"PLD",n:"騎士",c:"tank"},{k:"WAR",n:"戰士",c:"tank"},{k:"DRK",n:"暗黑騎士",c:"tank"},{k:"GNB",n:"絕槍戰士",c:"tank"},
-  {k:"WHM",n:"白魔道士",c:"heal"},{k:"SCH",n:"學者",c:"heal"},{k:"AST",n:"占星術師",c:"heal"},{k:"SGE",n:"賢者",c:"heal"},
-  {k:"MNK",n:"武僧",c:"melee"},{k:"DRG",n:"龍騎士",c:"melee"},{k:"NIN",n:"忍者",c:"melee"},{k:"SAM",n:"武士",c:"melee"},{k:"RPR",n:"奪魂者",c:"melee"},{k:"VPR",n:"毒蛇劍士",c:"melee"},
-  {k:"BRD",n:"吟遊詩人",c:"phys"},{k:"MCH",n:"機工士",c:"phys"},{k:"DNC",n:"舞者",c:"phys"},
-  {k:"BLM",n:"黑魔道士",c:"magic"},{k:"SMN",n:"召喚士",c:"magic"},{k:"RDM",n:"赤魔道士",c:"magic"},{k:"PCT",n:"繪靈法師",c:"magic"}
-].map(j=>({...j,r:j.c==="tank"||j.c==="heal"?j.c:"dps"}));
+/* 職業表在 common.js（全站共用）；大廳用全名 */
+const JOBS=JOBS_ALL.map(j=>({k:j.k,n:j.n,c:j.c,r:j.r}));
 const JOB_CATS=[{k:"tank",n:"防護職業"},{k:"heal",n:"治療職業"},{k:"melee",n:"近戰職業"},{k:"phys",n:"遠程物理職業"},{k:"magic",n:"遠程魔法職業"}];
 const LINK_CATS=["資料查詢","配裝","戰鬥與排行","減傷與攻略","生活職業","幻化與收藏","小工具","官方","其他"];
 const LINK_LANGS=["繁中","簡中","英文","日文","其他"];
@@ -384,8 +380,6 @@ const DEFAULT_TARGETS=[
 /* ---------- 小工具 ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-/* 連結只接受 http(s)，其他（例如 javascript:）一律不給連 */
-const safeUrl=u=>/^https?:\/\//i.test(String(u||""))?String(u):"#";
 const W=WORKER_URL.replace(/\/+$/,"");
 function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2800);}
 const armed={};
@@ -643,7 +637,7 @@ function evActive(){const pd=n=>String(n).padStart(2,"0"),t=new Date(),td=t.getF
   return evs.filter(e=>e.status!=="closed"&&(!last(e)||last(e)>=td)).sort((a,b)=>(last(a)||"9").localeCompare(last(b)||"9"));}
 function syncEvRs(){const want=new Set(evActive().slice(0,6).map(e=>e.id));
   Object.keys(evSubs).forEach(id=>{if(!want.has(id)){evSubs[id]();delete evSubs[id];delete evRs[id];}});
-  want.forEach(id=>{if(evSubs[id])return;evSubs[id]=onSnapshot(collection(db,"events",id,"rsvp"),s=>{evRs[id]={};s.forEach(d=>{evRs[id][d.id]=d.data();});render(true);},()=>{});});}
+  want.forEach(id=>{if(evSubs[id])return;evSubs[id]=onSnapshot(collection(db,"events",id,"rsvp"),s=>{evRs[id]={};s.forEach(d=>{evRs[id][d.id]=cleanRsvp(d.data());});render(true);},()=>{});});}
 /* 飛地大廳：揪團活動 */
 function eventsPanelHTML(){
   const WKD="日一二三四五六",pd=n=>String(n).padStart(2,"0"),t=new Date(),td=t.getFullYear()+"-"+pd(t.getMonth()+1)+"-"+pd(t.getDate());
@@ -654,7 +648,8 @@ function eventsPanelHTML(){
     (act.length?'<div class="evl">'+act.slice(0,6).map(e=>{const f=e.status==="fixed"&&(e.slots||[]).find(s=>s.id===e.fixed);
       const R=evRs[e.id]||{},ys=Object.keys(R).filter(u=>R[u].go==="y"),ms=Object.keys(R).filter(u=>R[u].go==="m"),need=e.minSize||e.size||0;
       const av=ys.concat(ms).slice(0,10).map(u=>'<img src="'+esc(avatarUrl(users[u]))+'" alt="" title="'+esc(nameOf(users[u])+(R[u].go==="m"?"（看時間）":""))+'"'+(R[u].go==="m"?' class="mb"':'')+' loading="lazy">').join("");
-      const st=need?(ys.length>=need?'<span class="evs ok">人數夠了</span>':'<span class="evs">還差 '+(need-ys.length)+' 人</span>'):'';
+      const bs=bestSlot(e,R),rs=bs?readyState(e,bs):{state:""};
+      const st=({ok:'<span class="evs ok">可以成團</span>',maybe:'<span class="evs">算上勉強的可以成團</span>',roles:'<span class="evs">職能還不齊</span>',short:'<span class="evs">還差 '+(rs.lack||0)+' 人</span>'})[rs.state]||'';
       const mine=me&&R[me.uid]?'<span class="evs me">'+({y:"你要來",m:"你在看時間",n:"你這次不行"}[R[me.uid].go]||"已回覆")+'</span>':'<span class="evs todo">你還沒回</span>';
       return '<a class="evi" href="events.html?e='+encodeURIComponent(e.id)+'"><div class="evt"><span class="evk">'+esc(e.kind||"其他")+'</span><b>'+esc(e.title)+'</b><span class="muted">'+(f?'確定 '+esc(wt(f)):(e.slots||[]).length?'調查中：'+esc((e.slots||[]).slice(0,2).map(wt).join("、"))+((e.slots||[]).length>2?" 等":""):'調查中')+'</span></div>'+
         '<div class="evb"><span class="eva">'+av+'</span><span class="evn">'+(ys.length||ms.length?ys.length+' 人要來'+(ms.length?'・'+ms.length+' 人看時間':''):'還沒有人報名')+'</span>'+st+'<span class="sp"></span>'+mine+'</div></a>';}).join("")+'</div>'
@@ -728,9 +723,10 @@ function svCrew(x){
 }
 function evCount(e){
   const R=evRs[e.id];if(!R)return null;
-  let sure=0;Object.values(R).forEach(r=>{if(!r||r.go==="n")return;const a=(r.slots||{})[e.fixed];if(a==="y"||(!a&&r.go==="y"))sure++;});
+  /* 和揪團頁一樣：這個時間勾「可以」才算確定（common.js 的 slotTally） */
+  const bs=bestSlot(e,R),sure=bs?bs.ok.length:0;
   const mine=me&&R[me.uid];let my="todo";
-  if(mine){const a=(mine.slots||{})[e.fixed];my=mine.go==="n"||a==="n"?"no":(a==="y"||(!a&&mine.go==="y"))?"yes":"maybe";}
+  if(mine){const a=(mine.slots||{})[e.fixed];my=mine.go==="n"||a==="n"?"no":a==="y"?"yes":a==="m"?"maybe":"unset";}
   return {sure,my};
 }
 function nextBodyHTML(){
@@ -762,7 +758,7 @@ function nextBodyHTML(){
       '<span class="next-when">'+esc(mdw(main.d))+(main.s.t?' '+esc(main.s.t):'')+(rel?'<small>'+rel+'</small>':'')+'</span>'+
       '<span class="next-what">'+esc(e.title||"揪團活動")+'</span><div class="next-meta">';
     if(c){h+='<span class="stp good">'+c.sure+' 人確定參加</span>';
-      h+=({yes:'<span class="stp info">你會參加</span>',maybe:'<span class="stp soft">你是勉強可以</span>',no:'<span class="stp">你這次不行</span>',todo:'<span class="stp warm">你還沒回覆</span>'})[c.my];}
+      h+=({yes:'<span class="stp info">你會參加</span>',maybe:'<span class="stp soft">你是勉強可以</span>',no:'<span class="stp">你這次不行</span>',todo:'<span class="stp warm">你還沒回覆</span>',unset:'<span class="stp warm">你還沒勾這個時間</span>'})[c.my];}
     h+='</div><div class="next-acts"><a class="btn sm primary" href="events.html?e='+encodeURIComponent(e.id)+'">查看活動</a></div>';
   }
   h+='</div>';
