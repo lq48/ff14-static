@@ -204,6 +204,32 @@ textarea.f{min-height:96px;resize:vertical}
 .slotrow b{width:40px}
 .arm{background:var(--danger)!important;color:#FFFFFF!important;border-color:var(--danger)!important;width:auto!important;padding:0 10px!important;font-size:12px;font-weight:700;white-space:nowrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
+/* Phase 2：我的減傷（列表） */
+.vseg{display:inline-flex;gap:4px;padding:3px;border-radius:999px;background:var(--surface2,var(--bg));align-self:flex-start}
+.vseg button{border:0;background:none;border-radius:999px;padding:6px 14px;min-height:36px;font-weight:700;color:var(--muted)}
+.vseg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.lsel{display:flex;flex-wrap:wrap;gap:8px}.lsel label{display:flex;align-items:center;gap:6px}.lsel select{width:auto;min-height:36px}
+.gw.lmode{background:var(--bg)}
+.mlist{max-width:760px;margin:0 auto;padding:12px 14px 40px;display:grid;gap:10px}
+.lwho{display:flex;flex-wrap:wrap;gap:6px}
+.lchip{display:inline-flex;gap:6px;align-items:center;font-size:13px;padding:4px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.lchip.tank b{color:var(--tank)}.lchip.heal b{color:var(--heal)}.lchip.dps b{color:var(--dps)}
+.lhead{margin:10px 0 0;font-size:14px;color:var(--muted);letter-spacing:.04em}
+.litem{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.litem.tk{box-shadow:inset 4px 0 0 var(--tank)}.litem.hl{box-shadow:inset 4px 0 0 var(--heal)}
+.ltime{font-weight:900;font-size:16px;font-variant-numeric:tabular-nums;line-height:1.2}.ltime small{display:block;font-size:11.5px;font-weight:500;color:var(--muted);margin-top:2px}
+.lbody{min-width:0;display:grid;gap:8px}
+.lmech{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.lmech b{font-size:15px}
+.ldmg{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted)}.ldmg .dt{width:16px;height:16px}
+.lsk{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.lsk li{display:flex;align-items:center;gap:10px}.lsk li>span{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+.lsk small{font-size:12.5px;color:var(--muted)}.lsk .lslot{font-weight:700;color:var(--ink)}
+.warn2{color:var(--maybe,#B26A00)!important;font-weight:700}.bad2{color:var(--danger)!important;font-weight:700}
+.lflag{display:flex;align-items:center;gap:6px;margin:0;font-weight:700}.lflag img{width:22px;height:22px}
+.lteam{margin:0;font-size:13px;color:var(--muted)}
+.lnote2{margin:0;font-size:13.5px;white-space:pre-wrap}.lnote2 b{margin-right:6px;font-size:12px;color:var(--muted)}
+.lnote{margin:0;font-size:12.5px;color:var(--muted)}
+@media (max-width:480px){.litem{grid-template-columns:52px 1fr;gap:10px;padding:10px 12px}}
 </style>
 <link rel="stylesheet" href="cozy.css?v=7">
 </head>
@@ -248,6 +274,9 @@ const tid=qs.get("team")||"";
 let did=qs.get("duty")||"";
 let me=null,isOwner=false,st=null,members={},users={},duties=[],lib={jobs:{}},duty=null,plan={comp:{},rows:{}},slotDocs={};
 let cur=0,sel=null,filt="all",modal=null,toastT=null,gridT=null;
+/* 檢視：grid＝完整時間軸（可編輯）、list＝我的減傷（唯讀列表）；記在這台裝置，手機第一次預設列表 */
+let vmode=(()=>{try{const v=localStorage.getItem("mitView");if(v==="grid"||v==="list")return v;}catch(e){}return matchMedia("(max-width:700px)").matches?"list":"grid";})();
+let listInit=false;
 let dutyDirty=false,dutyT=null,libDirty=false,libT=null,planDirty=false,planT=null;
 let imgCache={},uploading=0;
 let unDuty=null,unPlan=null,unSlots=null,ready={duties:false,lib:false};
@@ -298,7 +327,7 @@ const skillOf=(j,id)=>allJobSkills(j).find(s=>s.id===id);
 const dSlots=()=>(duty&&duty.slots&&duty.slots.length?duty.slots:["MT","H1","D1","D2"]);
 function memberJob(u){if(!u)return "";const m=members[u]||{};return m.job||((users[u]||{}).job)||"";}
 function compOf(s){const c=(plan.comp||{})[s];if(c)return c;const u=((st&&st.roles)||{})[s];return memberJob(u)||"";}
-function vSlots(){return dSlots().filter(s=>filt==="all"||filt===s||(filt==="mine"&&s===mySlot()));}
+function vSlots(){return dSlots().filter(s=>filt==="all"||filt===s||(filt==="mine"&&s===mySlot())||(filt.startsWith("job:")&&compOf(s)===filt.slice(4)));}
 const stage=()=>duty&&duty.stages&&duty.stages[cur];
 const rows=()=>(stage()&&stage().rows)||[];
 const prow=id=>((plan.rows||{})[id])||{};
@@ -336,6 +365,7 @@ function render(){
   if(!me){app.innerHTML='<div class="empty"><p>請先到飛地首頁登入，再回來這一頁。</p><p><a class="btn primary" href="index.html'+(tid?"?team="+encodeURIComponent(tid):"")+'">前往首頁登入</a></p></div>';return;}
   if(tid&&!st){app.innerHTML='<div class="empty">載入固團資料中…</div>';return;}
   if(!canView()){app.innerHTML='<div class="empty"><p>這個固團還沒有開放減傷軸給你。</p><p><a href="index.html?team='+encodeURIComponent(tid)+'">← 回固團</a></p></div>';return;}
+  if(!listInit&&duty&&vmode==="list"){listInit=true;if(filt==="all"&&mySlot()&&dSlots().includes(mySlot()))filt="mine";}
   const editTxt=!tid?(isOwner?"可編輯機制與技能庫":"僅檢視"):canAll()?"可編輯全部":canSlot(mySlot())?"可編輯 "+mySlot():"僅檢視";
   let h='<div class="bar"><div class="bar1"><div>'+(tid?'<a class="back" href="index.html?team='+encodeURIComponent(tid)+'">← 回 '+esc(st.name||"固團")+'</a>':'<a class="back" href="index.html">← 回飛地</a>')+
     '<h1>減傷軸</h1><div class="sub">'+(duty?esc(duty.name)+'・Lv'+esc(duty.level)+'・'+dSlots().length+' 人':'')+'　<span class="perm'+(editTxt!=="僅檢視"?" ed":"")+'">'+esc(editTxt)+'</span></div></div><div class="tools">';
@@ -344,17 +374,59 @@ function render(){
   if(tid&&duty)h+='<button class="btn" data-a="comp">陣容</button>';
   if(tid&&duty)h+='<button class="btn" data-a="names" aria-pressed="'+showNames+'">'+(showNames?"隱藏玩家":"顯示玩家")+'</button>';
   h+='<button class="btn" data-a="skills">技能庫</button>'+(duty?'<button class="btn" data-a="text">文字小抄</button>':'')+'<button class="btn" data-a="io">匯出／匯入</button></div></div>';
+  if(duty)h+='<div class="vseg" role="group" aria-label="檢視方式"><button type="button" data-a="vmode" data-v="list" aria-pressed="'+(vmode==="list")+'">我的減傷</button><button type="button" data-a="vmode" data-v="grid" aria-pressed="'+(vmode==="grid")+'">完整時間軸'+(canAll()||canSlot(mySlot())?'（編輯）':'')+'</button></div>';
   if(duty){
     h+='<div class="scrollx">'+(duty.stages||[]).map((s,i)=>'<button class="tab'+(i===cur?" on":"")+'" data-a="stage" data-i="'+i+'">'+esc(s.name)+'</button>').join("")+'</div>';
     h+='<div class="scrollx"><span class="lbl">只看</span><button class="tab'+(filt==="all"?" on":"")+'" data-a="filt" data-s="all">全部</button>'+(mySlot()&&dSlots().includes(mySlot())?'<button class="tab'+(filt==="mine"?" on":"")+'" data-a="filt" data-s="mine">我的</button>':'')+
       dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+s+'">'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
+    if(vmode==="list"&&tid){const R2=(st&&st.roles)||{},mem=dSlots().filter(x=>R2[x]&&users[R2[x]]),jobs=[...new Set(dSlots().map(compOf).filter(Boolean))];
+      h+='<div class="lsel"><label><span class="lbl">依成員</span><select class="f" data-lf="mem"><option value="">選擇成員…</option>'+mem.map(x=>'<option value="'+x+'"'+(filt===x?" selected":"")+'>'+esc(nameOf(users[R2[x]]))+'（'+x+'）</option>').join("")+'</select></label>'+
+        '<label><span class="lbl">依職業</span><select class="f" data-lf="job"><option value="">選擇職業…</option>'+jobs.map(j=>'<option value="job:'+j+'"'+(filt==="job:"+j?" selected":"")+'>'+esc((JOB[j]||{}).n||j)+'</option>').join("")+'</select></label></div>';}
   }
-  h+='</div><div class="gw" id="gw"></div>';
+  h+='</div><div class="gw'+(vmode==="list"&&duty?" lmode":"")+'" id="gw"></div>';
   const og=$("#gw"),ox=og?og.scrollLeft:0,oy=og?og.scrollTop:0,wy=window.scrollY;
   app.innerHTML=h;const ng=$("#gw");renderGrid();if(ng){ng.scrollLeft=ox;ng.scrollTop=oy;}if(wy)window.scrollTo(0,wy);
 }
+/* ===== 我的減傷：依位置列出要放的技能（和完整時間軸用同一份資料與計算） ===== */
+function renderList(){
+  const gw=$("#gw");if(!gw)return;
+  const V=vSlots(),all=filt==="all",rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),ms=mySlot();
+  if(!all&&!V.length){gw.innerHTML='<div class="empty">這個副本沒有符合的位置。</div>';return;}
+  const R2=(st&&st.roles)||{};
+  let h='<div class="mlist">';
+  if(all)h+='<p class="lnote">目前顯示全部位置。按上方「我的」或某個位置，只看那個人要放的技能。</p>';
+  else h+='<div class="lwho">'+V.map(x=>{const j=compOf(x),u=R2[x];return'<span class="lchip '+((JOB[j]||{}).r||SLOT_ROLE[x])+'"><b>'+x+'</b>'+esc(j?(JOB[j]||{}).n||j:"未設定職業")+(u&&users[u]?'・'+esc(nameOf(users[u])):'')+(x===ms?'（你）':'')+'</span>';}).join("")+'</div>';
+  let head=null,n=0;
+  rs.forEach((r,i)=>{
+    if(r.virt)return; // 讀條的虛擬列只用來推算時間，和完整時間軸一樣
+    if(r.kind==="head"){head=r;}
+    const p=prow(r.id),sk=[];
+    V.forEach(x=>{const j=compOf(x);assign(x,r.id).forEach(id=>{const k=skillOf(j,id);if(!k)return;const c=C[r.id+"|"+x+"|"+id]||{};sk.push({x,j,k,eo:early(x,r.id,id),tg:target(x,r.id,id),bad:c.bad,short:c.short});});});
+    const lb=p.lb&&V.includes(p.lb);
+    if(!sk.length&&!lb&&!(all&&(r.kind==="head"||p.note)))return;
+    if(head&&head!==r&&!head._shown){h+='<h3 class="lhead">'+esc(head.mech||"")+'</h3>';head._shown=1;}
+    if(r.kind==="head"&&!sk.length&&!lb){h+='<h3 class="lhead">'+esc(r.mech||"")+'</h3>';r._shown=1;return;}
+    n++;
+    const tt=r.t?esc(r.t):(E[i].v!=null?'約 '+fmt(E[i].v):'—'),tb=T[r.id+"|B"]||{},tp=T[r.id+"|P"]||{};
+    h+='<article class="litem'+(r.tag==="死刑"?" tk":r.tag==="全體AOE"?" hl":"")+'"><div class="ltime">'+tt+(r.t0?'<small>'+esc(r.t0)+' 讀條</small>':'')+'</div><div class="lbody">'+
+      '<div class="lmech"><b>'+esc(r.mech||"（未命名機制）")+'</b>'+(r.tag?'<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>':'')+(r.ctag?'<span class="pill c">'+esc(r.ctag)+'</span>':'')+
+        ((r.hits||[]).length?'<span class="ldmg">'+r.hits.map(x=>dIco(x.dtype)+esc(x.dmg||(DTYPE[x.dtype]?DTYPE[x.dtype].n:""))+(+x.n>1?"×"+(+x.n):"")).join(" → ")+'</span>':'')+'</div>'+
+      (sk.length?'<ul class="lsk">'+sk.map(o=>'<li data-r="'+r.id+'" data-s="'+o.x+'" data-k="'+o.k.id+'">'+skIco(o.j,o.k)+'<span><b>'+esc(o.k.name)+'</b>'+(V.length>1?'<small class="lslot">'+o.x+'</small>':'')+(o.tg?'<small>→ '+esc(o.tg)+'</small>':'')+(o.eo?'<small class="warn2">提前 '+o.eo+' 秒放</small>':'')+
+        (o.bad?'<small class="bad2">CD 還差 '+Math.ceil(o.bad)+' 秒</small>':o.short==="judge"?'<small class="bad2">效果在判定前就結束</small>':o.short==="tail"?'<small class="warn2">效果撐不到最後一下</small>':'')+'</span></li>').join("")+'</ul>':'')+
+      (lb?'<p class="lflag"><img src="'+LB_ICON+'" alt="">'+esc(p.lb)+' 放 LB</p>':'')+
+      ((p.burst||p.pot)?'<p class="lteam">'+(p.burst?'全隊 '+esc(p.burst)+' 爆發':'')+(p.burst&&p.pot?'・':'')+(p.pot?'吃爆發藥':'')+'</p>':(tb.act&&tb.v==="120"?'<p class="lteam">120 爆發中</p>':''))+
+      (p.note?'<p class="lnote2"><b>解法</b>'+esc(p.note)+'</p>':'')+(r.desc?'<p class="lnote2"><b>說明</b>'+esc(r.desc)+'</p>':'')+
+      ((p.imgs||[]).length||(p.links||[]).length?'<button class="linkbtn" data-a="open" data-r="'+r.id+'">看站位圖與連結（'+((p.imgs||[]).length+(p.links||[]).length)+'）</button>':'')+
+    '</div></article>';
+  });
+  rs.forEach(r=>{if(!r.virt)delete r._shown;});
+  if(!n)h+='<div class="empty">'+(all?"這個階段還沒有安排技能。":esc(V.join("、"))+" 在「"+esc((stage()||{}).name||"")+"」沒有要放的技能。")+'</div>';
+  h+='<p class="lnote">時間前面有「約」的是依前後機制推算的。要修改分配請切到「完整時間軸」。</p></div>';
+  gw.innerHTML=h;
+}
 function renderGrid(){
   const gw=$("#gw");if(!gw)return;
+  if(vmode==="list"&&duty){renderList();return;}
   if(!duty){gw.innerHTML='<div class="empty">'+(!ready.duties?"載入中…":duties.length?"找不到這個副本。":isOwner?"還沒有副本。按「副本設定」新增，或用「匯出／匯入」匯入資料。":"還沒有副本，請等團長建立。")+'</div>';return;}
   const sx=gw.scrollLeft,sy=gw.scrollTop,rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),V=vSlots(),ms=mySlot(),ca=canAll();
   let h='<table class="g'+(showNames?" names":"")+'"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th><th class="jh bh" colspan="2">爆發</th><th class="jh bh">LB</th>';
@@ -491,6 +563,7 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="tcompact"){modal.compact=b.checked;try{localStorage.setItem("mitTextCompact",b.checked?"1":"0");}catch(e){}renderModal();}
   else if(a==="tmode"){modal.slot=b.dataset.s;try{localStorage.setItem("mitTextMode",b.dataset.s===mySlot()?"mine":b.dataset.s);}catch(e){}renderModal();}
   else if(a==="filt"){filt=b.dataset.s;render();}
+  else if(a==="vmode"){vmode=b.dataset.v;try{localStorage.setItem("mitView",vmode);}catch(err){}if(vmode==="list"&&filt==="all"&&mySlot()&&dSlots().includes(mySlot()))filt="mine";render();}
   else if(a==="cell")toggleSkill(b.dataset.s,b.dataset.r,b.dataset.k);
   else if(a==="dtog")toggleSkill(b.dataset.s,sel,b.dataset.k);
   else if(a==="bcell"){const p=prow(b.dataset.r);setP(b.dataset.r,{burst:!p.burst?"120":p.burst==="120"?"60":""});renderGrid();if(sel===b.dataset.r)renderDrawer();}
@@ -691,7 +764,7 @@ function start(){
 }
 
 document.getElementById("app").addEventListener("click",onClick);
-document.addEventListener("change",e=>{if(e.target.id==="dutySel")switchDuty(e.target.value);});
+document.addEventListener("change",e=>{if(e.target.id==="dutySel")switchDuty(e.target.value);else if(e.target.dataset&&e.target.dataset.lf){filt=e.target.value||"all";render();}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(modal)closeModal();else if(sel){sel=null;renderDrawer();renderGrid();}}});
 window.addEventListener("beforeunload",()=>{if(dutyDirty)saveDuty();if(libDirty)saveLib();if(planDirty&&tid)savePlan();});
 
