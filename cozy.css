@@ -115,3 +115,22 @@
 .skin-toggle{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:999px;padding:8px 14px;font:700 13px/1 "Noto Sans TC",sans-serif;
   background:var(--ink);color:var(--bg);box-shadow:0 8px 20px -10px rgba(0,0,0,.5);cursor:pointer;opacity:.85}
 .skin-toggle:hover{opacity:1}
+
+/* ---------- 固定團卡片、成員卡、連結卡（第二輪） ---------- */
+[data-skin="cozy"] .teams{gap:14px}
+[data-skin="cozy"] .teamcard{border:0;border-radius:18px;box-shadow:var(--shadow);transition:transform .15s ease}
+[data-skin="cozy"] .teamcard:hover{transform:translateY(-2px)}
+[data-skin="cozy"] .teams .teamcard:nth-child(3n+1){background:var(--peach)}
+[data-skin="cozy"] .teams .teamcard:nth-child(3n+2){background:var(--sage)}
+[data-skin="cozy"] .teams .teamcard:nth-child(3n+3){background:var(--sky)}
+[data-skin="cozy"] .teamcard .tn{font-family:"Noto Sans TC",sans-serif;font-size:19px}
+[data-skin="cozy"] .teamcard .avs img{border-color:rgba(255,255,255,.8)}
+[data-skin="cozy"] .teamcard .rel{border-radius:999px;background:rgba(255,255,255,.6);color:var(--ink)}
+[data-skin="cozy"] .crystals{gap:14px}
+[data-skin="cozy"] .crystal{border:0;border-left:0;border-radius:18px;background:var(--surface2);box-shadow:none;position:relative}
+[data-skin="cozy"] .crystal::before{content:"";position:absolute;left:14px;right:14px;top:0;height:4px;border-radius:0 0 4px 4px;background:var(--rc)}
+[data-skin="cozy"] .crystal img{box-shadow:0 0 0 3px var(--surface)}
+[data-skin="cozy"] .crystal .tags .target{background:var(--surface)}
+[data-skin="cozy"] .lcard,[data-skin="cozy"] .dropcard{border:0;border-radius:16px;background:var(--surface2)}
+[data-skin="cozy"] .lcard:hover{box-shadow:var(--shadow)}
+[data-skin="cozy"] .lcard.self{border-left:0;box-shadow:inset 0 0 0 2px var(--butter)}
