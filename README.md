@@ -1,41 +1,56 @@
-# 固團出席表（GitHub Pages + Firebase）
+# 光之戰士飛地
 
-團員不用登入，拿到網址就能填；只有團長用 Google 登入後才能發起調查。
+FF14 固定團的線上小據點：大廳（今日飛地）、固定團、BiS、減傷軸、出席調查、自由揪團、請假行事曆、回憶錄。
 
-## 一、建立 Firebase（免費方案即可）
+- 網站：https://lq48.github.io/ff14-static/
+- 架構：純靜態網頁（GitHub Pages）＋ Firebase（Firestore、Authentication）＋ Cloudflare Worker（Discord 登入與通知）
+- 沒有建置流程：改完檔案推上 `main` 就會上線
 
-1. 到 https://console.firebase.google.com 建立新專案（Google Analytics 可以關掉）。
-2. **建立資料庫**：左側「Build → Firestore Database」→「Create database」→ 選「Production mode」→ 地區建議選 `asia-east1 (Taiwan)`。
-3. **貼上規則**：Firestore 的「Rules」分頁，把 `firestore.rules` 的內容整個貼上，
-   把 `your-email@gmail.com` 改成你的 Google 帳號，按「Publish」。
-4. **開啟 Google 登入**：「Build → Authentication」→「Get started」→「Sign-in method」→ 啟用「Google」。
-5. **註冊網頁應用程式**：專案總覽的齒輪 →「Project settings」→ 下方「Your apps」點 `</>` 圖示，
-   隨便取個名字（不用勾 Hosting），完成後會看到一段 `firebaseConfig`。
+## 頁面
 
-## 二、修改 index.html
+| 檔案 | 內容 |
+|---|---|
+| `index.html` | 大廳、靈魂水晶、固定團（陣容、管理、權限）、BiS 與分裝、推薦網站。用網址 `?team=` `&mod=bis` 切換畫面 |
+| `schedule.html` | 出席時間調查（不登入也能填） |
+| `events.html` | 自由揪團：候選時間、回覆、成團判斷、分享到 Discord |
+| `away.html` | 請假行事曆 |
+| `mit.html` | 減傷軸（完整時間軸／我的減傷） |
+| `memories.html` | 飛地回憶錄（照片存在 Firestore） |
+| `moogle.html` | 莫古莫古大收集試算（只存在瀏覽器） |
 
-打開 `index.html`，找到最上面的設定區，把剛才的 `firebaseConfig` 各欄位貼進 `FIREBASE_CONFIG`，
-並把 `OWNER_EMAIL` 改成你的 Google 帳號（和規則裡的一樣）。
+## 共用檔案
 
-> Firebase 的 apiKey 本來就是公開的，放在 GitHub 上沒關係；真正的權限是由 Firestore 規則控管。
+| 檔案 | 內容 |
+|---|---|
+| `config.js` | Firebase 設定、總團長身分、Worker 網址、團員通訊錄（**改一個地方就好**） |
+| `common.js` | 職業表、`esc`／`safeUrl`、揪團成團判斷（`slotTally`、`readyState`）。**同一個數字只在這裡算** |
+| `nav.js` | 全站導覽（頂部列、手機底部導覽、使用者選單） |
+| `cozy.css` | 設計 tokens（色彩、字級、間距）與共用元件 |
+| `skin.js` | 外觀與深淺色設定（放在 `<head>` 最前面） |
+| `icons.js` | 線條圖示（24×24、線寬 1.9） |
+| `ui.js` | 可以「復原」的提示 |
+| `photo.js` | 照片壓縮（WebP） |
+| `away-core.js`、`away-mini.js` | 請假資料讀取與大廳的請假預覽 |
+| `firestore.rules` | Firestore 權限規則（**改了要到 Firebase 主控台發布才會生效**） |
+| `_tests/` | 自動化回歸測試（不會發布到網站），說明見 `_tests/README.md` |
 
-## 三、發佈到 GitHub Pages
+## 登入與權限
 
-1. 在 GitHub 建立新的 repository（例如 `ff14-static`），設為 Public。
-2. 上傳 `index.html`（`firestore.rules` 和 `README.md` 可一起放，不影響網頁）。
-3. repository 的「Settings → Pages」→ Source 選「Deploy from a branch」→ Branch 選 `main`、資料夾 `/ (root)` → Save。
-4. 等一兩分鐘，網址會是 `https://你的帳號.github.io/ff14-static/`。
+- 團員用 **Discord** 登入：Worker 完成 OAuth 後發 Firebase custom token（帳號 ID 是 `dc_` 加 Discord ID，帶 `dc` claim）
+- 總團長另外可以用 Google 帳號備用登入（`config.js` 的 `OWNER_EMAIL`）
+- **真正的權限在 `firestore.rules`**；頁面上隱藏按鈕只是體驗，不是保護
+- Firebase 的 `apiKey` 本來就是公開的，可以放在 GitHub；**Worker 的密鑰（Discord client secret、bot token、服務帳號）絕對不能放進這個 repo**
 
-## 四、把 GitHub 網域加進 Firebase 授權網域（團長登入需要）
+## 修改時的注意事項
 
-Firebase「Authentication → Settings → Authorized domains」→「Add domain」→ 輸入 `你的帳號.github.io`。
+1. **快取版本號**：改了共用檔案（`cozy.css`、`nav.js`、`common.js`…），要把各頁引用的 `?v=` 數字加一，不然團員會拿到舊檔案
+2. **輸出到畫面一律 `esc()`**：包含 `data-*`、`value`、`class` 屬性裡的值。資料庫裡的「選項」欄位也可能被改成任何字串
+3. **連結用 `safeUrl()`**：只接受 http(s)
+4. **新的計算放進 `common.js`**：大廳和功能頁要顯示同一個數字時，不要各算一次
+5. **新增 Firestore collection 或欄位**：先改 `firestore.rules`，在主控台的規則模擬器測過再發布
+6. **改完跑測試**：`python _tests/run_all.py`；開 PR 時 GitHub 也會自動跑
 
-## 使用方式
+## 部署 Firestore 規則
 
-- 團長：打開網址，頁面最下方「用 Google 登入」→ 出現「發起與管理調查」分頁 → 發起調查，把網址傳到群組。
-- 團員：打開網址，選自己的名字，勾時間，按「儲存我的時間」。
-- 團長可以截止填寫、重新開放、清除某人的回覆、刪除整份調查，也能用「複製連結」取得某份調查的專屬網址。
-
-## 要改團員名單時
-
-`index.html` 的 `MEMBERS` 和 `firestore.rules` 的 `isMember` 兩邊都要改，`k` 只能用英數字。
+1. Firebase 主控台 → Firestore Database → 規則
+2. 貼上 `firestore.rules` 的內容 → 用「規則模擬器」試幾個情況（未登入讀取、非作者修改）→ 發布

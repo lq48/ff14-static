@@ -127,7 +127,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
 @media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr 100px 40px}.three{grid-template-columns:1fr 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=9">
+<link rel="stylesheet" href="cozy.css?v=10">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -135,6 +135,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
+import { JOBS as JOBS_ALL, fillComp, readyState, slotTally, cleanRsvp } from "./common.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -146,11 +147,8 @@ const fb=initializeApp(FIREBASE_CONFIG),auth=getAuth(fb),db=getFirestore(fb);
 mountNav({page:"events",auth});
 
 /* ===== 常數 ===== */
-const JOBS=[["PLD","騎士","tank"],["WAR","戰士","tank"],["DRK","暗騎","tank"],["GNB","絕槍","tank"],
-  ["WHM","白魔","heal"],["SCH","學者","heal"],["AST","占星","heal"],["SGE","賢者","heal"],
-  ["MNK","武僧","dps"],["DRG","龍騎","dps"],["NIN","忍者","dps"],["SAM","武士","dps"],["RPR","鐮刀","dps"],["VPR","蛇","dps"],
-  ["BRD","詩人","dps"],["MCH","機工","dps"],["DNC","舞者","dps"],["BLM","黑魔","dps"],["SMN","召喚","dps"],["RDM","赤魔","dps"],["PCT","繪靈","dps"]]
-  .map(([k,n,r])=>({k,n,r}));
+/* 職業表在 common.js（全站共用）；揪團頁用簡稱 */
+const JOBS=JOBS_ALL.map(j=>({k:j.k,n:j.s,r:j.r}));
 const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
 const ROLE_N={tank:"坦",heal:"補",dps:"輸出"};
 const KINDS=["高難度","一般副本","藏寶圖","聚會","其他"];
@@ -187,28 +185,10 @@ const jt=k=>{const j=JOB[k];return j?'<span class="jt '+j.r+'" title="'+esc(j.n)
 function lastDay(e){const ds=(e.slots||[]).map(s=>s.d).filter(Boolean).sort();if(e.status==="fixed"){const f=(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;}return ds[ds.length-1]||"";}
 const isPast=e=>e.status==="closed"||(lastDay(e)&&lastDay(e)<today());
 
-/* ===== 排位：有空的人能不能湊滿 坦/補/輸出 =====
-   每個人只能占一個位置，用二分圖匹配算最多能填滿幾格 */
-function fillComp(e,people){
-  const seats=[];[["tank",e.t||0],["heal",e.h||0],["dps",e.d||0]].forEach(([r,n])=>{for(let i=0;i<n;i++)seats.push(r);});
-  const roles=people.map(p=>new Set((p.jobs||[]).map(k=>(JOB[k]||{}).r).filter(Boolean)));
-  const owner=new Array(seats.length).fill(-1);
-  function aug(pi,seen){for(let s=0;s<seats.length;s++){if(seen[s]||!roles[pi].has(seats[s]))continue;seen[s]=true;if(owner[s]<0||aug(owner[s],seen)){owner[s]=pi;return true;}}return false;}
-  people.forEach((_,pi)=>aug(pi,[]));
-  const got={tank:0,heal:0,dps:0};owner.forEach((o,s)=>{if(o>=0)got[seats[s]]++;});
-  return got;
-}
-
-/* 這個時間能不能成團：人數到最少門檻、職能也湊得齊 */
-function ready(e,x){const mn=e.minSize||e.size||0;if(!mn&&!e.roles)return '';
-  const okRoles=g=>!e.roles||(g.tank>=(e.t||0)&&g.heal>=(e.h||0)&&g.dps>=(e.d||0));
-  const need=e.roles?Math.max(mn,(e.t||0)+(e.h||0)+(e.d||0)):mn;
-  const A=x.ok,B=x.ok.concat(x.mb);
-  let h='';
-  if(A.length>=need&&okRoles(fillComp(e,A)))h='<span class="pill y">可以成團</span>';
-  else if(B.length>=need&&okRoles(fillComp(e,B)))h='<span class="pill m">算上勉強的可以成團</span>';
-  else h='<span class="pill n">'+(A.length>=need?'職能還不齊':'還差 '+(need-A.length)+' 人')+'</span>';
-  if(e.size&&A.length>e.size)h+=' <span class="pill m">超過上限 '+e.size+' 人</span>';
+/* 這個時間能不能成團：判斷邏輯在 common.js 的 readyState（大廳也用同一個） */
+function ready(e,x){const r=readyState(e,x);if(!r.state)return '';
+  let h=r.state==="ok"?'<span class="pill y">可以成團</span>':r.state==="maybe"?'<span class="pill m">算上勉強的可以成團</span>':'<span class="pill n">'+(r.state==="roles"?'職能還不齊':'還差 '+r.lack+' 人')+'</span>';
+  if(r.over)h+=' <span class="pill m">超過上限 '+e.size+' 人</span>';
   return h;}
 
 /* ===== 畫面 ===== */
@@ -268,7 +248,7 @@ function detailHTML(id,e){
   const yes=list.filter(r=>r.go==="y"),may=list.filter(r=>r.go==="m"),no=list.filter(r=>r.go==="n");
   h+='<div class="panel"><h2>大家的回覆　<span class="pill y">想參加 '+yes.length+'</span> <span class="pill m">看時間 '+may.length+'</span> <span class="pill n">不行 '+no.length+'</span></h2>';
   if(slots.length){
-    const stat=slots.map(s=>{const ok=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="y"),mb=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="m");return {s,ok,mb,score:ok.length*2+mb.length};});
+    const stat=slots.map(s=>({s,...slotTally(R,s.id)}));
     const best=Math.max(0,...stat.map(x=>x.score)),mx=Math.max(1,e.size||0,...stat.map(x=>x.ok.length+x.mb.length));
     h+='<div style="margin-bottom:10px">'+stat.map(x=>{let comp='';
       if(e.roles){const gA=fillComp(e,x.ok),gB=fillComp(e,x.ok.concat(x.mb));
@@ -430,16 +410,6 @@ window.addEventListener("beforeunload",ev=>{if(form||(draft&&draft.dirty)){ev.pr
 function readView(){const q=new URLSearchParams(location.search);return q.get("e")?{e:q.get("e")}:{};}
 
 /* ===== 讀取 ===== */
-/* 回覆內容會被拿來組 HTML（例如 class 名稱），讀進來時先限定成已知的值 */
-const YMN=new Set(["y","m","n"]);
-function cleanRsvp(r){
-  r=r&&typeof r==="object"?{...r}:{};
-  r.go=YMN.has(r.go)?r.go:"n";
-  const sl={};Object.entries(r.slots&&typeof r.slots==="object"?r.slots:{}).forEach(([k,v])=>{if(YMN.has(v))sl[k]=v;});r.slots=sl;
-  r.jobs=Array.isArray(r.jobs)?r.jobs.filter(j=>JOB[j]):[];
-  if(r.note!=null)r.note=String(r.note);
-  return r;
-}
 function watchRsvp(id){if(rsvpFor===id)return;if(rsvpUnsub)rsvpUnsub();rsvp={};rsvpFor=id;
   rsvpUnsub=onSnapshot(collection(db,"events",id,"rsvp"),s=>{rsvp={};s.forEach(d=>{rsvp[d.id]=cleanRsvp(d.data());});if(!(draft&&draft.dirty))draft=null;if(!form)render();},err=>{console.error(err);toast("讀取回覆失敗："+(err.code==="permission-denied"?"Firestore 規則可能還沒更新":err.code));});}
 function start(){

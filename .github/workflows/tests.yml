@@ -1,0 +1,22 @@
+# 開 PR 時自動跑回歸測試（不會連正式資料庫，也不會發 Discord 訊息）
+name: 回歸測試
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r _tests/requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python _tests/run_all.py
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: _tests/out/
