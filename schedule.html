@@ -440,7 +440,9 @@ function leaveByDate(sv){if(!leaveAll)return null;const o={};
 const mdw=d=>md(d)+"（"+WD[wd(d)].slice(1)+"）";
 function stopLeave(){Object.values(leaveSubs).forEach(f=>{try{f();}catch(_){}});leaveSubs={};leave={};leaveAll=false;dcUid={};}
 function startLeave(u){stopLeave();if(!u||!(authClaims.dc||isOwner))return;
-  const repaint=()=>{renderFill();renderResults();};
+  /* 只有「畫面上的請假標記」真的變了才重畫，避免資料陸續到達時打斷正在勾選的人 */
+  let sig="";
+  const repaint=()=>{const sv=cur();const n=sv?JSON.stringify([leaveAll,myMember,leaveOf(sv,myMember),leaveByDate(sv)]):"";if(n===sig)return;sig=n;renderFill();renderResults();};
   const self=()=>{if(leaveSubs.self)return;leaveSubs.self=onSnapshot(doc(db,"away",u.uid),s=>{if(s.exists())leave[u.uid]=awayEntries(s.data());else delete leave[u.uid];repaint();},()=>{});};
   leaveSubs.users=onSnapshot(collection(db,"users"),q=>{dcUid={};q.forEach(d=>{const v=d.data()||{};if(v.dc)dcUid[String(v.dc)]=d.id;});repaint();},()=>{});
   leaveSubs.cfg=onSnapshot(doc(db,"awayCfg","main"),s=>{const a=((s.exists()&&s.data().access)||{})[u.uid]||"",all=isOwner||a==="view"||a==="lead";

@@ -13,6 +13,6 @@ for f in files:
     status="✅" if not fl and not crashed else "❌"
     print(f"{status} {os.path.basename(f):24s} 通過 {p:3d}　失敗 {fl:2d}　{time.time()-t:5.1f} 秒"+("　（程式錯誤）" if crashed else ""))
     if fl or crashed:
-        bad.append(f);print("\n".join(["     "+l for l in out.splitlines() if l.startswith("FAIL ") or "Error" in l or "Traceback" in l][:12]))
+        bad.append(f);print("\n".join(["     "+l for l in out.splitlines() if l.startswith("FAIL ") or "Error" in l or "Traceback" in l or re.search(r'File ".*test_\w+\.py", line \d+',l) or "waiting for" in l][:16]))
 print(f"\n合計：通過 {tot_p} 項，失敗 {tot_f} 項" + ("" if not bad else f"，有問題的檔案 {len(bad)} 個"))
 sys.exit(1 if bad else 0)
