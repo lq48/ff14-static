@@ -37,6 +37,8 @@ async def m():
       await visit(b,"events.html?mock=member","揪團列表",[("打開活動",C('.card a, .card, [data-e]'))])
       await visit(b,"events.html?mock=member&e=e1","揪團詳情")
       await visit(b,"events.html?mock=member&e=e2","揪團詳情（調查中）")
+      await visit(b,"events.html?mock=member&e=e3","揪團詳情（有截止、結束時間、職能）")
+      await visit(b,"events.html?mock=member&e=e4","揪團詳情（已截止）")
       await visit(b,"away.html?mock=member","請假行事曆",[("打開請假",C('[data-a="edit"]'))])
       await visit(b,"schedule.html?mock=member&s=sv1","出席調查",[("結果",C('.tab[data-tab="results"]')),("管理",C('.tab[data-tab="manage"]'))])
       await visit(b,"schedule.html","出席調查（未登入）")

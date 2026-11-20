@@ -10,5 +10,7 @@
   }
   const db=window.__MOCK.db;Object.keys(db).forEach(p=>walk(db[p]));
   // 物件的 key 也可能被拿來組 HTML（例如 bis 的部位、減傷軸的列 ID）：另外加一筆奇怪 key 的資料
+  // 數字欄位也可能被改成字串：揪團的回覆截止
+  if(db["events/e3"])db["events/e3"].due=P;
   if(db["statics/s1/bis/t1__u1"])db["statics/s1/bis/t1__u1"].final[P]={src:"raid"+P,st:"got"+P};
 })();

@@ -127,14 +127,18 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .comp{font-size:12.5px;color:var(--muted)}
 .comp b{color:var(--ink)}
 .comp .ok{color:var(--yes)}.comp .lack{color:var(--danger)}
-.srow{display:grid;grid-template-columns:1fr 120px 40px;gap:6px;align-items:center;margin-bottom:6px}
+.srow{display:grid;grid-template-columns:minmax(130px,1fr) 112px auto 112px 40px;gap:6px;align-items:center;margin-bottom:6px}
+.sto{font-size:12.5px;color:var(--muted)}
+.fact.over{color:var(--muted)}
+.dueclosed{border-left:4px solid var(--line)}
+.dueman{margin:0 0 10px}
 .three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
 .arm{background:var(--danger)!important;color:#fff!important;border-color:var(--danger)!important}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
-@media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr 100px 40px}.three{grid-template-columns:1fr 1fr 1fr}}
+@media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr auto 1fr 40px}.srow input[type=date]{grid-column:1/-1}.three{grid-template-columns:1fr 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=11">
+<link rel="stylesheet" href="cozy.css?v=12">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -142,7 +146,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
-import { JOBS as JOBS_ALL, assignComp, fillComp, readyState, slotTally, cleanRsvp } from "./common.js?v=2";
+import { JOBS as JOBS_ALL, assignComp, fillComp, readyState, slotTally, cleanRsvp, slotTimeTxt, slotStart, evDue, dueOver, dueTxt, dueLeft } from "./common.js?v=3";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -182,7 +186,7 @@ function armed(b,label){if(b.dataset.armed)return true;b.dataset.armed="1";const
 const pad=n=>String(n).padStart(2,"0");
 const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c);};
-const whenTxt=s=>{if(!s||!s.d)return "時間未定";const d=parse(s.d);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）"+(s.t?" "+s.t:"");};
+const whenTxt=s=>{if(!s||!s.d)return "時間未定";const d=parse(s.d);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK[d.getDay()]+"）"+(slotTimeTxt(s)?" "+slotTimeTxt(s):"");};
 const today=()=>ymd(new Date());
 function nextDow(dow){const d=new Date();d.setHours(0,0,0,0);while(d.getDay()!==dow)d.setDate(d.getDate()+1);return ymd(d);}
 const canFillFor=t=>!!me&&(t===me.uid||isOwner||!!(((ecfg.proxies||{})[t]||{})[me.uid]));
@@ -231,12 +235,14 @@ function listHTML(){
   const card=([id,e])=>{const f=e.status==="fixed"?(e.slots||[]).find(s=>s.id===e.fixed):null;
     return '<a class="card" href="events.html?e='+encodeURIComponent(id)+'"><div class="row"><span class="pill kind">'+esc(e.kind||"其他")+'</span>'+statusPill(e)+'</div><h3>'+esc(e.title)+'</h3><div class="meta">'+
       (f?'確定時間：'+esc(whenTxt(f)):(e.slots||[]).length?'候選時間：'+esc((e.slots||[]).slice(0,3).map(whenTxt).join("、"))+((e.slots||[]).length>3?" 等":""):"只問參加意願")+
-      '<br>發起人：'+esc(nameOf(users[e.by]))+'</div></a>';};
+      (evDue(e)&&e.status==="open"?'<br>'+esc(dueLine(e)):'')+'<br>發起人：'+esc(nameOf(users[e.by]))+'</div></a>';};
   return '<div class="top"><div><h1>揪團活動</h1><div class="sub">任何人都能發起，問大家要不要參加、哪個時間可以</div></div><div class="row">'+(isOwner?'<button class="btn" data-a="helpers">代填權限</button>':'')+'<button class="btn primary" data-a="new">＋ 發起揪團</button></div></div>'+
     (act.length?'<div class="cards">'+act.map(card).join("")+'</div>':'<div class="panel empty">目前沒有進行中的揪團，來發起一個吧！</div>')+
     (past.length?'<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">已結束的活動（'+past.length+'）</summary><div class="cards" style="margin-top:12px">'+past.map(card).join("")+'</div></details>':'');
 }
-const statusPill=e=>e.status==="fixed"?'<span class="pill fixed">已定案</span>':e.status==="closed"?'<span class="pill closed">已結束</span>':'<span class="pill open">調查中</span>';
+const statusPill=e=>e.status==="fixed"?'<span class="pill fixed">已定案</span>':e.status==="closed"?'<span class="pill closed">已結束</span>':dueOver(e)?'<span class="pill closed">回覆已截止</span>':'<span class="pill open">調查中</span>';
+/* 回覆截止：一行說明（截止前顯示剩多久） */
+const dueLine=e=>{const v=evDue(e);if(!v)return"";return dueOver(e)?"回覆已在 "+dueTxt(v)+" 截止":"回覆截止 "+dueTxt(v)+"（"+dueLeft(v)+"）";};
 
 function detailHTML(id,e){
   if(!who||!canFillFor(who)||(draft&&draft.eid!==id))who=me.uid;
@@ -251,9 +257,16 @@ function detailHTML(id,e){
   const facts=[];if(sizeTxt(e))facts.push('<span class="fact"><b>人數</b>'+sizeTxt(e)+(e.minSize&&e.size&&e.minSize<e.size?'（'+e.minSize+' 人就能出發）':'')+'</span>');
   if(e.roles)facts.push('<span class="fact"><b>職能</b>坦 '+(e.t||0)+'　補 '+(e.h||0)+'　輸出 '+(e.d||0)+'</span>');
   if(e.ilvl)facts.push('<span class="fact"><b>裝等</b>'+esc(e.ilvl)+'</span>');
+  if(evDue(e))facts.push('<span class="fact'+(dueOver(e)?' over':'')+'"><b>回覆截止</b>'+esc(dueTxt(evDue(e)))+(dueOver(e)?'（已截止）':'（'+esc(dueLeft(evDue(e)))+'）')+'</span>');
   h+='<div class="panel">'+(e.desc?'<p class="desc">'+linkify(e.desc)+'</p>':'<p class="muted" style="margin:0">（發起人沒有寫說明）</p>')+(facts.length?'<div class="facts">'+facts.join("")+'</div>':'')+'</div>';
-  // 我的回覆
-  if(e.status!=="closed"){
+  // 我的回覆（截止後只剩發起人和總團長能改，資料庫規則也會擋）
+  const over=dueOver(e);
+  if(e.status!=="closed"&&over&&!mg){
+    const r=R[me.uid];
+    h+='<div class="panel dueclosed"><h2 style="margin:0 0 6px">回覆已截止</h2><p class="muted" style="margin:0">'+esc(dueLine(e))+'。'+(r?'你的回覆：<b>'+({y:"想參加",m:"看時間",n:"這次不行"}[r.go]||"")+'</b>。':'你這次沒有回覆。')+'要改的話，請直接跟發起人 '+esc(nameOf(users[e.by]))+' 說。</p></div>';
+  }
+  if(e.status!=="closed"&&(!over||mg)){
+    if(over)h+='<p class="hint dueman">'+esc(dueLine(e))+'。其他人已經不能回覆，只有你（發起人／總團長）還能修改。</p>';
     h+='<div class="panel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">'+(self?(mine?"你的回覆（可以隨時修改）":"填寫你的意願"):"幫 "+esc(wn)+" 填寫"+(mine?"（已回覆過，可修改）":""))+'</h2>'+
       (canProxy()?'<label class="row" style="font-size:13px">幫誰填：<select class="f" id="who" style="width:auto;min-height:32px">'+[me.uid].concat(Object.keys(users).filter(u=>u!==me.uid&&users[u].dc&&canFillFor(u)).sort((a,b)=>(!!R[a])-(!!R[b])||nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"))).map(u=>'<option value="'+esc(u)+'"'+(u===who?" selected":"")+'>'+(u===me.uid?"自己":esc(nameOf(users[u]))+(R[u]?"（已回覆）":"（還沒回）"))+'</option>').join("")+'</select></label>':'')+'</div>'+
       (!self&&mine&&mine.by&&mine.by!==who?'<p class="hint" style="margin:-4px 0 10px">上次由 '+esc(nameOf(users[mine.by]))+' 代填</p>':'')+
@@ -293,6 +306,22 @@ function detailHTML(id,e){
 
 /* ===== 發起／編輯表單 ===== */
 function newForm(){const sat=nextDow(6),sun=nextDow(0);return {id:"",tpl:"raid",...structuredClone(TPL.raid),title:"",ilvl:"",slots:[{id:rid(),d:sat,t:"21:00",note:""},{id:rid(),d:sun,t:"21:00",note:""}]};}
+/* 回覆截止：不設定／開打前 1 天／開打前 3 小時／自訂
+   「開打前」以最早的候選時間為準（沒填時間就當那天 00:00）；存成絕對時間 due，編輯時一律顯示成「自訂」 */
+const DUE_OPT=[["none","不設定"],["1d","開打前 1 天"],["3h","開打前 3 小時"],["custom","自訂"]];
+const pad2=n=>String(n).padStart(2,"0");
+const dtLocal=ms=>{const d=new Date(ms);return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())+"T"+pad2(d.getHours())+":"+pad2(d.getMinutes());};
+function firstStart(F){const ts=F.slots.map(slotStart).filter(Boolean).map(d=>d.getTime());return ts.length?Math.min(...ts):0;}
+function formDue(F){const m=F.dueMode||"none";if(m==="none")return 0;
+  if(m==="custom"){const v=F.dueAt?new Date(F.dueAt).getTime():0;return Number.isFinite(v)?v:0;}
+  const fs=firstStart(F);return fs?fs-(m==="1d"?86400e3:3*3600e3):0;}
+function duePrevTxt(F){const m=F.dueMode||"none";if(m==="none")return"不設定的話，大家隨時都能回覆，直到你結束活動。";
+  const v=formDue(F);if(!v)return m==="custom"?"請選日期和時間。":"要先加候選時間，才能用「開打前」。";
+  return"截止時間："+dueTxt(v)+(v<=Date.now()?"（已經過了，存檔後大家就不能回覆）":"");}
+function dueFieldHTML(F){const m=F.dueMode||"none";
+  return'<div class="fld"><span>回覆截止（選填，截止後只有你和總團長能改回覆）</span><div class="chips">'+DUE_OPT.map(([k,n])=>'<button type="button" class="chip" data-a="duem" data-k="'+esc(k)+'" aria-pressed="'+(m===k)+'">'+n+'</button>').join("")+'</div>'+
+    (m==="custom"?'<input class="f" type="datetime-local" data-due="1" value="'+esc(F.dueAt||"")+'" aria-label="截止日期與時間" style="max-width:260px;margin-top:6px">':'')+
+    '<p class="hint" id="duePrev" style="margin-top:6px">'+esc(duePrevTxt(F))+'</p></div>';}
 function formHTML(){const F=form;
   let h='<a class="back" href="#" data-a="fcancel">← 取消</a><div class="top"><div><h1>'+(F.id?"編輯揪團":"發起揪團")+'</h1><div class="sub">只要填名稱和候選時間就能發起，其他都可以之後再補</div></div></div><div class="panel">';
   if(!F.id)h+='<div class="fld"><span>從範本開始</span><div class="chips">'+Object.entries(TPL).map(([k,t])=>'<button type="button" class="chip" data-a="tpl" data-k="'+esc(k)+'" aria-pressed="'+(F.tpl===k)+'">'+t.n+'</button>').join("")+'</div><p class="hint">範本只是幫你先填好常用設定，選完都還能改。</p></div>';
@@ -305,8 +334,9 @@ function formHTML(){const F=form;
     (F.roles?'<div class="three" style="margin-top:6px;max-width:360px">'+[["t","坦"],["h","補"],["d","輸出"]].map(([k,n])=>'<label class="fld" style="margin:0"><span>'+n+'</span><input class="f" type="number" min="0" max="24" data-ff="'+esc(k)+'" value="'+(F[k]||0)+'"></label>').join("")+'</div>':'')+'</div>'+
     '<label class="fld"><span>說明（攻略連結、集合地點、要準備什麼都寫這裡，網址會自動變成連結）</span><textarea class="f" data-ff="desc" maxlength="1500">'+esc(F.desc||"")+'</textarea></label>'+
     '<div class="fld"><span>候選時間（大家會一個一個回答可不可以；不加就只問參加意願）</span>'+
-    F.slots.map((s,i)=>'<div class="srow"><input class="f" type="date" data-sd="'+esc(i)+'" value="'+esc(s.d)+'" aria-label="日期"><input class="f" type="time" data-st="'+esc(i)+'" value="'+esc(s.t)+'" aria-label="時間"><button type="button" class="btn sm" data-a="srm" data-i="'+esc(i)+'" aria-label="移除這個時間">✕</button></div>').join("")+
-    '<div class="row"><button type="button" class="btn sm" data-a="sadd">＋ 新增時間</button>'+[[6,"21:00","本週六晚上"],[0,"14:00","本週日下午"],[0,"21:00","本週日晚上"]].map(([w,t,n])=>'<button type="button" class="btn sm" data-a="squick" data-w="'+esc(w)+'" data-t="'+esc(t)+'">＋ '+n+'</button>').join("")+'</div></div>'+
+    F.slots.map((s,i)=>'<div class="srow"><input class="f" type="date" data-sd="'+esc(i)+'" value="'+esc(s.d)+'" aria-label="日期"><input class="f" type="time" data-st="'+esc(i)+'" value="'+esc(s.t)+'" aria-label="開始時間"><span class="sto" aria-hidden="true">到</span><input class="f" type="time" data-se="'+esc(i)+'" value="'+esc(s.te||"")+'" aria-label="結束時間（可不填）" title="結束時間（可不填；比開始早＝打到隔天）"><button type="button" class="btn sm" data-a="srm" data-i="'+esc(i)+'" aria-label="移除這個時間">✕</button></div>').join("")+
+    '<p class="hint" style="margin:-2px 0 8px">結束時間可以不填；比開始時間早，就當作打到隔天（例如 22:00 到 01:00）。</p><div class="row"><button type="button" class="btn sm" data-a="sadd">＋ 新增時間</button>'+[[6,"21:00","本週六晚上"],[0,"14:00","本週日下午"],[0,"21:00","本週日晚上"]].map(([w,t,n])=>'<button type="button" class="btn sm" data-a="squick" data-w="'+esc(w)+'" data-t="'+esc(t)+'">＋ '+n+'</button>').join("")+'</div></div>'+
+    dueFieldHTML(F)+
     '<div class="end"><button class="btn" data-a="fcancel">取消</button><button class="btn primary" data-a="fsave">'+(F.id?"儲存":"發起")+'</button></div></div>';
   return h;
 }
@@ -323,6 +353,7 @@ function shareText(id,e,tag){
   else if(slots.length){L.push("時間還沒定，目前大家的狀況：");slots.forEach(s=>{const ok=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="y").length,mb=list.filter(r=>r.go!=="n"&&(r.slots||{})[s.id]==="m").length;L.push(w(s)+"　"+ok+" 人可以"+(mb?"、"+mb+" 人勉強":""));});}
   const info=[];if(sizeTxt(e))info.push(sizeTxt(e));if(e.roles)info.push((e.t||0)+" 坦 "+(e.h||0)+" 補 "+(e.d||0)+" 輸出");if(e.ilvl)info.push("裝等 "+e.ilvl);
   if(info.length)L.push(info.join("，"));
+  if(evDue(e)&&e.status!=="closed")L.push(dueOver(e)?"（回覆已截止）":"⏰ 回覆截止："+dueTxt(evDue(e)));
   if(e.desc){const d=e.desc.trim();L.push("",d.length>300?d.slice(0,300)+"…":d);}
   const yes=list.filter(r=>r.go==="y"),may=list.filter(r=>r.go==="m");
   L.push("","目前要來："+(yes.length?yes.map(nm).join("、"):"還沒有人，快來當第一個"));
@@ -376,9 +407,10 @@ function openHelpers(){const m=document.createElement("div");
 /* ===== 存檔 ===== */
 async function saveForm(){const F=form;
   const title=(F.title||"").trim();if(!title){toast("請填活動名稱");return;}
-  const slots=F.slots.filter(s=>s.d).map(s=>({id:s.id||rid(),d:s.d,t:s.t||"",note:s.note||""})).sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
+  const slots=F.slots.filter(s=>s.d).map(s=>{const o={id:s.id||rid(),d:s.d,t:s.t||"",note:s.note||""};if(s.te&&s.t&&s.te!==s.t)o.te=s.te;return o;}).sort((a,b)=>(a.d+a.t).localeCompare(b.d+b.t));
+  const due=formDue(F);if((F.dueMode||"none")!=="none"&&!due){toast(F.dueMode==="custom"?"請選回覆截止的日期和時間":"要先加候選時間，才能用「開打前」截止");return;}
   const data={title:title.slice(0,40),kind:F.kind||"其他",desc:(F.desc||"").slice(0,1500),ilvl:(F.ilvl||"").trim().slice(0,20),size:Math.max(0,Math.min(48,+F.size||0)),minSize:Math.max(0,Math.min(48,+F.min||0)),
-    roles:!!F.roles,t:F.roles?+F.t||0:0,h:F.roles?+F.h||0:0,d:F.roles?+F.d||0:0,slots,updatedAt:Date.now()};
+    roles:!!F.roles,t:F.roles?+F.t||0:0,h:F.roles?+F.h||0:0,d:F.roles?+F.d||0:0,slots,due,updatedAt:Date.now()};
   try{
     if(data.size&&data.minSize>data.size){toast("最少人數不能比最多人數多");return;}
     if(F.id){const old=events[F.id];if(old.status==="fixed"&&!slots.some(s=>s.id===old.fixed)){data.status="open";data.fixed="";}
@@ -387,6 +419,7 @@ async function saveForm(){const F=form;
   }catch(e){console.error(e);toast("儲存失敗："+(e.code==="permission-denied"?"沒有權限（Firestore 規則可能還沒更新）":e.code||e.message));}
 }
 async function saveRsvp(){const e=events[view.e];if(!draft.go){toast("先選要不要參加");return;}
+  if(dueOver(e)&&!canManage(e)){toast("回覆已經截止了");render();return;}
   if(draft.go!=="n"&&e.roles&&!draft.jobs.length){toast("請至少選一個職業");return;}
   const slots={};(e.slots||[]).forEach(s=>{if(draft.slots[s.id])slots[s.id]=draft.slots[s.id];});
   if(draft.go!=="n"&&(e.slots||[]).length&&e.status!=="fixed"&&!Object.keys(slots).length){toast("請回答每個時間可不可以");return;}
@@ -401,12 +434,13 @@ function go(v){view=v;history.pushState(null,"",v.e?"events.html?e="+encodeURICo
 document.addEventListener("click",async ev=>{const b=ev.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,e=events[view.e];
   if(a==="new"){form=newForm();render();}
   else if(a==="tpl"){const t=TPL[b.dataset.k];form={...form,tpl:b.dataset.k,kind:t.kind,size:t.size,min:t.min,roles:t.roles,t:t.t||0,h:t.h||0,d:t.d||0,desc:form.desc&&form.desc!==TPL[form.tpl].desc?form.desc:t.desc};render();}
-  else if(a==="sadd"){const last=form.slots[form.slots.length-1];form.slots.push({id:rid(),d:last?last.d:today(),t:last?last.t:"21:00",note:""});render();}
+  else if(a==="duem"){form.dueMode=b.dataset.k;if(form.dueMode==="custom"&&!form.dueAt){const fs=firstStart(form);form.dueAt=dtLocal(fs?fs-86400e3:Date.now()+86400e3);}render();}
+  else if(a==="sadd"){const last=form.slots[form.slots.length-1];form.slots.push({id:rid(),d:last?last.d:today(),t:last?last.t:"21:00",te:last&&last.te||"",note:""});render();}
   else if(a==="squick"){form.slots.push({id:rid(),d:nextDow(+b.dataset.w),t:b.dataset.t,note:""});render();}
   else if(a==="srm"){form.slots.splice(+b.dataset.i,1);render();}
   else if(a==="fcancel"){ev.preventDefault();form=null;render();}
   else if(a==="fsave")saveForm();
-  else if(a==="edit"){form={id:view.e,tpl:"",title:e.title,kind:e.kind,desc:e.desc||"",ilvl:e.ilvl||"",size:e.size||0,min:e.minSize||0,roles:!!e.roles,t:e.t||0,h:e.h||0,d:e.d||0,slots:structuredClone(e.slots||[])};render();}
+  else if(a==="edit"){form={id:view.e,tpl:"",title:e.title,kind:e.kind,desc:e.desc||"",ilvl:e.ilvl||"",size:e.size||0,min:e.minSize||0,roles:!!e.roles,t:e.t||0,h:e.h||0,d:e.d||0,slots:structuredClone(e.slots||[]),dueMode:evDue(e)?"custom":"none",dueAt:evDue(e)?dtLocal(evDue(e)):""};render();}
   else if(a==="go"){draft.go=b.dataset.v;draft.dirty=true;render();}
   else if(a==="sl"){draft.slots[b.dataset.s]=b.dataset.v;draft.dirty=true;render();}
   else if(a==="job"){const k=b.dataset.k,i=draft.jobs.indexOf(k);if(i>=0)draft.jobs.splice(i,1);else draft.jobs.push(k);draft.dirty=true;render();}
@@ -424,10 +458,15 @@ document.addEventListener("input",ev=>{const t=ev.target;
   if(form&&t.dataset.ff){const k=t.dataset.ff;form[k]=t.type==="checkbox"?t.checked:t.value;if(k==="roles"){if(t.checked&&!(form.t||form.h||form.d)){form.t=2;form.h=2;form.d=4;}render();}}
   else if(form&&t.dataset.sd!=null)form.slots[+t.dataset.sd].d=t.value;
   else if(form&&t.dataset.st!=null)form.slots[+t.dataset.st].t=t.value;
+  else if(form&&t.dataset.se!=null)form.slots[+t.dataset.se].te=t.value;
+  else if(form&&t.dataset.due)form.dueAt=t.value;
+  if(form&&(t.dataset.sd!=null||t.dataset.st!=null||t.dataset.due)){const p=document.getElementById("duePrev");if(p)p.textContent=duePrevTxt(form);}
   else if(t.id==="who"){if(draft&&draft.dirty&&!confirm("剛剛填的還沒送出，要放棄嗎？")){t.value=who;return;}who=t.value;draft=null;render();}
   else if(t.id==="note"&&draft){draft.note=t.value;draft.dirty=true;}
 });
 window.addEventListener("popstate",()=>{form=null;draft=null;view=readView();render();});
+/* 頁面開著時剛好到了截止時間：自動切換成「已截止」的畫面（送出時也會再檢查一次） */
+let lastOver=null;setInterval(()=>{const e=view.e&&events[view.e];if(!e||!evDue(e)||form)return;const o=dueOver(e);if(lastOver!==null&&o!==lastOver)render();lastOver=o;},20000);
 window.addEventListener("beforeunload",ev=>{if(form||(draft&&draft.dirty)){ev.preventDefault();ev.returnValue="";}});
 function readView(){const q=new URLSearchParams(location.search);return q.get("e")?{e:q.get("e")}:{};}
 

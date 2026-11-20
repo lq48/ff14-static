@@ -72,6 +72,20 @@ export function readyState(e,x){
   const state=A.length>=need&&okRoles(fillComp(e,A))?"ok":B.length>=need&&okRoles(fillComp(e,B))?"maybe":A.length>=need?"roles":"short";
   return{state,need,lack:Math.max(0,need-A.length),over:!!(e.size&&A.length>e.size)};
 }
+/* ---------- 揪團時間 ----------
+   候選時間 slot：{id, d:"YYYY-MM-DD", t:"HH:MM"（開始，可空）, te:"HH:MM"（結束，選填）, note}
+   結束比開始早＝打到隔天（例如 22:00–01:00）
+   回覆截止 e.due：毫秒時間戳，0 或沒有＝不設定 */
+const HM=/^([01]\d|2[0-3]):([0-5]\d)$/;
+export const cleanHM=v=>HM.test(String(v||""))?String(v):"";
+export const slotTimeTxt=s=>{const t=cleanHM(s&&s.t),te=cleanHM(s&&s.te);return t?(te&&te!==t?t+"–"+te:t):"";};
+export function slotStart(s){if(!s||!/^\d{4}-\d{2}-\d{2}$/.test(s.d||""))return null;const[y,m,d]=s.d.split("-").map(Number),t=cleanHM(s.t);return new Date(y,m-1,d,t?+t.slice(0,2):0,t?+t.slice(3):0);}
+export const evDue=e=>{const v=Number(e&&e.due);return Number.isFinite(v)&&v>0?v:0;};
+export const dueOver=(e,now=Date.now())=>{const v=evDue(e);return !!v&&now>=v;};
+const WK1="日一二三四五六",p2=n=>String(n).padStart(2,"0");
+export function dueTxt(ms){const d=new Date(ms);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WK1[d.getDay()]+"）"+p2(d.getHours())+":"+p2(d.getMinutes());}
+export function dueLeft(ms,now=Date.now()){const m=Math.floor((ms-now)/60000);if(m<0)return"";if(m<60)return"還有 "+Math.max(1,m)+" 分鐘";const h=Math.floor(m/60);if(h<48)return"還有 "+h+" 小時";return"還有 "+Math.round(h/24)+" 天";}
+
 /* 整個活動要看哪個時間：定案了就看定案的時間，否則看分數最高（最多人能來）的時間 */
 export function bestSlot(e,R){
   const slots=e.slots||[];if(!slots.length)return null;
@@ -79,3 +93,11 @@ export function bestSlot(e,R){
   let best=null;slots.forEach(s=>{const t={s,...slotTally(R,s.id)};if(!best||t.score>best.score)best=t;});
   return best;
 }
+
+/* ---------- 請假 ----------
+   away/{uid}.entries：[{from:"YYYY-MM-DD", to:"YYYY-MM-DD", kind:"off"|"maybe"}]，只記到「哪幾天」，沒有幾點
+   讀進來時只留日期格式正確的，kind 不認得就當成「可能不在」 */
+const AWD=/^\d{4}-\d{2}-\d{2}$/;
+export function awayEntries(data){return(Array.isArray(data&&data.entries)?data.entries:[]).filter(e=>e&&typeof e==="object"&&AWD.test(e.from)&&AWD.test(e.to)).map(e=>({from:e.from,to:e.to,kind:e.kind==="off"?"off":"maybe"}));}
+/* 某一天的狀態：off（請假）優先於 maybe（可能不在）；沒有就是 "" */
+export function awayDay(entries,d){let st="";for(const e of entries||[])if(e.from<=d&&d<=e.to){if(e.kind==="off")return"off";st="maybe";}return st;}

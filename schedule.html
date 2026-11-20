@@ -129,6 +129,16 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .savebar{position:sticky;bottom:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border:1px solid var(--line);border-radius:8px}
 .savebar .state{font-size:14px}
 .savebar .state.dirty{color:var(--hol);font-weight:700}
+.grid th.dh .lvm{display:block;margin:3px auto 0;width:max-content;font-size:10.5px;font-weight:700;line-height:1.5;padding:0 5px;border-radius:999px}
+.lvm.lv-off{background:var(--sky,#DCE8F2);color:var(--sky-ink,#2F5878)}
+.lvm.lv-mb{box-shadow:inset 0 0 0 1px var(--sky-ink,#2F5878);color:var(--sky-ink,#2F5878)}
+.lvnote{padding:10px 12px;border-radius:8px;background:var(--sky,#DCE8F2);color:var(--ink);border:1px solid var(--line);margin:0 0 10px;font-size:13.5px;line-height:1.6}
+.lvnote b{margin-right:6px}
+.lvlist{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13.5px}
+.lvlist li{display:flex;flex-wrap:wrap;gap:4px 10px}.lvlist b{min-width:5.5em}
+.lvconf{margin-top:10px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--hol) 10%,var(--surface));font-size:13px}
+.lvconf ul{margin:4px 0;padding-left:18px}
+.lvfoot{font-size:12px;margin:10px 0 0}
 .notice{padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--hol) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--hol) 35%,var(--line));margin:0 0 14px}
 
 /* results */
@@ -248,7 +258,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 .dcnote{flex-basis:100%;display:grid;gap:2px;font-size:12.5px;color:var(--muted)}
 .besthint{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
 </style>
-<link rel="stylesheet" href="cozy.css?v=11">
+<link rel="stylesheet" href="cozy.css?v=12">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -363,6 +373,7 @@ tr.p-eve{--pbg:var(--p-eve);--pc:var(--s-eve)}
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL, DIRECTORY } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
 import { undoToast } from "./ui.js?v=1";
+import { awayEntries, awayDay } from "./common.js?v=3";
 const NOTIFY_URL = WORKER_URL;   // 設定都在 config.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -403,6 +414,8 @@ let dragMode=false,picked=null,saving=false,leaveArmed=0;
 let fHol=new Set(),fMembers=[],fEvents=[];
 const armed={};
 let lastWho={},lastResponders=[];
+/* 請假提醒：只在畫面上提示，不寫進調查。依請假行事曆的權限讀取（總團長／有檢視權限的人看全部，其他人只看自己） */
+let leave={},leaveAll=false,leaveSubs={},dcUid={};
 let evBuf=null; // {sid, list:[...], form:{d,a,b,label}} 正在編輯既定活動的調查
 let didBuf=null; // {sid, vals:[...]} 正在編輯 Discord ID 的調查
 
@@ -416,6 +429,26 @@ const teamOf=sv=>sv.team||"固團";
 const eventsOf=sv=>Array.isArray(sv.events)?sv.events:[];
 function evMap(sv){const m={};for(const e of eventsOf(sv))for(let i=e.a;i<e.b;i++)m[e.d+"|"+i]=e;return m;}
 const evTime=e=>slotT(e.a)+"–"+(e.b===48?"24:00":slotT(e.b));
+/* 隊員 → 帳號：用 users 的 dc 欄位對（對不到才用 Discord 登入的預設 uid 格式） */
+const memUid=m=>m&&m.did?(dcUid[m.did]||"dc_"+m.did):"";
+/* 這位隊員在調查日期裡的請假：{date:"off"|"maybe"}；看不到資料就是 null */
+function leaveOf(sv,k){const m=memOf(sv).find(x=>x.k===k),u=memUid(m);if(!u||!leave[u])return null;
+  const o={};for(const d of sv.dates){const st=awayDay(leave[u],d);if(st)o[d]=st;}return o;}
+/* 整份調查：{date:{off:[k],maybe:[k]}}，只有看得到全部請假的人才算 */
+function leaveByDate(sv){if(!leaveAll)return null;const o={};
+  for(const m of memOf(sv)){const L=leaveOf(sv,m.k);if(!L)continue;for(const d in L)((o[d]=o[d]||{off:[],maybe:[]})[L[d]]).push(m.k);}return o;}
+const mdw=d=>md(d)+"（"+WD[wd(d)].slice(1)+"）";
+function stopLeave(){Object.values(leaveSubs).forEach(f=>{try{f();}catch(_){}});leaveSubs={};leave={};leaveAll=false;dcUid={};}
+function startLeave(u){stopLeave();if(!u||!(authClaims.dc||isOwner))return;
+  const repaint=()=>{renderFill();renderResults();};
+  const self=()=>{if(leaveSubs.self)return;leaveSubs.self=onSnapshot(doc(db,"away",u.uid),s=>{if(s.exists())leave[u.uid]=awayEntries(s.data());else delete leave[u.uid];repaint();},()=>{});};
+  leaveSubs.users=onSnapshot(collection(db,"users"),q=>{dcUid={};q.forEach(d=>{const v=d.data()||{};if(v.dc)dcUid[String(v.dc)]=d.id;});repaint();},()=>{});
+  leaveSubs.cfg=onSnapshot(doc(db,"awayCfg","main"),s=>{const a=((s.exists()&&s.data().access)||{})[u.uid]||"",all=isOwner||a==="view"||a==="lead";
+    if(all&&!leaveSubs.all){if(leaveSubs.self){leaveSubs.self();delete leaveSubs.self;}
+      leaveSubs.all=onSnapshot(collection(db,"away"),q=>{leave={};q.forEach(d=>{leave[d.id]=awayEntries(d.data());});leaveAll=true;repaint();},()=>{if(leaveSubs.all){leaveSubs.all();delete leaveSubs.all;}leaveAll=false;self();repaint();});}
+    else if(!all){if(leaveSubs.all){leaveSubs.all();delete leaveSubs.all;leave={};leaveAll=false;}self();}
+  },()=>{self();});
+}
 function meMap(){try{return JSON.parse(store.get("ff14-me")||"{}")||{};}catch(e){return{};}}
 function myKeyFor(sv){if(!sv)return null;const n=meMap()[teamOf(sv)];let m=memOf(sv).find(x=>x.n===n);if(!m&&authClaims.dc)m=memOf(sv).find(x=>x.did===authClaims.dc);return m?m.k:null;}
 function rememberMe(sv,k){const map=meMap();map[teamOf(sv)]=nameOf(sv,k);store.set("ff14-me",JSON.stringify(map));}
@@ -509,10 +542,10 @@ function renderTabs(){
 }
 
 /* ---------- 表格 ---------- */
-function gridHTML(sv){
-  const hol=new Set(sv.holidays||[]);const ev=evMap(sv);
+function gridHTML(sv,marks){
+  const hol=new Set(sv.holidays||[]);const ev=evMap(sv);marks=marks||{};
   let h='<table class="grid"><thead><tr><th class="corner pcol" style="--pbg:var(--surface)"></th><th class="corner2 tcol"></th>';
-  for(const d of sv.dates){const H=hol.has(d);h+='<th class="dh'+(H?' hol':'')+'" data-date="'+esc(d)+'"><span class="md">'+md(d)+'</span><span class="wd">'+WD[wd(d)]+'</span></th>';}
+  for(const d of sv.dates){const H=hol.has(d);h+='<th class="dh'+(H?' hol':'')+'" data-date="'+esc(d)+'"><span class="md">'+md(d)+'</span><span class="wd">'+WD[wd(d)]+'</span>'+(marks[d]?'<span class="lvm '+esc(marks[d].c)+'" title="'+esc(marks[d].t)+'">'+esc(marks[d].x)+'</span>':'')+'</th>';}
   h+='</tr></thead><tbody>';
   for(let i=0;i<48;i++){
     const p=periodOf(i);
@@ -555,11 +588,19 @@ function renderFill(){
       '<div class="hint">送出後會清除你已勾的時間。之後想改，照常勾時間再儲存就好。</div>'+
       '<div class="acts"><button class="btn sm" data-act="noneCancel">取消</button><button class="btn sm primary" data-act="noneSend">確認送出</button></div></div>':'')+
     (ro?'':'<p class="muted" style="font-size:13px;margin:0 0 8px">'+(coarse?"點格子勾選；打開拖曳塗選後可以一次劃一整段。":"按住拖曳可一次勾一整段。")+'點日期勾整天，點時間勾那半小時的每一天，點左側時段勾整個時段。</p>')+
-    '<div class="gridwrap fillmode'+(ro?' readonly':'')+(dragMode?' drag':'')+'" id="fillGrid">'+gridHTML(sv)+'</div>'+
+    fillLeaveHTML(sv)+
+    '<div class="gridwrap fillmode'+(ro?' readonly':'')+(dragMode?' drag':'')+'" id="fillGrid">'+gridHTML(sv,fillMarks(sv))+'</div>'+
     (ro?'':'<div class="savebar"><span class="state" id="saveState"></span><button class="btn primary" data-act="save" id="saveBtn">儲存我的時間</button></div>');
   document.querySelectorAll("#fillGrid td.cell").forEach(c=>{const s=draft[c.dataset.date];c.classList.toggle("on",!!(s&&s.has(+c.dataset.slot)));});
   updateSave();
 }
+/* 填寫時：這位隊員請假的日子，在日期上標出來，並在表格上方提醒一次（不自動帶入，勾不勾由本人決定） */
+function fillMarks(sv){const L=leaveOf(sv,myMember)||{},o={};for(const d in L)o[d]=L[d]==="off"?{c:"lv-off",x:"請假",t:"請假行事曆上這天請假"}:{c:"lv-mb",x:"可能",t:"請假行事曆上這天可能不在"};return o;}
+function fillLeaveHTML(sv){const L=leaveOf(sv,myMember);if(!L)return"";const ds=Object.keys(L).sort();if(!ds.length)return"";
+  const m=memOf(sv).find(x=>x.k===myMember),self=!!(m&&authClaims.dc&&m.did===authClaims.dc),who=self?"你":esc(m?m.n:"");
+  const off=ds.filter(d=>L[d]==="off"),mb=ds.filter(d=>L[d]==="maybe");
+  return'<div class="lvnote" role="note"><b>請假行事曆提醒</b>'+who+(off.length?'在 '+esc(off.map(mdw).join("、"))+'請假':'')+(off.length&&mb.length?'；':'')+(mb.length?(off.length?'':'在 ')+esc(mb.map(mdw).join("、"))+'可能不在':'')+
+    '。表格上已經標出來，系統不會自動幫你勾或取消，這幾天能不能上線、幾點能上，請照實際狀況填。</div>';}
 function updateSave(){
   const st=$("#saveState");if(!st)return;
   const has=surveyResps(curSid)[myMember];
@@ -633,6 +674,8 @@ function renderResults(){
   ranges.sort((x,y)=>(y.b-y.a)-(x.b-x.a));
   const top=ranges.slice(0,8).sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.a-y.a);
 
+  const LB=leaveByDate(sv),LBm={};
+  if(LB)for(const d in LB){const a=LB[d].off.map(k=>nameOf(sv,k)),b=LB[d].maybe.map(k=>nameOf(sv,k));LBm[d]={c:a.length?"lv-off":"lv-mb",x:"假 "+(a.length+b.length),t:(a.length?"請假："+a.join("、"):"")+(a.length&&b.length?"；":"")+(b.length?"可能不在："+b.join("、"):"")};}
   const missing=MEM.filter(m=>!responders.includes(m.k)),pctR=TOTAL?Math.round(responders.length/TOTAL*100):0;
   let side='<div class="panel"><h2>回覆狀況（'+responders.length+' / '+TOTAL+'）</h2>'+
     '<div class="mprog wide"><span class="bar" aria-hidden="true"><i style="width:'+pctR+'%"></i></span>'+pctR+'%</div>'+
@@ -643,6 +686,7 @@ function renderResults(){
     '</div>';
   const outs=MEM.filter(m=>{const r=surveyResps(sv.id)[m.k];return r&&responders.includes(m.k)&&!Object.values(r.slots||{}).some(x=>x&&x.length);});
   if(outs.length)side+='<div class="panel"><h2>此時段皆無法參與（'+outs.length+'）</h2><ul class="reasons">'+outs.map(m=>{const n=(surveyResps(sv.id)[m.k]||{}).note;return'<li><b>'+esc(m.n)+'</b>'+(n?'：'+esc(n):'<span class="muted">（沒有填原因）</span>')+'</li>';}).join("")+'</ul></div>';
+  if(LB&&Object.keys(LB).length)side+=leavePanelHTML(sv,LB);
   side+='<div class="panel"><h2>'+(max===TOTAL?'全員到齊的時段':max>0?'最多人有空（'+max+' 人）':'最佳時段')+'</h2>'+
     (max===0?'<p class="muted">還沒有人勾選時間。</p>':'<ul class="ranges">'+top.map(r=>{
       const miss=MEM.filter(m=>!r.people.includes(m.k)).map(m=>m.n);
@@ -653,11 +697,11 @@ function renderResults(){
   if(picked&&sv.dates.includes(picked.d)){
     const s=who[picked.d+"|"+picked.i]||new Set();
     det+='<div class="slot">'+md(picked.d)+' '+WD[wd(picked.d)]+'　'+slotT(picked.i)+'–'+(picked.i===47?'24:00':slotT(picked.i+1))+'</div><div class="people">'+
-      MEM.map(m=>{const yes=s.has(m.k);return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(!yes&&!responders.includes(m.k)?'（未回覆）':'')+'</span>';}).join("")+'</div>';
+      MEM.map(m=>{const yes=s.has(m.k),lv=LB&&LB[picked.d]?(LB[picked.d].off.includes(m.k)?"（請假）":LB[picked.d].maybe.includes(m.k)?"（可能不在）":""):"";return'<span class="person '+(yes?'yes':'no')+'">'+esc(m.n)+(!yes&&!responders.includes(m.k)?'（未回覆）':'')+(!yes?lv:'')+'</span>';}).join("")+'</div>';
   }else det+='<p class="muted">點左邊表格的任一格查看。</p>';
   det+='</div>';
 
-  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">滑鼠移到格子上就能看到誰有空。格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv)+'</div></div><div>'+side+det+'</div></div>';
+  v.innerHTML='<div class="cols"><div><p class="muted" style="font-size:13px;margin:0 0 8px">滑鼠移到格子上就能看到誰有空。格子數字是有空的人數，顏色越深人越多；金框代表 '+TOTAL+' 人全到。</p><div class="gridwrap heatmode" id="heatGrid">'+gridHTML(sv,LBm)+'</div></div><div>'+side+det+'</div></div>';
   document.querySelectorAll("#heatGrid td.cell").forEach(c=>{
     if(c.classList.contains("ev"))return;
     const s=who[c.dataset.date+"|"+c.dataset.slot];const n=s?s.size:0;
@@ -665,6 +709,14 @@ function renderResults(){
     if(picked&&picked.d===c.dataset.date&&picked.i===+c.dataset.slot)c.classList.add("picked");
   });
 }
+/* 團長看結果：調查期間誰請假；請假當天卻勾了時間的，標「和請假衝突？」讓團長確認（可能只是晚到，不一定是錯） */
+function leavePanelHTML(sv,LB){const R=surveyResps(sv.id),ds=Object.keys(LB).sort();
+  const rows=ds.map(d=>{const a=LB[d].off.map(k=>nameOf(sv,k)),b=LB[d].maybe.map(k=>nameOf(sv,k));
+    return'<li><b>'+esc(mdw(d))+'</b>'+(a.length?'<span>請假 '+esc(a.join("、"))+'</span>':'')+(b.length?'<span class="muted">可能不在 '+esc(b.join("、"))+'</span>':'')+'</li>';}).join("");
+  const cf=[];ds.forEach(d=>LB[d].off.forEach(k=>{const n=((R[k]||{}).slots||{})[d];if(n&&n.length)cf.push(nameOf(sv,k)+" "+mdw(d)+" 請假，但勾了 "+(n.length/2)+" 小時");}));
+  return'<div class="panel lvpanel"><h2>請假行事曆</h2><ul class="lvlist">'+rows+'</ul>'+
+    (cf.length?'<div class="lvconf"><b>和請假衝突？</b><ul>'+cf.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul><span class="muted">可能只是晚點上線，有需要再跟本人確認。</span></div>':'')+
+    '<p class="muted lvfoot">只有能看請假行事曆的人看得到這一區，不會寫進調查，也不會顯示請假原因。</p></div>';}
 /* 團長：發布目前狀況到 Discord（沿用 Worker 的 /status），會 tag 誰、上次什麼時候發過都先講清楚 */
 function dcBoxHTML(sv,missing){
   const last=dcLastGet(sv.id),recent=last&&Date.now()-last<DC_COOL;
@@ -1076,6 +1128,7 @@ mountNav({page:"team",auth});
     authUser=u;authClaims={};
     if(u){try{authClaims=(await u.getIdTokenResult()).claims||{};}catch(_){}}
     isOwner=!!(u&&((u.email&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase())||authClaims.dc===OWNER_DISCORD_ID));
+    startLeave(u);
     if(staticsUnsub){staticsUnsub();staticsUnsub=null;}statics=[];leadTids=[];
     if(u)staticsUnsub=onSnapshot(collection(db,"statics"),s=>{
       statics=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));

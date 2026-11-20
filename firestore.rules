@@ -329,20 +329,29 @@ service cloud.firestore {
       return request.auth != null && exists(/databases/$(database)/documents/eventsCfg/main)
         && get(/databases/$(database)/documents/eventsCfg/main).data.get('proxies', {}).get(uid, {}).get(request.auth.uid, false) == true;
     }
+    // 回覆截止（due，毫秒；0 或沒有＝不設定）：截止後只剩總團長和發起人能寫回覆
+    function rsvpOpen(eid) {
+      let ev = get(/databases/$(database)/documents/events/$(eid)).data;
+      return ev.get('due', 0) == 0 || request.time.toMillis() < ev.get('due', 0)
+        || isOwner() || ev.get('by', '') == request.auth.uid;
+    }
     match /events/{eid} {
       allow read: if enclaveMember();
       allow create: if enclaveMember()
         && request.resource.data.by == request.auth.uid
         && request.resource.data.title is string && request.resource.data.title.size() <= 40
-        && request.resource.data.get('desc', '').size() <= 1500;
+        && request.resource.data.get('desc', '').size() <= 1500
+        && request.resource.data.get('due', 0) is number;
       allow update: if isOwner() || (enclaveMember()
         && resource.data.by == request.auth.uid
         && request.resource.data.by == resource.data.by
-        && request.resource.data.get('desc', '').size() <= 1500);
+        && request.resource.data.get('desc', '').size() <= 1500
+        && request.resource.data.get('due', 0) is number);
       allow delete: if isOwner() || (enclaveMember() && resource.data.by == request.auth.uid);
       match /rsvp/{uid} {
         allow read: if enclaveMember();
         allow create, update: if enclaveMember() && (request.auth.uid == uid || isOwner() || eventHelper(uid))
+          && rsvpOpen(eid)
           && request.resource.data.keys().hasOnly(['go','slots','jobs','note','at','updatedAt','by'])
           && request.resource.data.go in ['y','m','n'];
         allow delete: if isOwner() || eventHelper(uid) || (enclaveMember() && (request.auth.uid == uid

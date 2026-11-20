@@ -1,5 +1,5 @@
 const M=window.__MOCK||{};const DB=M.db||{};
-window.__writes=[];
+window.__writes=[];window.__reads=[];/* 讀過哪些路徑（測試用來確認不會讀到沒權限的資料） */
 const segs=p=>p.split("/");
 function mkRef(path){const s=segs(path);return {path,id:s[s.length-1],get parent(){return s.length>1?mkColRef(s.slice(0,-1).join("/")):null;},type:"doc"};}
 function mkColRef(path){const s=segs(path);return {path,id:s[s.length-1],get parent(){return s.length>1?mkRef(s.slice(0,-1).join("/")):null;},type:"col"};}
@@ -23,7 +23,7 @@ function listFor(ref){
 }
 const LIS=[];
 function fire(ref,next){if((M.deny||[]).some(x=>(ref.path||ref.id||"").startsWith(x)))return;try{next(ref.type==="doc"?snapDoc(ref.path):listFor(ref));}catch(e){console.error("mock",e);}}
-export function onSnapshot(ref,next,err){
+export function onSnapshot(ref,next,err){window.__reads.push((ref&&(ref.path||(ref._q&&ref._q.path)))||"?");
   const L={ref,next};LIS.push(L);
   setTimeout(()=>{try{
     if((M.deny||[]).some(x=>(ref.path||ref.id||"").startsWith(x))){err&&err({code:"permission-denied"});return;}
@@ -40,8 +40,8 @@ function apply(op,path,data){
   else if(op==="addDoc")DB[path]=JSON.parse(JSON.stringify(data));
   setTimeout(()=>LIS.slice().forEach(L=>fire(L.ref,L.next)),15);
 }
-export async function getDocs(ref){return listFor(ref);}
-export async function getDoc(ref){return snapDoc(ref.path);}
+export async function getDocs(ref){window.__reads.push((ref&&(ref.path||(ref._q&&ref._q.path)))||"?");return listFor(ref);}
+export async function getDoc(ref){window.__reads.push(ref.path);return snapDoc(ref.path);}
 const DEL={__del:1};export function deleteFieldX(){return DEL;}
 function deepMerge(a,b){Object.entries(b).forEach(([k,v])=>{if(v&&v.__del){delete a[k];return;}if(v&&typeof v==="object"&&!Array.isArray(v)&&a[k]&&typeof a[k]==="object"&&!Array.isArray(a[k]))deepMerge(a[k],v);else a[k]=JSON.parse(JSON.stringify(v));});return a;}
 const W=(op)=>async(ref,data,opt)=>{if(op==="setDoc"&&opt&&opt.merge)op="setMerge";await new Promise(r=>setTimeout(r,M.writeDelay||30));let path=ref.path;if(op==="addDoc")path=ref.path+"/new"+Math.random().toString(36).slice(2,6);
