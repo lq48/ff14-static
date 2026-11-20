@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=11">
+<link rel="stylesheet" href="cozy.css?v=12">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -329,7 +329,7 @@ import { initAwayMini } from "./away-mini.js?v=gr3";
 import { startIcons, icon } from "./icons.js?v=5";
 import { mountNav, setNavUser, setNavActive } from "./nav.js?v=2";
 import { undoToast } from "./ui.js?v=1";
-import { JOBS as JOBS_ALL, readyState, bestSlot, cleanRsvp, safeUrl } from "./common.js?v=2";
+import { JOBS as JOBS_ALL, readyState, bestSlot, cleanRsvp, safeUrl, slotTimeTxt, evDue, dueOver, dueTxt, dueLeft } from "./common.js?v=3";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -641,7 +641,7 @@ function syncEvRs(){const want=new Set(evActive().slice(0,6).map(e=>e.id));
 /* 飛地大廳：揪團活動 */
 function eventsPanelHTML(){
   const WKD="日一二三四五六",pd=n=>String(n).padStart(2,"0"),t=new Date(),td=t.getFullYear()+"-"+pd(t.getMonth()+1)+"-"+pd(t.getDate());
-  const wt=s=>{if(!s||!s.d)return"";const[a,b,c]=s.d.split("-").map(Number),d=new Date(a,b-1,c);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WKD[d.getDay()]+"）"+(s.t?" "+s.t:"");};
+  const wt=s=>{if(!s||!s.d)return"";const[a,b,c]=s.d.split("-").map(Number),d=new Date(a,b-1,c);return (d.getMonth()+1)+"/"+d.getDate()+"（"+WKD[d.getDay()]+"）"+(slotTimeTxt(s)?" "+slotTimeTxt(s):"");};
   const last=e=>{const f=e.status==="fixed"&&(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;const ds=(e.slots||[]).map(s=>s.d).sort();return ds[ds.length-1]||"";};
   const act=evActive();
   return '<div class="panel" id="events"><div class="phead"><h2>揪團活動</h2><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><a class="btn sm primary" href="events.html?new=1">＋ 發起揪團</a><a class="btn sm" href="events.html">全部活動</a></div></div>'+
@@ -650,7 +650,7 @@ function eventsPanelHTML(){
       const av=ys.concat(ms).slice(0,10).map(u=>'<img src="'+esc(avatarUrl(users[u]))+'" alt="" title="'+esc(nameOf(users[u])+(R[u].go==="m"?"（看時間）":""))+'"'+(R[u].go==="m"?' class="mb"':'')+' loading="lazy">').join("");
       const bs=bestSlot(e,R),rs=bs?readyState(e,bs):{state:""};
       const st=({ok:'<span class="evs ok">可以成團</span>',maybe:'<span class="evs">算上勉強的可以成團</span>',roles:'<span class="evs">職能還不齊</span>',short:'<span class="evs">還差 '+(rs.lack||0)+' 人</span>'})[rs.state]||'';
-      const mine=me&&R[me.uid]?'<span class="evs me">'+({y:"你要來",m:"你在看時間",n:"你這次不行"}[R[me.uid].go]||"已回覆")+'</span>':'<span class="evs todo">你還沒回</span>';
+      const mine=me&&R[me.uid]?'<span class="evs me">'+({y:"你要來",m:"你在看時間",n:"你這次不行"}[R[me.uid].go]||"已回覆")+'</span>':dueOver(e)?'<span class="evs">回覆已截止</span>':'<span class="evs todo">你還沒回'+(evDue(e)?'・'+esc(dueLeft(evDue(e))):'')+'</span>';
       return '<a class="evi" href="events.html?e='+encodeURIComponent(e.id)+'"><div class="evt"><span class="evk">'+esc(e.kind||"其他")+'</span><b>'+esc(e.title)+'</b><span class="muted">'+(f?'確定 '+esc(wt(f)):(e.slots||[]).length?'調查中：'+esc((e.slots||[]).slice(0,2).map(wt).join("、"))+((e.slots||[]).length>2?" 等":""):'調查中')+'</span></div>'+
         '<div class="evb"><span class="eva">'+av+'</span><span class="evn">'+(ys.length||ms.length?ys.length+' 人要來'+(ms.length?'・'+ms.length+' 人看時間':''):'還沒有人報名')+'</span>'+st+'<span class="sp"></span>'+mine+'</div></a>';}).join("")+'</div>'
       :'<p class="muted" style="margin:0">目前沒有揪團。想找人打本、挖寶或辦活動，按「發起揪團」問問大家！</p>')+'</div>';
@@ -755,7 +755,7 @@ function nextBodyHTML(){
   }else{
     const e=main.ev,c=evCount(e);
     h+='<span class="next-team">揪團・'+esc(e.kind||"其他")+'</span>'+
-      '<span class="next-when">'+esc(mdw(main.d))+(main.s.t?' '+esc(main.s.t):'')+(rel?'<small>'+rel+'</small>':'')+'</span>'+
+      '<span class="next-when">'+esc(mdw(main.d))+(slotTimeTxt(main.s)?' '+esc(slotTimeTxt(main.s)):'')+(rel?'<small>'+rel+'</small>':'')+'</span>'+
       '<span class="next-what">'+esc(e.title||"揪團活動")+'</span><div class="next-meta">';
     if(c){h+='<span class="stp good">'+c.sure+' 人確定參加</span>';
       h+=({yes:'<span class="stp info">你會參加</span>',maybe:'<span class="stp soft">你是勉強可以</span>',no:'<span class="stp">你這次不行</span>',todo:'<span class="stp warm">你還沒回覆</span>',unset:'<span class="stp warm">你還沒勾這個時間</span>'})[c.my];}
@@ -765,7 +765,7 @@ function nextBodyHTML(){
   const more=[...sv,...ev].filter(x=>x!==main).sort((a,b)=>a.start-b.start).slice(0,3);
   if(more.length)h+='<ul class="next-more" aria-label="接下來的行程">'+more.map(x=>x.src==="sv"
     ?'<li><span class="w">'+esc(mdw(x.d))+' '+slotHM(x.a)+'</span><a href="schedule.html?s='+encodeURIComponent(x.sv.id)+'">'+esc(x.e.label||"固定團活動")+'</a><span class="muted small">'+esc(svTeamName(x.sv))+'</span></li>'
-    :'<li><span class="w">'+esc(mdw(x.d))+(x.s.t?' '+esc(x.s.t):'')+'</span><a href="events.html?e='+encodeURIComponent(x.ev.id)+'">'+esc(x.ev.title||"揪團")+'</a><span class="muted small">揪團</span></li>').join("")+'</ul>';
+    :'<li><span class="w">'+esc(mdw(x.d))+(slotTimeTxt(x.s)?' '+esc(slotTimeTxt(x.s)):'')+'</span><a href="events.html?e='+encodeURIComponent(x.ev.id)+'">'+esc(x.ev.title||"揪團")+'</a><span class="muted small">揪團</span></li>').join("")+'</ul>';
   return h;
 }
 function nextPanelHTML(){return'<section class="panel" aria-labelledby="nextH"><h2 class="dash-h" id="nextH" data-ico="1">'+icb("clock","peach")+'下一場冒險</h2><div id="nextBody">'+nextBodyHTML()+'</div></section>';}
@@ -775,8 +775,9 @@ function todoItems(){
   const out=[];
   svs.filter(svOpenFor).forEach(sv=>{const k=mySvKey(sv),R=svRs[sv.id];if(!k||!R||R[k])return;
     out.push({href:"schedule.html?s="+encodeURIComponent(sv.id),t:"填寫「"+(sv.title||"出席調查")+"」",d:svTeamName(sv)+"的出席時間調查"});});
-  evActive().forEach(e=>{const R=evRs[e.id];if(!R||!me||R[me.uid])return;
-    out.push({href:"events.html?e="+encodeURIComponent(e.id),t:"回覆揪團「"+(e.title||"")+"」",d:"要不要參加、哪個時間可以"});});
+  /* 揪團：截止後就不能回了，不列入；有截止時間的寫出截止時間，快截止的排前面 */
+  evActive().filter(e=>!dueOver(e)).sort((a,b)=>(evDue(a)||9e15)-(evDue(b)||9e15)).forEach(e=>{const R=evRs[e.id];if(!R||!me||R[me.uid])return;const v=evDue(e);
+    out.push({href:"events.html?e="+encodeURIComponent(e.id),t:"回覆揪團「"+(e.title||"")+"」",d:v?dueTxt(v)+" 截止回覆（"+dueLeft(v)+"）":"要不要參加、哪個時間可以",dot:v&&v-Date.now()<86400e3?"warm":""});});
   statics.forEach(st=>{if(!capsOf(st).members)return;const n=Object.values(membersOf(st.id)).filter(m=>m.status==="pending").length;
     if(n)out.push({href:"?team="+encodeURIComponent(st.id),act:"openManage",tid:st.id,dot:"sage",t:n+" 人申請加入「"+st.name+"」",d:"到固定團的管理頁看看"});});
   if(isOwner){const n=Object.values(links).filter(l=>l.status==="pending").length;
@@ -843,7 +844,7 @@ function agendaItems(){
   svUpcoming().forEach(x=>add(x.d,{k:"team",sort:"0"+slotHM(x.a),time:slotHM(x.a)+"–"+slotHM(x.b),title:x.e.label||"固定團活動",sub:svTeamName(x.sv),href:"schedule.html?s="+encodeURIComponent(x.sv.id)}));
   evs.filter(ev=>ev.status!=="closed").forEach(ev=>{
     const fx=ev.status==="fixed"&&(ev.slots||[]).find(s=>s.id===ev.fixed);
-    (fx?[fx]:(ev.slots||[])).forEach(s=>{if(!s||!s.d)return;add(s.d,{k:fx?"ev":"evc",sort:"1"+(s.t||"99"),time:s.t||"",title:ev.title||"揪團",sub:fx?(ev.kind||"揪團")+"・已定案":(ev.kind||"揪團")+"・候選時間，還在調查",href:"events.html?e="+encodeURIComponent(ev.id)});});
+    (fx?[fx]:(ev.slots||[])).forEach(s=>{if(!s||!s.d)return;add(s.d,{k:fx?"ev":"evc",sort:"1"+(s.t||"99"),time:slotTimeTxt(s),title:ev.title||"揪團",sub:fx?(ev.kind||"揪團")+"・已定案":(ev.kind||"揪團")+"・候選時間，還在調查",href:"events.html?e="+encodeURIComponent(ev.id)});});
   });
   const ents=awayMini&&awayMini.entriesBetween?awayMini.entriesBetween(from,to):[];
   for(let i=0;i<AG_DAYS;i++){const x=new Date(t);x.setDate(t.getDate()+i);const d=ymdOf(x);

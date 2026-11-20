@@ -30,7 +30,10 @@ if(full){
  db["events/e2"]={title:"週末挖寶團（一起開藏寶圖、順便聊天）",kind:"藏寶圖",status:"open",fixed:"",slots:[{id:"y1",d:day(3),t:"22:00"},{id:"y2",d:day(4),t:"22:00"}],size:8,minSize:4,by:"u3",createdAt:now};
  db["events/e2/rsvp/u3"]={by:"u3",go:"y",slots:{y1:"y"}};
  /* 有職能需求的揪團：多數人填了好幾個職業，用來檢查「依志願排位」 */
- db["events/e3"]={title:"幻 青龍初見團",kind:"高難度",status:"open",fixed:"",slots:[{id:"z1",d:day(2),t:"14:00"},{id:"z2",d:day(2),t:"20:00"}],size:8,minSize:8,roles:true,t:2,h:2,d:4,by:"u2",createdAt:now-1000};
+ db["events/e3"]={title:"幻 青龍初見團",kind:"高難度",status:"open",fixed:"",slots:[{id:"z1",d:day(2),t:"14:00",te:"17:00"},{id:"z2",d:day(2),t:"20:00"}],size:8,minSize:8,roles:true,t:2,h:2,d:4,due:now+5*3600e3,by:"u2",createdAt:now-1000};
+ /* 回覆已經截止的揪團（發起人 Satoru） */
+ db["events/e4"]={title:"週末夜跑團",kind:"一般副本",status:"open",fixed:"",slots:[{id:"w1",d:day(3),t:"22:00",te:"01:00"}],size:4,minSize:4,due:now-3600e3,by:"u2",createdAt:now-2000};
+ db["events/e4/rsvp/u2"]={by:"u2",go:"y",slots:{w1:"y"}};
  [["u2",["SCH"]],["u9",["MNK","DRK","AST"]],["u3",["DRK","PLD","AST"]],["u8",["RDM","BLM"]],["u4",["AST","VPR"]]].forEach(([u,j])=>db["events/e3/rsvp/"+u]={by:u,go:"y",jobs:j,slots:{z1:"y"}});
  const ds=[0,1,2,3,4,5,6].map(day);
  db["surveys/sv1"]={team:"週三零式團",tid:"s1",title:"12 月第一週",dates:ds,holidays:[],note:"",closed:false,createdAt:now,
@@ -39,6 +42,8 @@ if(full){
  db["surveys/sv1/responses/b"]={slots:{[day(1)]:[40,41,42]}};
  db["away/u3"]={entries:[{from:day(2),to:day(2),kind:"off"}]};db["away/u4"]={entries:[{from:day(5),to:day(6),kind:"maybe"}]};
  db["away/u1"]={entries:[{from:day(0),to:day(0),kind:"off"}]};
+ /* Satoru 請假當天卻勾了時間：出席調查的「和請假衝突？」 */
+ db["away/u2"]={entries:[{from:day(1),to:day(1),kind:"off"}]};
  db["awayCfg/main"]={access:{u1:"view"},proxies:{}};
  db["links/l1"]={title:"FFLogs",url:"https://www.fflogs.com/",cat:"戰鬥與排行",desc:"上傳戰鬥紀錄，看傷害、死因和排名",lang:"英文",status:"approved",pinned:true,by:"u2",byName:"Satoru",createdAt:1};
  db["links/l2"]={title:"繁中工具箱",url:"https://xivtc.com/",cat:"資料查詢",desc:"繁中服玩家的綜合工具網站",lang:"繁中",status:"approved",by:"u2",byName:"Satoru",createdAt:2};

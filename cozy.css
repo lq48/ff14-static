@@ -290,6 +290,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .todo-list .dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--accent-soft)}
 .todo-list .dot.sage{background:var(--heal)}
 .todo-list .dot.sky{background:var(--tank)}
+.todo-list .dot.warm{background:var(--danger)}
 .todo-list .tx{flex:1;min-width:0}
 .todo-list .tx small{display:block;color:var(--muted);font-size:12.5px}
 .todo-list .go{color:var(--muted);flex:none}
