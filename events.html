@@ -111,9 +111,16 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .who{display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:700}
 .who img{width:22px;height:22px;border-radius:50%}
 .mk{font-weight:900}.mk.y{color:var(--yes)}.mk.m{color:var(--mb)}.mk.n{color:var(--no)}
-.res{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.res{display:grid;grid-template-columns:160px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .res:last-child{border-bottom:0}
-.res.best .when::after{content:"最多人";margin-left:6px;font-size:11px;background:var(--gold);color:#fff;border-radius:999px;padding:1px 7px;vertical-align:2px}
+.res .when{min-width:0}
+.res.best .when::after{content:"最多人";display:inline-block;white-space:nowrap;margin-left:6px;font-size:11px;line-height:1.5;background:var(--gold);color:#fff;border-radius:999px;padding:0 7px;vertical-align:1px}
+.lineup{display:grid;gap:3px;margin-top:6px;font-size:12.5px}
+.lu-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.lu-r{font-weight:700;color:var(--muted);min-width:2.6em}
+.lu-p{white-space:nowrap}.lu-p .jt{margin-left:2px}
+.lu-p small{margin-left:3px;font-size:11px;color:var(--muted)}
+.lu-can{font-size:12px;color:var(--muted)}
 .bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--surface2);margin-bottom:4px}
 .bar i{display:block}
 .bar .y{background:var(--yes)}.bar .m{background:var(--mb)}
@@ -127,7 +134,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
 @media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr 100px 40px}.three{grid-template-columns:1fr 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=10">
+<link rel="stylesheet" href="cozy.css?v=11">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -135,7 +142,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
-import { JOBS as JOBS_ALL, fillComp, readyState, slotTally, cleanRsvp } from "./common.js?v=1";
+import { JOBS as JOBS_ALL, assignComp, fillComp, readyState, slotTally, cleanRsvp } from "./common.js?v=2";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -185,6 +192,21 @@ const jt=k=>{const j=JOB[k];return j?'<span class="jt '+j.r+'" title="'+esc(j.n)
 function lastDay(e){const ds=(e.slots||[]).map(s=>s.d).filter(Boolean).sort();if(e.status==="fixed"){const f=(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;}return ds[ds.length-1]||"";}
 const isPast=e=>e.status==="closed"||(lastDay(e)&&lastDay(e)<today());
 
+/* 排位明細：依志願排出來的位置（第一志願優先；要湊滿才會排到後面的志願）
+   缺人的職能，列出排在別的位置、但也會打這個職能的人，方便團長決定要不要請他轉 */
+function lineupHTML(e,ppl,A){
+  if(!ppl.length)return"";
+  const by={tank:[],heal:[],dps:[]},rest=[];
+  ppl.forEach((p,i)=>{const k=A.pick[i];if(!k){rest.push(p);return;}by[JOB[k].r].push('<span class="lu-p">'+esc(nameOf(users[p.u]))+' '+jt(k)+(A.rank[i]>0?'<small>第'+(A.rank[i]+1)+'志願</small>':'')+'</span>');});
+  const need={tank:e.t||0,heal:e.h||0,dps:e.d||0};
+  const parts=["tank","heal","dps"].filter(r=>need[r]).map(r=>{
+    let h='<span class="lu-r">'+ROLE_N[r]+'</span>'+(by[r].length?by[r].join(""):'<span class="muted">—</span>');
+    if(A.got[r]<need[r]){const can=ppl.filter((p,i)=>A.pick[i]&&JOB[A.pick[i]].r!==r&&(p.jobs||[]).some(k=>(JOB[k]||{}).r===r)).map(p=>nameOf(users[p.u]));
+      if(can.length)h+='<span class="lu-can">'+esc(can.join("、"))+' 也能'+ROLE_N[r]+'</span>';}
+    return'<div class="lu-row">'+h+'</div>';});
+  if(rest.length)parts.push('<div class="lu-row"><span class="lu-r">候補</span>'+rest.map(p=>'<span class="lu-p">'+esc(nameOf(users[p.u]))+'</span>').join("")+'</div>');
+  return'<div class="lineup" aria-label="依志願排出的位置">'+parts.join("")+'</div>';
+}
 /* 這個時間能不能成團：判斷邏輯在 common.js 的 readyState（大廳也用同一個） */
 function ready(e,x){const r=readyState(e,x);if(!r.state)return '';
   let h=r.state==="ok"?'<span class="pill y">可以成團</span>':r.state==="maybe"?'<span class="pill m">算上勉強的可以成團</span>':'<span class="pill n">'+(r.state==="roles"?'職能還不齊':'還差 '+r.lack+' 人')+'</span>';
@@ -251,8 +273,8 @@ function detailHTML(id,e){
     const stat=slots.map(s=>({s,...slotTally(R,s.id)}));
     const best=Math.max(0,...stat.map(x=>x.score)),mx=Math.max(1,e.size||0,...stat.map(x=>x.ok.length+x.mb.length));
     h+='<div style="margin-bottom:10px">'+stat.map(x=>{let comp='';
-      if(e.roles){const gA=fillComp(e,x.ok),gB=fillComp(e,x.ok.concat(x.mb));
-        comp='<div class="comp">'+[["tank",e.t],["heal",e.h],["dps",e.d]].filter(([,n])=>n).map(([r,n])=>'<span class="'+(gA[r]>=n?"ok":"lack")+'">'+ROLE_N[r]+' <b>'+gA[r]+'/'+n+'</b></span>'+(gB[r]>gA[r]?'<span class="muted">（含勉強 '+gB[r]+'）</span>':'')).join("　")+'</div>';}
+      if(e.roles){const A=assignComp(e,x.ok),gA=A.got,gB=fillComp(e,x.ok.concat(x.mb));
+        comp='<div class="comp">'+[["tank",e.t],["heal",e.h],["dps",e.d]].filter(([,n])=>n).map(([r,n])=>'<span class="'+(gA[r]>=n?"ok":"lack")+'">'+ROLE_N[r]+' <b>'+gA[r]+'/'+n+'</b></span>'+(gB[r]>gA[r]?'<span class="muted">（含勉強 '+gB[r]+'）</span>':'')).join("　")+'</div>'+lineupHTML(e,x.ok,A);}
       const names=x.ok.map(r=>nameOf(users[r.u])).join("、")+(x.mb.length?'；勉強：'+x.mb.map(r=>nameOf(users[r.u])).join("、"):'');
       return '<div class="res'+(best&&x.score===best&&!fx?" best":"")+'"><span class="when">'+esc(whenTxt(x.s))+'</span><div title="'+esc(names)+'"><div class="bar"><i class="y" style="width:'+(x.ok.length/mx*100)+'%"></i><i class="m" style="width:'+(x.mb.length/mx*100)+'%"></i></div><div class="comp">可以 <b>'+x.ok.length+'</b>　勉強 <b>'+x.mb.length+'</b>'+(sizeTxt(e)?'　／ '+sizeTxt(e):'')+'　'+ready(e,x)+'</div>'+comp+'</div>'+
         (mg?(e.fixed===x.s.id&&e.status==="fixed"?'<span class="pill fixed">已定案</span>':'<button class="btn sm" data-a="fix" data-s="'+esc(x.s.id)+'">定案這個時間</button>'):'<span></span>')+'</div>';}).join("")+'</div>';

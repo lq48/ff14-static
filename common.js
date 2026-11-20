@@ -40,16 +40,27 @@ export function slotTally(R,slotId){
   return{ok,mb,score:ok.length*2+mb.length};
 }
 /* 排位：有空的人能不能湊滿 坦/補/輸出
-   每個人只能占一個位置，用二分圖匹配算最多能填滿幾格 */
-export function fillComp(e,people){
-  const seats=[];[["tank",e.t||0],["heal",e.h||0],["dps",e.d||0]].forEach(([r,n])=>{for(let i=0;i<n;i++)seats.push(r);});
-  const roles=people.map(p=>new Set((p.jobs||[]).map(k=>(JOB[k]||{}).r).filter(Boolean)));
-  const owner=new Array(seats.length).fill(-1);
-  function aug(pi,seen){for(let s=0;s<seats.length;s++){if(seen[s]||!roles[pi].has(seats[s]))continue;seen[s]=true;if(owner[s]<0||aug(owner[s],seen)){owner[s]=pi;return true;}}return false;}
-  people.forEach((_,pi)=>aug(pi,[]));
-  const got={tank:0,heal:0,dps:0};owner.forEach((o,s)=>{if(o>=0)got[seats[s]]++;});
-  return got;
+   每個人只能占一個位置。先求「最多能填滿幾格」，填法一樣多時，選最符合每個人志願順序的那一種
+   （jobs 陣列的順序就是志願順序，第一個是主職）。用最小成本最大流計算，人數再多也很快。
+   回傳 got：各職能填了幾格；pick：每個人被排到的職業（沒排到是 null）；rank：那是他的第幾志願（0 起算） */
+export function assignComp(e,people){
+  const R=["tank","heal","dps"],cap={tank:e.t||0,heal:e.h||0,dps:e.d||0},P=people.length;
+  const S=0,T=P+4,N=P+5,G=[...Array(N)].map(()=>[]);
+  const edge=(a,b,c,w)=>{G[a].push({to:b,c,w,r:G[b].length});G[b].push({to:a,c:0,w:-w,r:G[a].length-1});};
+  const best=people.map(p=>{const m={};(p.jobs||[]).forEach((k,i)=>{const r=(JOB[k]||{}).r;if(r&&!(r in m))m[r]={k,i};});return m;});
+  people.forEach((_,i)=>{edge(S,1+i,1,0);R.forEach((r,ri)=>{const b=best[i][r];if(b&&cap[r])edge(1+i,P+1+ri,1,b.i);});});
+  R.forEach((r,ri)=>{if(cap[r])edge(P+1+ri,T,cap[r],0);});
+  for(;;){ /* 每次沿著成本最低的路多排一個人（Bellman-Ford，可處理反向的負成本） */
+    const d=Array(N).fill(Infinity),pv=Array(N).fill(null);d[S]=0;
+    for(let it=0,ch=true;it<N&&ch;it++){ch=false;for(let a=0;a<N;a++)if(d[a]<Infinity)G[a].forEach((x,xi)=>{if(x.c>0&&d[a]+x.w<d[x.to]){d[x.to]=d[a]+x.w;pv[x.to]=[a,xi];ch=true;}});}
+    if(d[T]===Infinity)break;
+    for(let v=T;v!==S;){const[a,xi]=pv[v],x=G[a][xi];x.c--;G[v][x.r].c++;v=a;}
+  }
+  const got={tank:0,heal:0,dps:0},pick=Array(P).fill(null),rank=Array(P).fill(null);
+  people.forEach((_,i)=>G[1+i].forEach(x=>{if(x.to>P&&x.to<=P+3&&x.c===0){const r=R[x.to-P-1];got[r]++;pick[i]=best[i][r].k;rank[i]=best[i][r].i;}}));
+  return{got,pick,rank};
 }
+export function fillComp(e,people){return assignComp(e,people).got;}
 /* 這個時間能不能成團：人數到最少門檻、職能也湊得齊
    回傳 state：""（沒有設門檻）、ok（可以成團）、maybe（算上勉強的可以）、roles（人夠但職能不齊）、short（還差 lack 人）
    over：超過人數上限 */

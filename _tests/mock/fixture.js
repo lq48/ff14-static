@@ -29,6 +29,9 @@ if(full){
  db["events/e1/rsvp/u5"]={by:"u5",go:"m",slots:{x1:"m"}};
  db["events/e2"]={title:"週末挖寶團（一起開藏寶圖、順便聊天）",kind:"藏寶圖",status:"open",fixed:"",slots:[{id:"y1",d:day(3),t:"22:00"},{id:"y2",d:day(4),t:"22:00"}],size:8,minSize:4,by:"u3",createdAt:now};
  db["events/e2/rsvp/u3"]={by:"u3",go:"y",slots:{y1:"y"}};
+ /* 有職能需求的揪團：多數人填了好幾個職業，用來檢查「依志願排位」 */
+ db["events/e3"]={title:"幻 青龍初見團",kind:"高難度",status:"open",fixed:"",slots:[{id:"z1",d:day(2),t:"14:00"},{id:"z2",d:day(2),t:"20:00"}],size:8,minSize:8,roles:true,t:2,h:2,d:4,by:"u2",createdAt:now-1000};
+ [["u2",["SCH"]],["u9",["MNK","DRK","AST"]],["u3",["DRK","PLD","AST"]],["u8",["RDM","BLM"]],["u4",["AST","VPR"]]].forEach(([u,j])=>db["events/e3/rsvp/"+u]={by:u,go:"y",jobs:j,slots:{z1:"y"}});
  const ds=[0,1,2,3,4,5,6].map(day);
  db["surveys/sv1"]={team:"週三零式團",tid:"s1",title:"12 月第一週",dates:ds,holidays:[],note:"",closed:false,createdAt:now,
    members:[{k:"a",n:"飛雷虛",did:"390511952625008640"},{k:"b",n:"Satoru",did:"886243755051601921"},{k:"c",n:"諾爾",did:"867669258992222208"},{k:"d",n:"Jman",did:"517588902006095883"},{k:"e",n:"小明"}],memberKeys:["a","b","c","d","e"],

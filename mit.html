@@ -231,7 +231,7 @@ textarea.f{min-height:96px;resize:vertical}
 .lnote{margin:0;font-size:12.5px;color:var(--muted)}
 @media (max-width:480px){.litem{grid-template-columns:52px 1fr;gap:10px;padding:10px 12px}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=10">
+<link rel="stylesheet" href="cozy.css?v=11">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -239,7 +239,7 @@ textarea.f{min-height:96px;resize:vertical}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
-import { JOBS as JOBS_ALL, safeUrl } from "./common.js?v=1";
+import { JOBS as JOBS_ALL, safeUrl } from "./common.js?v=2";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
