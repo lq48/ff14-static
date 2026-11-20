@@ -255,10 +255,10 @@ function detailHTML(id,e){
     h+='<div class="panel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">'+(self?(mine?"你的回覆（可以隨時修改）":"填寫你的意願"):"幫 "+esc(wn)+" 填寫"+(mine?"（已回覆過，可修改）":""))+'</h2>'+
       (canProxy()?'<label class="row" style="font-size:13px">幫誰填：<select class="f" id="who" style="width:auto;min-height:32px">'+[me.uid].concat(Object.keys(users).filter(u=>u!==me.uid&&users[u].dc&&canFillFor(u)).sort((a,b)=>(!!R[a])-(!!R[b])||nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant"))).map(u=>'<option value="'+esc(u)+'"'+(u===who?" selected":"")+'>'+(u===me.uid?"自己":esc(nameOf(users[u]))+(R[u]?"（已回覆）":"（還沒回）"))+'</option>').join("")+'</select></label>':'')+'</div>'+
       (!self&&mine&&mine.by&&mine.by!==who?'<p class="hint" style="margin:-4px 0 10px">上次由 '+esc(nameOf(users[mine.by]))+' 代填</p>':'')+
-      '<div class="fld"><span>要參加嗎？</span><div class="seg">'+[["y","想參加"],["m","看時間"],["n","這次不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="go" data-v="'+v+'" aria-pressed="'+(draft.go===v)+'">'+t+'</button>').join("")+'</div></div>';
+      '<div class="fld"><span>要參加嗎？</span><div class="seg">'+[["y","想參加"],["m","看時間"],["n","這次不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="go" data-v="'+esc(v)+'" aria-pressed="'+(draft.go===v)+'">'+t+'</button>').join("")+'</div></div>';
     if(draft.go!=="n"){
-      if(slots.length&&!fx)h+='<div class="fld"><span>每個時間可不可以？</span>'+slots.map(s=>'<div class="slot"><span class="when">'+esc(whenTxt(s))+(s.note?' <small class="muted">'+esc(s.note)+'</small>':'')+'</span><div class="seg">'+[["y","可以"],["m","勉強"],["n","不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="sl" data-s="'+s.id+'" data-v="'+v+'" aria-pressed="'+(draft.slots[s.id]===v)+'">'+t+'</button>').join("")+'</div></div>').join("")+'</div>';
-      if(e.roles)h+='<div class="fld"><span>你可以打的職業（依想打的順序點，第一個是主職）</span><div class="jobs">'+["tank","heal","dps"].map(r=>'<div class="grp"><span>'+ROLE_N[r]+'</span>'+JOBS.filter(j=>j.r===r).map(j=>{const i=draft.jobs.indexOf(j.k);return '<button type="button" class="jb '+r+'" data-a="job" data-k="'+j.k+'" aria-pressed="'+(i>=0)+'">'+esc(j.n)+(i>=0?'<i>'+(i+1)+'</i>':'')+'</button>';}).join("")+'</div>').join("")+'</div></div>';
+      if(slots.length&&!fx)h+='<div class="fld"><span>每個時間可不可以？</span>'+slots.map(s=>'<div class="slot"><span class="when">'+esc(whenTxt(s))+(s.note?' <small class="muted">'+esc(s.note)+'</small>':'')+'</span><div class="seg">'+[["y","可以"],["m","勉強"],["n","不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="sl" data-s="'+esc(s.id)+'" data-v="'+esc(v)+'" aria-pressed="'+(draft.slots[s.id]===v)+'">'+t+'</button>').join("")+'</div></div>').join("")+'</div>';
+      if(e.roles)h+='<div class="fld"><span>你可以打的職業（依想打的順序點，第一個是主職）</span><div class="jobs">'+["tank","heal","dps"].map(r=>'<div class="grp"><span>'+ROLE_N[r]+'</span>'+JOBS.filter(j=>j.r===r).map(j=>{const i=draft.jobs.indexOf(j.k);return '<button type="button" class="jb '+r+'" data-a="job" data-k="'+esc(j.k)+'" aria-pressed="'+(i>=0)+'">'+esc(j.n)+(i>=0?'<i>'+(i+1)+'</i>':'')+'</button>';}).join("")+'</div>').join("")+'</div></div>';
     }
     h+='<label class="fld"><span>備註（可不填）</span><input class="f" id="note" maxlength="60" value="'+esc(draft.note)+'" placeholder="例如：週六要 22 點後才能上線"></label>'+
       '<div class="end" style="margin-top:4px">'+(mine?'<button class="btn" data-a="unrsvp">撤回回覆</button>':'')+'<button class="btn primary" data-a="save"'+(draft.go?'':' disabled')+'>'+(mine?"更新回覆":"送出")+'</button></div></div>';
@@ -275,7 +275,7 @@ function detailHTML(id,e){
         comp='<div class="comp">'+[["tank",e.t],["heal",e.h],["dps",e.d]].filter(([,n])=>n).map(([r,n])=>'<span class="'+(gA[r]>=n?"ok":"lack")+'">'+ROLE_N[r]+' <b>'+gA[r]+'/'+n+'</b></span>'+(gB[r]>gA[r]?'<span class="muted">（含勉強 '+gB[r]+'）</span>':'')).join("　")+'</div>';}
       const names=x.ok.map(r=>nameOf(users[r.u])).join("、")+(x.mb.length?'；勉強：'+x.mb.map(r=>nameOf(users[r.u])).join("、"):'');
       return '<div class="res'+(best&&x.score===best&&!fx?" best":"")+'"><span class="when">'+esc(whenTxt(x.s))+'</span><div title="'+esc(names)+'"><div class="bar"><i class="y" style="width:'+(x.ok.length/mx*100)+'%"></i><i class="m" style="width:'+(x.mb.length/mx*100)+'%"></i></div><div class="comp">可以 <b>'+x.ok.length+'</b>　勉強 <b>'+x.mb.length+'</b>'+(sizeTxt(e)?'　／ '+sizeTxt(e):'')+'　'+ready(e,x)+'</div>'+comp+'</div>'+
-        (mg?(e.fixed===x.s.id&&e.status==="fixed"?'<span class="pill fixed">已定案</span>':'<button class="btn sm" data-a="fix" data-s="'+x.s.id+'">定案這個時間</button>'):'<span></span>')+'</div>';}).join("")+'</div>';
+        (mg?(e.fixed===x.s.id&&e.status==="fixed"?'<span class="pill fixed">已定案</span>':'<button class="btn sm" data-a="fix" data-s="'+esc(x.s.id)+'">定案這個時間</button>'):'<span></span>')+'</div>';}).join("")+'</div>';
   }
   if(list.length){
     const ord={y:0,m:1,n:2};list.sort((a,b)=>(ord[a.go]??3)-(ord[b.go]??3)||(a.at||0)-(b.at||0));
@@ -293,18 +293,18 @@ function detailHTML(id,e){
 function newForm(){const sat=nextDow(6),sun=nextDow(0);return {id:"",tpl:"raid",...structuredClone(TPL.raid),title:"",ilvl:"",slots:[{id:rid(),d:sat,t:"21:00",note:""},{id:rid(),d:sun,t:"21:00",note:""}]};}
 function formHTML(){const F=form;
   let h='<a class="back" href="#" data-a="fcancel">← 取消</a><div class="top"><div><h1>'+(F.id?"編輯揪團":"發起揪團")+'</h1><div class="sub">只要填名稱和候選時間就能發起，其他都可以之後再補</div></div></div><div class="panel">';
-  if(!F.id)h+='<div class="fld"><span>從範本開始</span><div class="chips">'+Object.entries(TPL).map(([k,t])=>'<button type="button" class="chip" data-a="tpl" data-k="'+k+'" aria-pressed="'+(F.tpl===k)+'">'+t.n+'</button>').join("")+'</div><p class="hint">範本只是幫你先填好常用設定，選完都還能改。</p></div>';
+  if(!F.id)h+='<div class="fld"><span>從範本開始</span><div class="chips">'+Object.entries(TPL).map(([k,t])=>'<button type="button" class="chip" data-a="tpl" data-k="'+esc(k)+'" aria-pressed="'+(F.tpl===k)+'">'+t.n+'</button>').join("")+'</div><p class="hint">範本只是幫你先填好常用設定，選完都還能改。</p></div>';
   h+='<label class="fld"><span>活動名稱</span><input class="f" data-ff="title" maxlength="40" value="'+esc(F.title)+'" placeholder="例如：幻青龍初見團"></label>'+
     '<div class="row" style="align-items:flex-start"><label class="fld" style="flex:1;min-width:140px"><span>類型</span><select class="f" data-ff="kind">'+KINDS.map(k=>'<option'+(k===F.kind?" selected":"")+'>'+k+'</option>').join("")+'</select></label>'+
     '<label class="fld" style="width:130px"><span>最少幾人成團</span><input class="f" type="number" min="0" max="48" data-ff="min" value="'+(F.min||0)+'"></label>'+
     '<label class="fld" style="width:130px"><span>最多幾人（0＝不限）</span><input class="f" type="number" min="0" max="48" data-ff="size" value="'+(F.size||0)+'"></label>'+
     '<label class="fld" style="flex:1;min-width:140px"><span>裝等需求（可不填）</span><input class="f" data-ff="ilvl" maxlength="20" value="'+esc(F.ilvl||"")+'" placeholder="例如：730 以上"></label></div>'+
     '<div class="fld"><label class="row" style="font-weight:700;font-size:13px"><input type="checkbox" data-ff="roles"'+(F.roles?" checked":"")+'> 需要大家填職業（戰鬥內容建議打開）</label>'+
-    (F.roles?'<div class="three" style="margin-top:6px;max-width:360px">'+[["t","坦"],["h","補"],["d","輸出"]].map(([k,n])=>'<label class="fld" style="margin:0"><span>'+n+'</span><input class="f" type="number" min="0" max="24" data-ff="'+k+'" value="'+(F[k]||0)+'"></label>').join("")+'</div>':'')+'</div>'+
+    (F.roles?'<div class="three" style="margin-top:6px;max-width:360px">'+[["t","坦"],["h","補"],["d","輸出"]].map(([k,n])=>'<label class="fld" style="margin:0"><span>'+n+'</span><input class="f" type="number" min="0" max="24" data-ff="'+esc(k)+'" value="'+(F[k]||0)+'"></label>').join("")+'</div>':'')+'</div>'+
     '<label class="fld"><span>說明（攻略連結、集合地點、要準備什麼都寫這裡，網址會自動變成連結）</span><textarea class="f" data-ff="desc" maxlength="1500">'+esc(F.desc||"")+'</textarea></label>'+
     '<div class="fld"><span>候選時間（大家會一個一個回答可不可以；不加就只問參加意願）</span>'+
-    F.slots.map((s,i)=>'<div class="srow"><input class="f" type="date" data-sd="'+i+'" value="'+esc(s.d)+'" aria-label="日期"><input class="f" type="time" data-st="'+i+'" value="'+esc(s.t)+'" aria-label="時間"><button type="button" class="btn sm" data-a="srm" data-i="'+i+'" aria-label="移除這個時間">✕</button></div>').join("")+
-    '<div class="row"><button type="button" class="btn sm" data-a="sadd">＋ 新增時間</button>'+[[6,"21:00","本週六晚上"],[0,"14:00","本週日下午"],[0,"21:00","本週日晚上"]].map(([w,t,n])=>'<button type="button" class="btn sm" data-a="squick" data-w="'+w+'" data-t="'+t+'">＋ '+n+'</button>').join("")+'</div></div>'+
+    F.slots.map((s,i)=>'<div class="srow"><input class="f" type="date" data-sd="'+esc(i)+'" value="'+esc(s.d)+'" aria-label="日期"><input class="f" type="time" data-st="'+esc(i)+'" value="'+esc(s.t)+'" aria-label="時間"><button type="button" class="btn sm" data-a="srm" data-i="'+esc(i)+'" aria-label="移除這個時間">✕</button></div>').join("")+
+    '<div class="row"><button type="button" class="btn sm" data-a="sadd">＋ 新增時間</button>'+[[6,"21:00","本週六晚上"],[0,"14:00","本週日下午"],[0,"21:00","本週日晚上"]].map(([w,t,n])=>'<button type="button" class="btn sm" data-a="squick" data-w="'+esc(w)+'" data-t="'+esc(t)+'">＋ '+n+'</button>').join("")+'</div></div>'+
     '<div class="end"><button class="btn" data-a="fcancel">取消</button><button class="btn primary" data-a="fsave">'+(F.id?"儲存":"發起")+'</button></div></div>';
   return h;
 }
@@ -430,8 +430,18 @@ window.addEventListener("beforeunload",ev=>{if(form||(draft&&draft.dirty)){ev.pr
 function readView(){const q=new URLSearchParams(location.search);return q.get("e")?{e:q.get("e")}:{};}
 
 /* ===== 讀取 ===== */
+/* 回覆內容會被拿來組 HTML（例如 class 名稱），讀進來時先限定成已知的值 */
+const YMN=new Set(["y","m","n"]);
+function cleanRsvp(r){
+  r=r&&typeof r==="object"?{...r}:{};
+  r.go=YMN.has(r.go)?r.go:"n";
+  const sl={};Object.entries(r.slots&&typeof r.slots==="object"?r.slots:{}).forEach(([k,v])=>{if(YMN.has(v))sl[k]=v;});r.slots=sl;
+  r.jobs=Array.isArray(r.jobs)?r.jobs.filter(j=>JOB[j]):[];
+  if(r.note!=null)r.note=String(r.note);
+  return r;
+}
 function watchRsvp(id){if(rsvpFor===id)return;if(rsvpUnsub)rsvpUnsub();rsvp={};rsvpFor=id;
-  rsvpUnsub=onSnapshot(collection(db,"events",id,"rsvp"),s=>{rsvp={};s.forEach(d=>{rsvp[d.id]=d.data();});if(!(draft&&draft.dirty))draft=null;if(!form)render();},err=>{console.error(err);toast("讀取回覆失敗："+(err.code==="permission-denied"?"Firestore 規則可能還沒更新":err.code));});}
+  rsvpUnsub=onSnapshot(collection(db,"events",id,"rsvp"),s=>{rsvp={};s.forEach(d=>{rsvp[d.id]=cleanRsvp(d.data());});if(!(draft&&draft.dirty))draft=null;if(!form)render();},err=>{console.error(err);toast("讀取回覆失敗："+(err.code==="permission-denied"?"Firestore 規則可能還沒更新":err.code));});}
 function start(){
   onSnapshot(collection(db,"users"),s=>{users={};s.forEach(d=>{users[d.id]=d.data();});if(!form)render();},()=>{});
   onSnapshot(doc(db,"eventsCfg","main"),s=>{ecfg=s.exists()?s.data():{};if(!form&&!(draft&&draft.dirty))render();},()=>{ecfg={};});

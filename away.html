@@ -190,7 +190,11 @@ const canEdit=t=>!!me&&(isOwner||t===me.uid||helpersOf(t).includes(me.uid));
 const editableIds=()=>Object.keys(users).filter(canEdit);
 
 /* ===== 資料 ===== */
-const entriesOf=u=>(((away[u]||{}).entries)||[]);
+/* 讀資料時統一清理：規則只限制 entries 是清單，不檢查每一筆內容，
+   所以 kind 只接受 off／maybe、日期必須是 YYYY-MM-DD，其他一律略過（避免被塞進 HTML） */
+const DRE=/^\d{4}-\d{2}-\d{2}$/;
+const cleanEntry=e=>(e&&typeof e==="object"&&DRE.test(e.from)&&DRE.test(e.to))?(e.kind==="off"||e.kind==="maybe"?e:{...e,kind:"maybe"}):null;
+const entriesOf=u=>((((away[u]||{}).entries)||[]).map(cleanEntry).filter(Boolean));
 function labelOf(u,e){if(e.label)return {t:e.label,lock:false};const p=((priv[u]||{}).labels||{})[e.id];if(p)return {t:p,lock:true};return {t:"",lock:false};}
 function dayState(u,day){let st="";entriesOf(u).forEach(e=>{if(e.from<=day&&day<=e.to){if(e.kind==="off")st="off";else if(!st)st="maybe";}});return st;}
 function rowIds(){let ids=Object.keys(users);
@@ -210,7 +214,7 @@ function render(){
   const D=days(),ids=rowIds(),today=D[0];
   let h='<div class="top"><div><h1>請假行事曆</h1><div class="sub">飛地成員接下來 '+months+' 個月的請假與可能不在的日子</div></div><div class="tools">'+
     (editableIds().length?'<button class="btn primary" data-a="new">＋ 我要請假</button>':'')+
-    '<select class="f" style="width:auto" id="months" aria-label="顯示範圍">'+[1,3,6].map(m=>'<option value="'+m+'"'+(m===months?" selected":"")+'>'+m+' 個月</option>').join("")+'</select>'+
+    '<select class="f" style="width:auto" id="months" aria-label="顯示範圍">'+[1,3,6].map(m=>'<option value="'+esc(m)+'"'+(m===months?" selected":"")+'>'+m+' 個月</option>').join("")+'</select>'+
     (isOwner?'<button class="btn" data-a="settings">權限與順序</button>':'')+'</div></div>';
   if(!canList)h+='<div class="panel"><p style="margin:0">你目前只看得到自己'+(editableIds().length>1?'和你負責代填的人':'')+'的請假。需要看全部成員時，請找網站管理員開權限。</p></div>';
   // 篩選
@@ -221,7 +225,7 @@ function render(){
   // 近期清單
   const up=[];ids.forEach(id=>entriesOf(id).forEach(e=>{if(e.to>=today&&e.from<=D[D.length-1])up.push({id,e});}));up.sort((a,b)=>a.e.from.localeCompare(b.e.from)||a.e.to.localeCompare(b.e.to));
   h+='<div class="panel"><h2>近期請假（'+up.length+'）</h2>'+(up.length?'<ul class="up">'+up.map(({id,e})=>{const l=labelOf(id,e);
-    return '<li><span class="who">'+esc(nameOf(users[id]))+'</span><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock" title="只有本人、代填的人和團長看得到">僅團長可見</span>':'')+(canEdit(id)?'<button class="btn sm" data-a="edit" data-u="'+id+'">編輯</button>':'')+'</li>';}).join("")+'</ul>':'<p class="note" style="margin:0">這段期間沒有人請假。</p>')+'</div>';
+    return '<li><span class="who">'+esc(nameOf(users[id]))+'</span><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock" title="只有本人、代填的人和團長看得到">僅團長可見</span>':'')+(canEdit(id)?'<button class="btn sm" data-a="edit" data-u="'+esc(id)+'">編輯</button>':'')+'</li>';}).join("")+'</ul>':'<p class="note" style="margin:0">這段期間沒有人請假。</p>')+'</div>';
   // 行事曆
   h+='<div class="legend" style="margin:0 0 8px"><span><span class="sw off"></span>確定請假</span><span><span class="sw maybe"></span>可能不在</span><span><span class="sw hol"></span>國定假日（含補假）</span><span style="color:#B8860B">★</span><span style="margin-left:-10px">已定案的揪團（成員格子裡的 ★ 是會參加的人）　○ 調查中的候選日</span><span>上方數字：當天確定能到的人數（橘色小字是可能不在的人數）</span></div>';
   if(!ids.length){h+='<div class="panel empty">沒有符合條件的成員。</div>';app.innerHTML=h;return;}
@@ -237,10 +241,10 @@ function render(){
   t+='</tr></thead><tbody>';
   const AT=attendMap(evs,rs);
   ids.forEach(id=>{const u=users[id],ed=canEdit(id),at=AT[id]||{};
-    t+='<tr><th class="nm" scope="row">'+(ed?'<button class="in" data-a="edit" data-u="'+id+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'<div class="in">')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span class="t">'+esc(nameOf(u))+'</span>'+(id===me.uid?'<span class="me">你</span>':'')+(ed?'</button>':'</div>')+'</th>';
+    t+='<tr><th class="nm" scope="row">'+(ed?'<button class="in" data-a="edit" data-u="'+esc(id)+'" title="編輯 '+esc(nameOf(u))+' 的請假">':'<div class="in">')+'<img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span class="t">'+esc(nameOf(u))+'</span>'+(id===me.uid?'<span class="me">你</span>':'')+(ed?'</button>':'</div>')+'</th>';
     D.forEach((d,i)=>{const s=dayState(id,d),x=parse(d),ev=at[d];let tip=nameOf(u)+" "+md(d)+hn(d);
       if(s){const e=entriesOf(id).find(e=>e.from<=d&&d<=e.to&&(s==="off"?e.kind==="off":true)),l=labelOf(id,e);tip+="："+(s==="off"?"請假":"可能不在")+(l.t?"（"+l.t+"）":"");}
-      t+='<td class="day'+(s?" "+s:bg(d,x))+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+id+'" data-d="'+d+'"':'')+' title="'+esc(tip+(ev?"\n揪團："+ev.map(z=>(z.t?z.t+" ":"")+z.title+(z.sure?"":"（勉強）")).join("、")+(s==="off"?"（但這天請假了！）":""):""))+'">'+(ev?'<span class="evd'+(ev.some(z=>z.sure)?"":" mb")+(s==="off"?" cf":"")+'">★</span>':'')+'</td>';});
+      t+='<td class="day'+(s?" "+s:bg(d,x))+(x.getDate()===1&&i?" mstart":"")+(i===0?" today":"")+(ed?" ed":"")+'"'+(ed?' data-a="edit" data-u="'+esc(id)+'" data-d="'+esc(d)+'"':'')+' title="'+esc(tip+(ev?"\n揪團："+ev.map(z=>(z.t?z.t+" ":"")+z.title+(z.sure?"":"（勉強）")).join("、")+(s==="off"?"（但這天請假了！）":""):""))+'">'+(ev?'<span class="evd'+(ev.some(z=>z.sure)?"":" mb")+(s==="off"?" cf":"")+'">★</span>':'')+'</td>';});
     t+='</tr>';});
   h+=t+'</tbody></table></div>';
   if(isOwner||editableIds().length)h+='<p class="hint">點自己那一列的格子，可以從那天開始新增請假。</p>';
@@ -257,9 +261,9 @@ function renderModal(){
   if(modal.k==="edit"){const u=modal.u,list=entriesOf(u).slice().sort((a,b)=>a.from.localeCompare(b.from)),today=ymd(new Date());
     const eds=editableIds();
     h+='<h2>'+esc(nameOf(users[u]))+' 的請假</h2>';
-    if(eds.length>1)h+='<label class="fld"><span>幫誰填</span><select class="f" id="who">'+sortIds(eds).sort((a,b)=>a===me.uid?-1:b===me.uid?1:0).map(id=>'<option value="'+id+'"'+(id===u?" selected":"")+'>'+esc(nameOf(users[id]))+(id===me.uid?"（我）":"")+'</option>').join("")+'</select></label>';
+    if(eds.length>1)h+='<label class="fld"><span>幫誰填</span><select class="f" id="who">'+sortIds(eds).sort((a,b)=>a===me.uid?-1:b===me.uid?1:0).map(id=>'<option value="'+esc(id)+'"'+(id===u?" selected":"")+'>'+esc(nameOf(users[id]))+(id===me.uid?"（我）":"")+'</option>').join("")+'</select></label>';
     const cur=list.filter(e=>e.to>=today),past=list.length-cur.length,cpT=sortIds(eds.filter(x=>x!==u));
-    h+=cur.length?cur.map(e=>{const l=labelOf(u,e);return '<div class="ent"><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock">僅團長可見</span>':'')+'<span class="sp"></span>'+(cpT.length?'<select class="f cp" data-copy="'+e.id+'" aria-label="把這筆請假複製給別人"><option value="">複製給…</option>'+cpT.map(x=>'<option value="'+x+'">'+esc(nameOf(users[x]))+'</option>').join("")+'</select>':'')+'<button class="btn sm" data-a="fedit" data-id="'+e.id+'">修改</button><button class="btn sm danger" data-a="fdel" data-id="'+e.id+'">刪除</button></div>';}).join(""):'<p class="note">目前沒有請假。</p>';
+    h+=cur.length?cur.map(e=>{const l=labelOf(u,e);return '<div class="ent"><span class="d">'+md(e.from)+(e.to!==e.from?' ～ '+md(e.to):'')+'</span><span class="pill '+e.kind+'">'+(e.kind==="off"?"請假":"可能不在")+'</span>'+(l.t?'<span class="note">'+esc(l.t)+'</span>':'')+(l.lock?'<span class="pill lock">僅團長可見</span>':'')+'<span class="sp"></span>'+(cpT.length?'<select class="f cp" data-copy="'+esc(e.id)+'" aria-label="把這筆請假複製給別人"><option value="">複製給…</option>'+cpT.map(x=>'<option value="'+esc(x)+'">'+esc(nameOf(users[x]))+'</option>').join("")+'</select>':'')+'<button class="btn sm" data-a="fedit" data-id="'+esc(e.id)+'">修改</button><button class="btn sm danger" data-a="fdel" data-id="'+esc(e.id)+'">刪除</button></div>';}).join(""):'<p class="note">目前沒有請假。</p>';
     if(past)h+='<p class="hint">另外有 '+past+' 筆已經過去的紀錄，結束超過 30 天會自動清除。</p>';
     const F=modal.form;
     if(!F)h+='<div class="end" style="justify-content:flex-start"><button class="btn primary" data-a="fnew">＋ 新增請假</button></div>';
@@ -274,13 +278,13 @@ function renderModal(){
     const ids=Object.keys(users).filter(id=>!isOwnerUid(id)).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")),A=modal.access,P=modal.proxies;
     h+='<h2>權限設定</h2><p class="hint" style="margin-top:0">每個人都能看到、編輯自己的請假。這裡設定誰能看到全部成員，以及誰可以幫誰代填。</p>';
     h+='<div class="panel" style="margin-top:12px"><h2>誰可以看整個行事曆</h2><div class="end" style="justify-content:flex-start;margin:0 0 6px"><button class="btn sm" data-a="leadall">把所有固定團的團長設為「團長」</button></div>'+
-      ids.map(id=>'<div class="srow"><span>'+esc(nameOf(users[id]))+'</span><select class="f" data-acc="'+id+'" aria-label="'+esc(nameOf(users[id]))+' 的權限"><option value="">只看得到自己</option><option value="view"'+(A[id]==="view"?" selected":"")+'>可檢視全部</option><option value="lead"'+(A[id]==="lead"?" selected":"")+'>團長（也看得到私人理由）</option></select></div>').join("")+'</div>';
+      ids.map(id=>'<div class="srow"><span>'+esc(nameOf(users[id]))+'</span><select class="f" data-acc="'+esc(id)+'" aria-label="'+esc(nameOf(users[id]))+' 的權限"><option value="">只看得到自己</option><option value="view"'+(A[id]==="view"?" selected":"")+'>可檢視全部</option><option value="lead"'+(A[id]==="lead"?" selected":"")+'>團長（也看得到私人理由）</option></select></div>').join("")+'</div>';
     h+='<div class="panel"><h2>成員順序</h2><p class="hint" style="margin-top:0">行事曆和清單都照這個順序排，只有你可以調整。</p>'+
-      modal.order.map((id,i)=>'<div class="ord"><span class="n">'+(i+1)+'</span><span class="t">'+esc(nameOf(users[id]))+'</span><button class="btn sm" data-a="oup" data-i="'+i+'"'+(i?'':' disabled')+' aria-label="'+esc(nameOf(users[id]))+' 往上">↑</button><button class="btn sm" data-a="odn" data-i="'+i+'"'+(i<modal.order.length-1?'':' disabled')+' aria-label="'+esc(nameOf(users[id]))+' 往下">↓</button></div>').join("")+'</div>';
+      modal.order.map((id,i)=>'<div class="ord"><span class="n">'+(i+1)+'</span><span class="t">'+esc(nameOf(users[id]))+'</span><button class="btn sm" data-a="oup" data-i="'+esc(i)+'"'+(i?'':' disabled')+' aria-label="'+esc(nameOf(users[id]))+' 往上">↑</button><button class="btn sm" data-a="odn" data-i="'+esc(i)+'"'+(i<modal.order.length-1?'':' disabled')+' aria-label="'+esc(nameOf(users[id]))+' 往下">↓</button></div>').join("")+'</div>';
     h+='<div class="panel"><h2>代填</h2><p class="hint" style="margin-top:0">被設定的人可以幫對方新增、修改請假，也看得到對方的私人理由。</p>'+
       Object.keys(users).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")).map(t=>{const hs=Object.keys(P[t]||{});
-        return '<div class="prow"><b>'+esc(nameOf(users[t]))+'</b> 可以由這些人代填：<div class="hl">'+hs.map(x=>'<span class="tag">'+esc(nameOf(users[x]))+'<button aria-label="移除 '+esc(nameOf(users[x]))+'" data-a="prm" data-t="'+t+'" data-h="'+x+'">×</button></span>').join("")+
-        '<select class="f" style="width:auto;min-height:30px;padding:2px 6px" data-padd="'+t+'" aria-label="新增代填的人"><option value="">＋ 新增</option>'+Object.keys(users).filter(x=>x!==t&&!hs.includes(x)).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")).map(x=>'<option value="'+x+'">'+esc(nameOf(users[x]))+'</option>').join("")+'</select></div></div>';}).join("")+'</div>';
+        return '<div class="prow"><b>'+esc(nameOf(users[t]))+'</b> 可以由這些人代填：<div class="hl">'+hs.map(x=>'<span class="tag">'+esc(nameOf(users[x]))+'<button aria-label="移除 '+esc(nameOf(users[x]))+'" data-a="prm" data-t="'+esc(t)+'" data-h="'+esc(x)+'">×</button></span>').join("")+
+        '<select class="f" style="width:auto;min-height:30px;padding:2px 6px" data-padd="'+esc(t)+'" aria-label="新增代填的人"><option value="">＋ 新增</option>'+Object.keys(users).filter(x=>x!==t&&!hs.includes(x)).sort((a,b)=>nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")).map(x=>'<option value="'+esc(x)+'">'+esc(nameOf(users[x]))+'</option>').join("")+'</select></div></div>';}).join("")+'</div>';
     h+='<div class="end"><button class="btn" data-a="mclose">取消</button><button class="btn primary" data-a="ssave">儲存</button></div>';
   }
   const sc=m.querySelector(".sheet")?m.querySelector(".sheet").scrollTop:0;
@@ -338,7 +342,7 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="selst"){const t=b.dataset.t;if(sel.has(t))sel.delete(t);else sel.add(t);saveFilter();render();}
   else if(a==="settings"){modal={k:"settings",order:sortIds(Object.keys(users)),access:{...(cfg.access||{})},proxies:JSON.parse(JSON.stringify(cfg.proxies||{}))};renderModal();}
   else if(a==="leadall"){statics.forEach(s=>Object.keys(s.leaders||{}).forEach(id=>{if(users[id])modal.access[id]="lead";}));renderModal();toast("已套用，記得按儲存");}
-  else if(a==="oup"||a==="odn"){const i=+b.dataset.i,j=a==="oup"?i-1:i+1,o=modal.order;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];renderModal();const nb=document.querySelector('[data-a="'+a+'"][data-i="'+j+'"]');if(nb&&!nb.disabled)nb.focus();}
+  else if(a==="oup"||a==="odn"){const i=+b.dataset.i,j=a==="oup"?i-1:i+1,o=modal.order;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];renderModal();const nb=document.querySelector('[data-a="'+esc(a)+'"][data-i="'+esc(j)+'"]');if(nb&&!nb.disabled)nb.focus();}
   else if(a==="prm"){delete (modal.proxies[b.dataset.t]||{})[b.dataset.h];renderModal();}
   else if(a==="ssave"){const P={};Object.keys(modal.proxies).forEach(t=>{const k=Object.keys(modal.proxies[t]||{});if(k.length)P[t]=Object.fromEntries(k.map(x=>[x,true]));});
     setDoc(doc(db,"awayCfg","main"),{access:modal.access,proxies:P,order:modal.order,updatedAt:Date.now()}).then(()=>{closeModal();toast("權限已儲存");}).catch(e=>{console.error(e);toast("儲存失敗："+(e.code||e.message));});}
