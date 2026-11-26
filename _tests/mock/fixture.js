@@ -51,7 +51,7 @@ if(full){
  db["mitDuties/d1"]={name:"M6S",level:100,slots:["MT","ST","H1","H2","D1","D2","D3","D4"],createdAt:1,stages:[{id:"st1",name:"一王",rows:[
    {id:"r0",kind:"head",mech:"開場"},
    {id:"r1",t:"0:12",mech:"全體 AOE A",tag:"全體AOE",hits:[{dtype:"magic",dmg:"8萬"}]},
-   {id:"r2",t:"0:30",mech:"死刑 B",tag:"死刑",hits:[{dtype:"phys",dmg:"20萬"}]},
+   {id:"r2",t:"0:30",mech:"死刑 B",tag:"死刑",aoe:"tank",hits:[{dtype:"phys",dmg:"20萬",dot:"1萬",tk:2,iv:3}]},
    {id:"r3",mech:"分攤 C",tag:"分攤",hits:[]},
    {id:"r4",t:"1:10",mech:"全體 AOE D",tag:"全體AOE",hits:[]},
    {id:"r5",t:"1:40",mech:"全體 AOE E",hits:[]}]},{id:"st2",name:"二王",rows:[]}]};
