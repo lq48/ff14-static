@@ -15,7 +15,7 @@ async def m():
     b=await browser(pw)
     # ---- 純計算（在瀏覽器裡載入 mit-hp.js）
     ctx,p,errs,calls=await open_page(b,"mit.html?mock=owner",1280,900);await p.wait_for_timeout(400)
-    r=await p.evaluate("""async()=>{const m=await import('./mit-hp.js?v=1');const c=m.hpCfg({});
+    r=await p.evaluate("""async()=>{const m=await import('./mit-hp.js?v=2');const c=m.hpCfg({});
       const R=[{id:"a",hits:[{dtype:"phys",dmg:"92,000"}]},{id:"b",hits:[{dtype:"magic",dmg:"115,000"}]},{id:"c",tag:"死刑",hits:[{dtype:"magic",dmg:"800,000"}]},
         {id:"d",hits:[{dtype:"magic",dmg:"132,000",dot:"92,000",tk:5}]},{id:"x",aoe:"<img src=x>",hits:[{dmg:"<b>1</b>"}]}];
       const o=m.hpCheck(R,[15,17,24,86,200],c);
@@ -34,7 +34,7 @@ async def m():
     ok(await row(p,"罪炎 或 罪雷").locator(".hpb.dead").count()==1,"會死的血條是紅字")
     t=await row(p,"連鎖爆印銘刻").inner_text();ok("坦克 225,800" in t and "死刑" in t,"死刑看坦克")
     t=await row(p,"爆印").inner_text();ok("雙坦分攤" in t and "剩 -" not in t,"雙坦分攤看坦克")
-    ok(await p.locator("#gw thead .hc").count()==4,"表頭多四欄")
+    ok(await p.locator("#gw thead .hc").count()==5,"表頭多五欄（含減傷後）")
     ok(await p.locator("#gw .cm .dm").count()==0,"開血量檢查時，機制欄不重複顯示傷害")
     # 持續傷害（光焰圓光 132,000＋92,000×5）
     t=await row(p,"光焰圓光").inner_text();ok("持續 92,000×5" in t and "持續傷害跳完" in t,"持續傷害顯示每跳與跳完的血量")
