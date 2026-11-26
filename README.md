@@ -58,4 +58,7 @@ FF14 固定團的線上小據點：大廳（今日飛地）、固定團、BiS、
 ## 減傷軸的血量檢查（mit-hp.js）
 - 純計算模組，不碰畫面和資料庫：傷害文字解析（92,000／9.2萬／80k）、連段疊加、持續傷害、誰最危險（物理看法系、魔法看遠敏、死刑看坦克）。
 - 資料欄位（全部選填）：機制 `aoe`；每段傷害 `dot`、`tk`、`iv`；副本 `hp:{tank,ranged,caster}`、`chain`。
-- 測試：`_tests/test_mit_hp.py`（含絕光暗未來的匯入檔 `_tests/data/fru-mit-seed.json`）。
+- 減傷計算：本團分工裡排的技能，取技能庫 Lv 對應那一頁的「效果」。全隊／敵人→所有人，自身→施放者職能，目標→機制裡選的位置；減傷相乘、護盾依到期先後被吃掉、真實傷害不減、持續傷害用出現當下的減傷；有填「條件」的效果不算。
+- `mit-ref.json`：技能效果參考資料（日文 7.11 減傷表 Skill 分頁轉出），技能庫「從參考資料補效果」使用。重新產生：`python _tests/data/build_ref.py 試算表匯出.txt mit-ref.json`（需要 `pip install opencc-python-reimplemented`）。
+- 絕光暗未來匯入檔：`python _tests/data/build_fru_seed.py 試算表匯出.txt [譯名對照.csv]`。
+- 測試：`_tests/test_mit_hp.py`、`_tests/test_mit_ref.py`（含絕光暗未來的匯入檔 `_tests/data/fru-mit-seed.json`）。

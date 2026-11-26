@@ -41,58 +41,86 @@ export function hpCfg(duty) {
 }
 
 /* rows：同一個階段的機制（含段落列）；times：每列的秒數（可以是推估），和 rows 一樣長
+   effects：排進去的減傷／護盾（由頁面依分工換算好），每筆
+     { start, end, who: "all"|"tank"|"ranged"|"caster", k: "mit"|"shield", t: "all"|"phys"|"magic",
+       pct（減傷 %）, amt（護盾 HP）或 hpPct（護盾＝吃到的人最大 HP 的 %）, name }
+   規則：減傷用乘的疊加；物理／魔法只減對應類型，「全部傷害」都減；真實傷害不吃減傷
+         持續傷害用「出現那一下」當下的減傷（遊戲是附加時就定好）
+         護盾依時間先到期的先扣，被前面的傷害吃掉就沒了
    回傳 { [rowId]: 結果 }，只有有傷害數值的列才有 */
-export function hpCheck(rows, times, cfg) {
+const ROLES = ["tank", "ranged", "caster"];
+export function hpCheck(rows, times, cfg, effects) {
+  effects = (effects || []).filter(f => f && Number.isFinite(f.start) && Number.isFinite(f.end) && f.end > f.start);
   const ev = [];
   rows.forEach((r, i) => {
     if (!r || r.virt || r.kind === "head") return;
     const T = times[i]; if (T == null) return;
     const aoe = aoeOf(r), tankOnly = aoe === "tank" || aoe === "tanks";
     (r.hits || []).forEach(h => {
-      const off = posNum(h.off, 0), d = parseDmg(h.dmg), n = Math.max(1, Math.floor(posNum(h.n, 1)));
-      if (d) ev.push({ t: T + off, d: d * n, dt: h.dtype || "", r, tankOnly, dot: false });
+      const off = posNum(h.off, 0), d = parseDmg(h.dmg), n = Math.max(1, Math.floor(posNum(h.n, 1))), at = T + off;
+      if (d) ev.push({ t: at, mt: at, d: d * n, dt: h.dtype || "", r, tankOnly, dot: false });
       const dv = parseDmg(h.dot), tk = Math.floor(posNum(h.tk, 0)), iv = posNum(h.iv, 3);
-      if (dv && tk) for (let k = 1; k <= Math.min(tk, 60); k++) ev.push({ t: T + off + iv * k, d: dv, dt: h.dtype || "", r, tankOnly, dot: true });
+      if (dv && tk) for (let k = 1; k <= Math.min(tk, 60); k++) ev.push({ t: at + iv * k, mt: at, d: dv, dt: h.dtype || "", r, tankOnly, dot: true });
     });
   });
   ev.sort((a, b) => a.t - b.t);
-  const st = { tank: { last: -1e9, sum: 0, from: null }, ranged: { last: -1e9, sum: 0, from: null }, caster: { last: -1e9, sum: 0, from: null } };
+  const hits = (f, role) => f.who === "all" || f.who === role;
+  const live = (f, t) => f.start <= t + 1e-9 && t <= f.end + 1e-9;
+  /* 這個人、這種傷害、這個時間點吃到的減傷倍率 */
+  const mult = (role, dt, t) => {
+    if (dt === "true") return 1;
+    let m = 1;
+    effects.forEach(f => { if (f.k === "mit" && hits(f, role) && live(f, t) && (f.t === "all" || !f.t || f.t === dt)) m *= Math.max(0, 1 - (+f.pct || 0) / 100); });
+    return m;
+  };
+  /* 護盾：每個人各一份 */
+  const pools = {};
+  ROLES.forEach(k => { pools[k] = effects.filter(f => f.k === "shield" && hits(f, k)).map(f => ({ f, left: f.hpPct ? cfg.hp[k] * f.hpPct / 100 : (+f.amt || 0) })); });
+  const absorb = (role, t, dmg) => {
+    let got = 0;
+    pools[role].filter(x => x.left > 0 && live(x.f, t)).sort((a, b) => a.f.end - b.f.end).forEach(x => { if (dmg <= 0) return; const u = Math.min(x.left, dmg); x.left -= u; dmg -= u; got += u; });
+    return { dmg, got };
+  };
+  const st = {}; ROLES.forEach(k => { st[k] = { last: -1e9, sum: 0, from: null }; });
   const out = {};
   ev.forEach(e => {
-    const who = e.tankOnly ? ["tank"] : ["tank", "ranged", "caster"];
+    const who = e.tankOnly ? ["tank"] : ROLES;
+    const o = out[e.r.id] || (out[e.r.id] = { raw: 0, dot: 0, dotN: 0, dt: e.dt, tankOnly: e.tankOnly, per: {}, after: null, dotAfter: null, from: {} });
     who.forEach(k => {
-      const s = st[k];
+      const s = st[k], m = mult(k, e.dt, e.mt), a = absorb(k, e.t, e.d * m);
       if (e.t - s.last > cfg.chain) { s.sum = 0; s.from = e.r; }
-      s.sum += e.d; s.last = e.t;
+      s.sum += a.dmg; s.last = e.t;
+      if (!e.dot) {
+        const p = o.per[k] || (o.per[k] = { mit: 0, abs: 0, mult: m });
+        p.mit += e.d * m; p.abs += a.got;
+        o.from[k] = s.from && s.from !== e.r ? s.from : null;
+      }
     });
-    const o = out[e.r.id] || (out[e.r.id] = { raw: 0, dot: 0, dotN: 0, dt: e.dt, tankOnly: e.tankOnly, after: null, dotAfter: null, chainFrom: null });
-    const snap = { tank: st.tank.sum, ranged: st.ranged.sum, caster: st.caster.sum };
+    const snap = {}; ROLES.forEach(k => { snap[k] = st[k].sum; });
     if (e.dot) { o.dot = o.dot || e.d; o.dotN++; o.dotAfter = snap; }
-    else {
-      o.raw += e.d; o.after = snap;
-      if (!o.dt) o.dt = e.dt;
-      const k = e.tankOnly ? "tank" : e.dt === "phys" ? "caster" : "ranged";
-      o.chainFrom = st[k].from && st[k].from !== e.r ? st[k].from : null;
-    }
+    else { o.raw += e.d; o.after = snap; if (!o.dt) o.dt = e.dt; }
   });
   Object.values(out).forEach(o => {
-    const left = sums => sums ? {
-      tank: cfg.hp.tank - sums.tank, ranged: cfg.hp.ranged - sums.ranged, caster: cfg.hp.caster - sums.caster
-    } : null;
+    const left = sums => sums ? { tank: cfg.hp.tank - sums.tank, ranged: cfg.hp.ranged - sums.ranged, caster: cfg.hp.caster - sums.caster } : null;
     const L = left(o.after), LD = left(o.dotAfter);
     let role;
     if (o.tankOnly) role = "tank";
     else if (o.dt === "phys") role = "caster";
     else if (o.dt === "magic") role = "ranged";
     else role = (L || LD) && (L || LD).caster < (L || LD).ranged ? "caster" : "ranged";
+    const p = o.per[role] || { mit: 0, abs: 0, mult: 1 };
     o.role = role; o.hp = cfg.hp[role];
-    o.left = L ? L[role] : null;          // 這一下打完剩多少（只有持續傷害的列是 null）
-    o.dotLeft = LD ? LD[role] : null;     // 持續傷害全部跳完剩多少
-    o.chain = !!(o.after && (o.after[role] > o.raw + 0.5));  // 這一下之前還有沒補回來的傷害
+    o.mitd = p.mit;                         // 減傷後（還沒扣盾）
+    o.mult = p.mult;                        // 第一下的減傷倍率
+    o.abs = p.abs;                          // 被盾吸收
+    o.chainFrom = o.from[role] || null;
+    o.left = L ? L[role] : null;            // 這一下打完剩多少（只有持續傷害的列是 null）
+    o.dotLeft = LD ? LD[role] : null;       // 持續傷害全部跳完剩多少
+    o.chain = !!(o.after && (o.after[role] > Math.max(0, p.mit - p.abs) + 0.5));
     const worst = o.dotLeft != null ? Math.min(o.left == null ? Infinity : o.left, o.dotLeft) : o.left;
     o.worst = worst;
     o.level = worst <= 0 ? "dead" : worst < o.hp * 0.2 ? "warn" : "ok";
-    delete o.after; delete o.dotAfter;
+    delete o.after; delete o.dotAfter; delete o.per; delete o.from;
   });
   return out;
 }
