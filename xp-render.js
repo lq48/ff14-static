@@ -219,7 +219,7 @@ const CSS = `.xpv{display:grid;gap:8px}
 .xpv-nav .xpv-arr{width:38px;min-height:40px;border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:10px;cursor:pointer;color:var(--ink,#222);font-size:18px;line-height:1;flex:none}
 .xpv-nav button:focus-visible,.xpv-seg button:focus-visible{outline:3px solid var(--accent,#c55);outline-offset:2px}
 .xpv{container-type:inline-size}
-@container (max-width:380px){.xpv-nav .xpv-arr:not(.xpv-play){display:none}}
+@container (max-width:345px){.xpv-nav .xpv-arr:not(.xpv-play){display:none}}
 .xpv-foot{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted,#666);flex-wrap:wrap}
 .xpv-foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .xpv-err{padding:14px;border-radius:12px;background:var(--surface2,#eee);color:var(--muted,#666);font-size:14px}`;
