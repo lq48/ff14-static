@@ -171,7 +171,7 @@ function layerSVG(sc, i, me, owners) {
   return z + mk + en + ar + tx;
 }
 /* 兩個人站在同一點（分攤）時圖示會完全疊住：沿著場地切線方向各錯開一點，兩個都看得到 */
-function spread(P) {
+function spread(P, prev) {
   const pos = new Map(), ks = [...P.keys()];
   ks.forEach(k => pos.set(k, [num(P.get(k).x), -num(P.get(k).y)]));
   const done = new Set();
@@ -181,6 +181,9 @@ function spread(P) {
     if (grp.length < 2) return;
     grp.forEach(j => done.add(j));
     const [cx, cy] = pos.get(k), d = Math.hypot(cx, cy) || 1, tx = d > 5 ? -cy / d : 1, ty = d > 5 ? cx / d : 0, gap = 32;
+    /* 依「從哪邊走過來」排：上一步在逆時針那側的人站逆時針那側（例：D4 從 1 過來、H2 從 B 過來 → D4 在北、H2 在南） */
+    const side = j => { const q = prev && prev.get(j); return q ? (num(q.x) - cx) * tx + (-num(q.y) - cy) * ty : 0; };
+    grp.sort((a, b) => side(a) - side(b));
     grp.forEach((j, i) => { const o = (i - (grp.length - 1) / 2) * gap; pos.set(j, [cx + tx * o, cy + ty * o]); });
   });
   return pos;
@@ -205,7 +208,7 @@ const CSS = `.xpv{display:grid;gap:8px}
 .xpv .xm text{font:900 20px system-ui,sans-serif;text-anchor:middle;paint-order:stroke;stroke:#0d1220;stroke-width:3px}
 .xpv .xx{font-weight:800;font-family:system-ui,sans-serif;paint-order:stroke;stroke:#0d1220;stroke-width:4px}
 .xpv .xpt{font:900 16px system-ui,sans-serif;fill:#fff;text-anchor:middle;letter-spacing:.02em}
-.xpv .tok{transition:transform .45s cubic-bezier(.3,.7,.2,1),opacity .3s}
+.xpv .tok{transition:opacity .3s}
 .xpv .lay{animation:xpvIn .3s ease-out}
 @keyframes xpvIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.xpv .tok{transition:none}.xpv .lay{animation:none}}
@@ -253,29 +256,54 @@ export function xpMount(el, entries, opts = {}) {
     h += '<p class="xpv-cap" aria-live="polite"></p>';
     if (n > 1) h += '<div class="xpv-nav"><button type="button" class="xpv-arr xpv-play" data-xp aria-label="自動播放">' + PLAY + '</button><button type="button" class="xpv-arr" data-xs="-1" aria-label="上一步">‹</button><div class="xpv-steps">' + sc.steps.map((s, k) => '<button type="button" data-xi="' + k + '">' + esc(stepLabel(sc, k)) + '</button>').join("") + '</div><button type="button" class="xpv-arr" data-xs="1" aria-label="下一步">›</button></div>';
     h += '<div class="xpv-foot"><span>' + (un.length ? "有部分內容這裡沒畫出來，" : "") + '</span><a href="' + esc(entries[st.v].url) + '" target="_blank" rel="noopener noreferrer">在 xivplan 開啟</a></div>';
-    el.innerHTML = h; st.me = me; st.tok = new Map();
+    cancelAnimationFrame(st.raf); el.innerHTML = h; st.me = me; st.tok = new Map(); st.pos = new Map();
     draw(true);
+  }
+  /* 隊員移動動畫：繞著場地中心走弧線（像遊戲裡繞王走位），不在中心附近的才用弧線；約 0.9 秒、慢進慢出 */
+  const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const place = (g, p) => g.setAttribute("transform", `translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`);
+  function lerp(a, b, t) {
+    const ra = Math.hypot(a[0], a[1]), rb = Math.hypot(b[0], b[1]);
+    if (ra > 40 && rb > 40) {
+      const aa = Math.atan2(a[1], a[0]); let d = Math.atan2(b[1], b[0]) - aa;
+      while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      if (Math.abs(d) < 2.2) { const an = aa + d * t, r = ra + (rb - ra) * t; return [r * Math.cos(an), r * Math.sin(an)]; }
+    }
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  }
+  function animate(moves) {
+    cancelAnimationFrame(st.raf);
+    if (!moves.length) return;
+    const t0 = performance.now(), D = 900, ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const frame = now => {
+      const t = Math.min(1, (now - t0) / D), e = ease(t);
+      moves.forEach(([k, g, a, b]) => { const p = lerp(a, b, e); place(g, p); st.pos.set(k, p); });
+      if (t < 1) st.raf = requestAnimationFrame(frame);
+    };
+    st.raf = requestAnimationFrame(frame);
   }
   function draw(first) {
     const sc = st.sc, step = sc.steps[st.i], me = st.mine ? st.me : "", svg = el.querySelector("svg");
     const lay = svg.querySelector(".lay"), nl = document.createElementNS(NS, "g");
     nl.setAttribute("class", "lay"); nl.innerHTML = layerSVG(sc, st.i, me, st.owners); lay.replaceWith(nl);
-    const pty = svg.querySelector(".pty"), P = partyOf(step), XY = spread(P), seen = new Set();
+    const pty = svg.querySelector(".pty"), P = partyOf(step), XY = spread(P, st.i > 0 ? partyOf(sc.steps[st.i - 1]) : null), seen = new Set(), moves = [];
     /* 自己畫在最上面 */
     const order = [...P.keys()].sort((a, b) => (a === st.me) - (b === st.me));
     order.forEach(k => {
       const o = P.get(k), slot = k.startsWith("#") ? "" : k; seen.add(k);
       let g = st.tok.get(k);
-      if (!g) { g = document.createElementNS(NS, "g"); g.setAttribute("class", "tok"); g.innerHTML = '<circle class="ring" r="28" fill="none" stroke="' + ME_RING + '" stroke-width="5"/>' + tokenInner(slot, o.name, opts); st.tok.set(k, g); if (first) g.style.transition = "none"; }
-      pty.appendChild(g);
-      const [px, py] = XY.get(k); g.style.transform = `translate(${px.toFixed(1)}px,${py.toFixed(1)}px)`;
+      /* 只在第一次出現時插入（把節點拿出來再放回去會打斷動畫） */
+      if (!g) { g = document.createElementNS(NS, "g"); g.setAttribute("class", "tok"); g.innerHTML = '<circle class="ring" r="28" fill="none" stroke="' + ME_RING + '" stroke-width="5"/>' + tokenInner(slot, o.name, opts); st.tok.set(k, g); pty.appendChild(g); if (st.me && st.tok.has(st.me)) pty.appendChild(st.tok.get(st.me)); }
+      const to = XY.get(k), from = st.pos.get(k);
+      g.dataset.pos = to[0].toFixed(1) + "," + to[1].toFixed(1);
+      if (first || !from || reduced()) { place(g, to); st.pos.set(k, to); } else moves.push([k, g, from, to]);
       const isMe = !!st.me && k === st.me;
       g.querySelector(".ring").style.display = isMe && st.mine ? "" : "none";
       g.style.opacity = me && !isMe ? .32 : op(o);
       g.setAttribute("aria-label", slot || "");
     });
     st.tok.forEach((g, k) => { if (!seen.has(k)) g.style.opacity = 0; });
-    if (first) requestAnimationFrame(() => st.tok.forEach(g => { g.style.transition = ""; }));
+    animate(moves);
     const c = captions(sc, step), cap = el.querySelector(".xpv-cap");
     cap.innerHTML = c.length ? esc(c[0]) + (c[1] ? "<small>" + esc(c[1]) + "</small>" : "") : (sc.steps.length > 1 ? esc(stepLabel(sc, st.i)) : "");
     el.querySelectorAll("[data-xi]").forEach(b => { if (+b.dataset.xi === st.i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
@@ -289,7 +317,7 @@ export function xpMount(el, entries, opts = {}) {
     if (!el.isConnected || !st.sc) { stop(); return; }
     const last = st.i >= st.sc.steps.length - 1;
     st.i = last ? 0 : st.i + 1; opts.onStep && opts.onStep(st.i); draw(false);
-    timer = setTimeout(tick, st.i >= st.sc.steps.length - 1 ? 2800 : 1800);
+    timer = setTimeout(tick, st.i >= st.sc.steps.length - 1 ? 3000 : 2200);
   }
   function play() { const b = playBtn(); if (!b) return; b.setAttribute("aria-pressed", "true"); b.setAttribute("aria-label", "暫停"); b.innerHTML = PAUSE; timer = setTimeout(tick, st.i >= st.sc.steps.length - 1 ? 300 : 1200); }
   const go = i => { if (!st.sc) return; i = Math.max(0, Math.min(st.sc.steps.length - 1, i)); if (i === st.i) return; st.i = i; opts.onStep && opts.onStep(i); draw(false); };
@@ -308,7 +336,7 @@ export function xpMount(el, entries, opts = {}) {
   el.addEventListener("click", onClick); el.addEventListener("keydown", onKey);
   el.addEventListener("touchstart", td, { passive: true }); el.addEventListener("touchend", te);
   load();
-  return { destroy() { stop(); st.gen++; el.removeEventListener("click", onClick); el.removeEventListener("keydown", onKey); el.removeEventListener("touchstart", td); el.removeEventListener("touchend", te); } };
+  return { destroy() { stop(); cancelAnimationFrame(st.raf); st.gen++; el.removeEventListener("click", onClick); el.removeEventListener("keydown", onKey); el.removeEventListener("touchstart", td); el.removeEventListener("touchend", te); } };
 }
 
 /* 清單用的小縮圖（第一步、只看自己），點了再開完整播放器 */
