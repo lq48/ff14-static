@@ -432,3 +432,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   [data-skin="cozy"] .mod:hover,[data-skin="cozy"] .card:hover,[data-skin="cozy"] .teamcard:hover,.qt:hover{transform:none}
   .loadbox .dots i{animation:none;opacity:.6}
 }
+
+/* 職業圖示 */
+img.jico{display:inline-block;vertical-align:-4px;margin:0 4px 0 0!important;padding:0!important;border:0!important;border-radius:4px!important;box-shadow:none!important;flex:none;object-fit:contain;background:none!important}
+.jb .jico,.jt .jico{margin-right:3px}
