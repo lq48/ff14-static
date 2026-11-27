@@ -32,7 +32,9 @@ for x in R:
             if x["mg"]:fx.append({"k":"mit","v":str(x["mg"]),"w":x["w"],"t":"magic"})
     if x["sh"]!="":fx.append({"k":"shield","v":str(x["sh"]),"w":x["w"]})
     if (x["job"],x["name"]) in INVULN:fx.append({"k":"other","v":"無敵","w":"self"})
-    tier={"lv":x["lv"],"cd":x["cd"],"dur":x["dur"],"fx":fx}
+    # 表上的等級是「這個數值從幾級開始生效」（例：雪仇 Lv98 起持續 15 秒），不是學會技能的等級
+    # 新技能一律從 1 級開始（Lv100 副本用的就是這組數值）；合併到既有技能時，才用 from 當成新的等級分頁
+    tier={"lv":1,"from":x["lv"],"cd":x["cd"],"dur":x["dur"],"fx":fx}
     if x["ch"]>1:tier["ch"]=x["ch"]
     sk={"name":x["name"],"cat":x["cat"],"grp":x["grp"],"tiers":[tier]}
     if x["w"]=="target":sk["tgt"]="ally"
