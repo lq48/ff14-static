@@ -209,6 +209,14 @@ textarea.f{min-height:96px;resize:vertical}
 .lk a{flex:1;word-break:break-all}
 .ib{width:34px;height:34px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib svg{width:15px;height:15px}
+.sbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:-4px}.sbar .hint{margin-right:auto}
+.btn.sm{min-height:36px;padding:4px 12px;font-size:13.5px;display:inline-flex;align-items:center;gap:6px}.btn.sm svg{width:15px;height:15px}
+.sblk{display:grid;gap:6px}.sblk h4{margin:0;font-size:13px;color:var(--muted);font-weight:700}
+.rned summary{cursor:pointer;font-weight:700;font-size:13.5px}.rned summary small{font-weight:400;color:var(--muted);margin-left:8px}.rned .rngrid{margin-top:8px}
+.xpthb{display:flex;align-items:center;gap:12px;width:100%;margin-top:8px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-align:left;cursor:pointer;font:inherit;color:inherit}
+.xpthi{width:84px;height:84px;flex:none;border-radius:9px;overflow:hidden;background:#2a2a2a}.xpthi svg{display:block;width:100%;height:100%}
+.xpthb b{display:block;font-size:14.5px}.xpthb small{color:var(--muted);font-size:12.5px}
+.xpsheet{max-width:520px;display:grid;gap:10px}.xph{display:flex;align-items:center;justify-content:space-between;gap:8px}.xph h2{margin:0;font-size:18px}.xph .sub{margin-left:8px;color:var(--muted);font-size:14px;font-weight:400}
 .rnme{margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ffe14a 22%,var(--surface));border:1px solid color-mix(in srgb,#c9a400 40%,transparent);font-size:15px;line-height:1.6}
 .rnme b{margin-right:8px;white-space:nowrap}
 .xpb{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -309,7 +317,8 @@ import { mountNav } from "./nav.js?v=2";
 import { JOBS as JOBS_ALL, jobIcon, safeUrl } from "./common.js?v=5";
 import { hpCheck, hpCfg, aoeOf, parseDmg, fmtN, AOE, ROLE_N, HP_DEF, CHAIN_DEF, TANK_MIT_DEF } from "./mit-hp.js?v=3";
 import { undoToast } from "./ui.js?v=1";
-import { xpIs, xpPersonal } from "./xivplan.js?v=1";
+import { xpIs } from "./xivplan.js?v=2";
+import { xpMount, xpThumb } from "./xp-render.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -334,7 +343,7 @@ const DTYPE={phys:{n:"物理",i:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
 const dIco=k=>DTYPE[k]?'<img class="dt" src="'+DTYPE[k].i+'" alt="'+DTYPE[k].n+'傷害" title="'+DTYPE[k].n+'傷害">':"";
 const POT_ICON="data:image/png;base64,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";
 const LB_ICON="data:image/png;base64,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";
-const IC={map:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s4.5-4.1 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 9.9 8 14 8 14Z"/><circle cx="8" cy="6.5" r="1.6"/></svg>',up:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>',dn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"/></svg>',x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>'};
+const IC={edit:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3z"/></svg>',map:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 14s4.5-4.1 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 9.9 8 14 8 14Z"/><circle cx="8" cy="6.5" r="1.6"/></svg>',up:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>',dn:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5"/></svg>',x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>'};
 
 /* ===== 狀態 ===== */
 const qs=new URLSearchParams(location.search);
@@ -347,7 +356,9 @@ let vmode=(()=>{try{const v=localStorage.getItem("mitView");if(v==="grid"||v==="
 let listInit=false;
 let dutyDirty=false,dutyT=null,libDirty=false,libT=null,planDirty=false,planT=null;
 let imgCache={},uploading=0;
-let drTab="s",drTabPick=false,drTabRow=null;
+let drTab="s",drTabPick=false,drTabRow=null,drEdit=false,drEditRow=null;
+/* 站位圖播放器的狀態（火／雷、第幾步、只看我）：抽屜重畫時保留 */
+const xpSt={row:null,v:0,i:0,mine:true};
 /* 技能圖示是外部網址（官方圖示）時，載入失敗就換成文字方塊；同一張圖之後不再試 */
 const badImg=new Set();
 document.addEventListener("error",e=>{const im=e.target;if(!(im instanceof HTMLImageElement)||!im.classList.contains("ico")||!im.dataset.nm)return;
@@ -413,11 +424,16 @@ const viewSlot=()=>dSlots().includes(filt)?filt:mySlot();
 const xpOf=p=>(Array.isArray(p.xp)?p.xp:[]).filter(x=>x&&typeof x==="object"&&xpIs(x.url)).slice(0,6);
 function rnOf(p){const o={},r=p.rn&&typeof p.rn==="object"?p.rn:{};SLOTS8.forEach(k=>{if(typeof r[k]==="string"&&r[k].trim())o[k]=r[k].trim().slice(0,200);});return o;}
 function rnHTML(p,slot){const rn=rnOf(p);return slot&&rn[slot]?'<p class="rnme"><b>你（'+esc(slot)+'）</b>'+esc(rn[slot])+'</p>':'';}
-function xpBtns(p,slot){const xs=xpOf(p);if(!xs.length)return"";
-  return'<div class="xpb">'+xs.map(x=>'<a class="xpbtn" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer"'+(slot?' data-xpp="'+esc(slot)+'" data-xpu="'+esc(x.url)+'"':'')+'>'+IC.map+'<span>'+esc(x.label||"站位圖")+(slot?'・看 '+esc(slot)+' 的站位':'（全員）')+'</span></a>'+
-    (slot?'<a class="xpall" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">全員</a>':'')).join("")+'</div>';}
-/* 「只看自己」的連結在瀏覽器裡算（不到 0.1 秒）；算好之前按下去會打開全員版 */
-function fillXp(root){(root||document).querySelectorAll("a[data-xpp]:not([data-ok])").forEach(a=>{a.dataset.ok="1";xpPersonal(a.dataset.xpu,a.dataset.xpp).then(u=>{a.href=u;}).catch(e=>console.warn("xivplan",e));});}
+/* 站位圖直接畫在網站裡（xp-render.js）；有設定職業的位置用職業圖示，沒有就用位置文字 */
+const xpOpts=me=>({me,job:s=>{const j=compOf(s);return j&&JOB[j]?j:"";},jobImg:j=>"icons/jobs/"+j+".webp"});
+function mountXp(root,rowId){const el=root.querySelector(".xpmount");if(!el)return;const xs=xpOf(prow(rowId));if(!xs.length)return;
+  if(xpSt.row!==rowId){xpSt.row=rowId;xpSt.v=0;xpSt.i=0;}
+  xpMount(el,xs,{...xpOpts(viewSlot()),v:xpSt.v,i:xpSt.i,mine:xpSt.mine,onVersion:v=>{xpSt.v=v;},onStep:i=>{xpSt.i=i;},onMine:m=>{xpSt.mine=m;}});}
+/* 手機清單：小縮圖（第一步、只看自己），點了開完整播放器 */
+function xpThumbBtn(p,rowId,slot){const xs=xpOf(p);if(!xs.length)return"";
+  return'<button type="button" class="xpthb" data-a="xpopen" data-r="'+esc(rowId)+'"><span class="xpthi" data-xpt="'+esc(rowId)+'" data-s="'+esc(slot||"")+'"></span><span><b>站位圖</b><small>'+xs.map(x=>esc(x.label||"站位圖")).join("／")+'・點開看每一步</small></span></button>';}
+function fillThumbs(root){(root||document).querySelectorAll("[data-xpt]:not([data-ok])").forEach(el=>{el.dataset.ok="1";const xs=xpOf(prow(el.dataset.xpt));if(!xs.length)return;
+  xpThumb(xs[0].url,xpOpts(el.dataset.s)).then(h=>{el.innerHTML=h;}).catch(e=>console.warn("xivplan",e));});}
 const assign=(s,id)=>((((slotDocs[s]||{}).a)||{})[id])||[];
 function skIco(j,sk,cls){const role=(JOB[j]||{}).r||"dps";if(sk.img&&!badImg.has(sk.img))return '<img class="ico'+(cls?" "+cls:"")+'" src="'+esc(sk.img)+'" alt="'+esc(sk.name)+'" title="'+esc(sk.name)+'" data-role="'+esc(role)+'" data-nm="'+esc(sk.name.slice(0,2))+'">';return '<span class="tx '+role+(cls?" "+cls:"")+'" role="img" aria-label="'+esc(sk.name)+'" title="'+esc(sk.name)+'">'+esc(sk.name.slice(0,2))+'</span>';}
 
@@ -554,7 +570,7 @@ function renderList(){
         (o.bad?'<small class="bad2">CD 還差 '+Math.ceil(o.bad)+' 秒</small>':o.short==="judge"?'<small class="bad2">效果在判定前就結束</small>':o.short==="tail"?'<small class="warn2">效果撐不到最後一下</small>':'')+'</span></li>').join("")+'</ul>':'')+
       (lb?'<p class="lflag"><img src="'+LB_ICON+'" alt="">'+esc(p.lb)+' 放 LB</p>':'')+
       ((p.burst||p.pot)?'<p class="lteam">'+(p.burst?'全隊 '+esc(p.burst)+' 爆發':'')+(p.burst&&p.pot?'・':'')+(p.pot?'吃爆發藥':'')+'</p>':(tb.act&&tb.v==="120"?'<p class="lteam">120 爆發中</p>':''))+
-      rnHTML(p,lvs)+xpBtns(p,lvs)+
+      rnHTML(p,lvs)+xpThumbBtn(p,r.id,lvs)+
       (p.note?'<p class="lnote2"><b>解法</b>'+esc(p.note)+'</p>':'')+(r.desc?'<p class="lnote2"><b>說明</b>'+esc(r.desc)+'</p>':'')+
       ((p.imgs||[]).length?'<div class="limgs">'+p.imgs.map((id,k)=>lazyImg(id,(r.mech||"")+" 站位圖 "+(k+1))).join("")+'</div>':'')+
       ((p.links||[]).length?'<p class="llinks">'+p.links.map(l=>'<a href="'+esc(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>').join("")+'</p>':'')+
@@ -563,7 +579,7 @@ function renderList(){
   rs.forEach(r=>{if(!r.virt)delete r._shown;});
   if(!n)h+='<div class="empty">'+(all?"這個階段還沒有安排技能，也沒有填傷害。":esc(V.join("、"))+" 在「"+esc((stage()||{}).name||"")+"」沒有要放的技能。")+'</div>';
   h+='<p class="lnote">時間前面有「約」的是依前後機制推算的。要修改分配請切到「完整時間軸」。</p></div>';
-  gw.innerHTML=h;watchLazy(gw);fillXp(gw);
+  gw.innerHTML=h;watchLazy(gw);fillThumbs(gw);
 }
 function renderGrid(){
   const gw=$("#gw");if(!gw)return;
@@ -661,23 +677,32 @@ function renderDrawer(){
         h+='<div class="early">'+esc(sk.name)+(ed?' 提前 <input class="f" data-e="'+esc(sk.id)+'" data-s="'+esc(s)+'" value="'+(eo||"")+'" placeholder="0" inputmode="numeric" aria-label="'+esc(sk.name)+' 提前幾秒"> 秒'+(lead?'<button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="'+esc(lead)+'">讀條開始</button><button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="'+Math.round(lead/2)+'">讀條一半</button>':'')+(eo?'<button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="0">清除</button>':''):'：提前 '+eo+' 秒開')+'</div>';});});
     h+='</div></div>';
     iS=h.length;
-    {const vs=viewSlot(),xs=xpOf(p),rn=rnOf(p);
-      h+=rnHTML(p,vs)+xpBtns(p,vs);
-      if(!ca&&Object.keys(rn).length&&!(vs&&Object.keys(rn).length===1&&rn[vs]))h+='<details class="rnall"><summary>其他位置的走法</summary><ul>'+SLOTS8.filter(k=>rn[k]&&k!==vs).map(k=>'<li><b>'+k+'</b>'+esc(rn[k])+'</li>').join("")+'</ul></details>';
-      if(ca){h+='<div class="fld"><span>站位圖（xivplan）</span>'+xs.map((x,i)=>'<div class="lk xpl"><span>'+IC.map+esc(x.label||"站位圖")+'</span><button class="ib" aria-label="刪除站位圖 '+esc(x.label||"")+'" data-a="xpdel" data-i="'+i+'">'+IC.x+'</button></div>').join("")+
-          (xs.length<6?'<div class="two"><input class="f" id="xpL" placeholder="名稱，例：火" maxlength="20"><input class="f" id="xpU" placeholder="https://xivplan.netlify.app/#/plan/…" inputmode="url"></div><button class="btn" data-a="xpadd">新增站位圖</button>':'')+
-          '<p class="hint">貼 xivplan 的「分享」連結（全員版）。網站會依每個人的位置，自動產生「只看自己」的版本：自己黃圈、其他人變淡。</p></div>';
-        h+='<div class="fld"><span>各位置的走法（一句話，每個人會看到自己那句）</span><div class="rngrid">'+SLOTS8.map(k=>{const j=compOf(k);return'<label><small>'+k+(j&&JOB[j]?' '+jobIcon(j,14):'')+'</small><input class="f" data-rn="'+k+'" value="'+esc(rn[k]||"")+'" maxlength="200"></label>';}).join("")+'</div></div>';}}
-    h+='<label class="fld"><span>本團解法</span>'+(ca?'<textarea class="f" data-p="note" placeholder="例：分攤去 A 點，坦克站王前面">'+esc(p.note||"")+'</textarea>':'<div class="ro">'+(p.note?esc(p.note):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
-    const ims=p.imgs||[];h+='<div class="fld"><span>站位圖</span>';
-    if(ims.length)h+='<div class="imgs">'+ims.map((id,i)=>{loadImg(id);const src=imgCache[id];return '<div class="im">'+(src?'<img src="'+esc(src)+'" alt="'+esc(r.mech)+' 站位圖 '+(i+1)+'" data-a="zoom" data-id="'+esc(id)+'">':'<span class="hint">'+(src===""?"讀取失敗":"載入中…")+'</span>')+(ca?'<button class="ib" aria-label="移除這張圖" data-a="idel" data-id="'+esc(id)+'">'+IC.x+'</button>':'')+'</div>';}).join("")+'</div>';
-    else if(!ca)h+='<span class="hint">（沒有）</span>';
-    if(ca)h+='<label class="btn" style="text-align:center">'+(uploading?"上傳中…":"上傳圖片")+'<input type="file" accept="image/*" multiple id="up" hidden></label><p class="hint">會自動壓縮後存進網站，一張大約 100～300 KB。</p>';
-    h+='</div>';
-    h+='<div class="fld"><span>連結（攻略、站位圖）</span>'+(p.links||[]).map((l,i)=>'<div class="lk"><a href="'+esc(safeUrl(l.url))+'"" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>'+(ca?'<button class="ib" aria-label="刪除連結" data-a="ldel" data-i="'+esc(i)+'">'+IC.x+'</button>':'')+'</div>').join("");
-    if(ca)h+='<div class="two"><input class="f" id="lkL" placeholder="名稱（可不填）"><input class="f" id="lkU" placeholder="https://…" inputmode="url"></div><button class="btn" data-a="ladd">新增連結</button>';
-    else if(!(p.links||[]).length)h+='<span class="hint">（沒有）</span>';
-    h+='<p class="hint">完整的攻略圖文可以整理在 Notion，公開分享後把「頁面」網址貼在這裡。</p></div>';
+    /* 攻略分頁分成「看」和「編輯」：平常大家看到同一個畫面；能編輯的人按「編輯」才出現欄位（沒有任何內容時直接進編輯） */
+    {const vs=viewSlot(),xs=xpOf(p),rn=rnOf(p),ims=p.imgs||[],lks=p.links||[],has=xs.length||Object.keys(rn).length||p.note||ims.length||lks.length;
+      if(drEditRow!==r.id){drEditRow=r.id;drEdit=false;}
+      const edit=ca&&(drEdit||!has);
+      const imgHTML=()=>'<div class="imgs">'+ims.map((id,i)=>{loadImg(id);const src=imgCache[id];return '<div class="im">'+(src?'<img src="'+esc(src)+'" alt="'+esc(r.mech)+' 參考圖片 '+(i+1)+'" data-a="zoom" data-id="'+esc(id)+'">':'<span class="hint">'+(src===""?"讀取失敗":"載入中…")+'</span>')+(edit?'<button class="ib" aria-label="移除這張圖" data-a="idel" data-id="'+esc(id)+'">'+IC.x+'</button>':'')+'</div>';}).join("")+'</div>';
+      const lkHTML=()=>lks.map((l,i)=>'<div class="lk"><a href="'+esc(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>'+(edit?'<button class="ib" aria-label="刪除連結" data-a="ldel" data-i="'+esc(i)+'">'+IC.x+'</button>':'')+'</div>').join("");
+      if(!edit){
+        if(ca)h+='<div class="sbar"><button class="btn sm" data-a="sedit">'+IC.edit+'編輯攻略</button></div>';
+        h+=rnHTML(p,vs);
+        if(xs.length)h+='<div class="xpmount"></div>';
+        const others=SLOTS8.filter(k=>rn[k]&&k!==vs);
+        if(others.length)h+='<details class="rnall"><summary>'+(vs&&rn[vs]?"其他位置的走法":"各位置的走法")+'</summary><ul>'+others.map(k=>'<li><b>'+k+'</b>'+esc(rn[k])+'</li>').join("")+'</ul></details>';
+        if(p.note)h+='<div class="sblk"><h4>本團解法</h4><div class="ro">'+esc(p.note)+'</div></div>';
+        if(ims.length)h+='<div class="sblk"><h4>參考圖片</h4>'+imgHTML()+'</div>';
+        if(lks.length)h+='<div class="sblk"><h4>連結</h4>'+lkHTML()+'</div>';
+      }else{
+        if(has)h+='<div class="sbar"><span class="hint">編輯中，改完會自動存</span><button class="btn sm primary" data-a="sdone">完成</button></div>';
+        h+='<div class="fld"><span>站位圖</span>'+xs.map((x,i)=>'<div class="lk xpl"><span>'+IC.map+esc(x.label||"站位圖")+'</span><button class="ib" aria-label="刪除站位圖 '+esc(x.label||"")+'" data-a="xpdel" data-i="'+i+'">'+IC.x+'</button></div>').join("")+
+          (xs.length<6?'<div class="two"><input class="f" id="xpL" placeholder="名稱，例：火" maxlength="20"><input class="f" id="xpU" placeholder="xivplan 分享連結" inputmode="url"></div><button class="btn" data-a="xpadd">新增站位圖</button>':'')+
+          '<p class="hint">在 xivplan 畫好全員版，按「Share」複製連結貼上；網站會自己畫出來，每個人看到自己的位置。</p></div>';
+        h+='<details class="fld rned"'+(Object.keys(rn).length?' open':'')+'><summary>各位置的走法<small>每個人會看到自己那句</small></summary><div class="rngrid">'+SLOTS8.map(k=>{const j=compOf(k);return'<label><small>'+k+(j&&JOB[j]?' '+jobIcon(j,14):'')+'</small><input class="f" data-rn="'+k+'" value="'+esc(rn[k]||"")+'" maxlength="200"></label>';}).join("")+'</div></details>';
+        h+='<label class="fld"><span>本團解法</span><textarea class="f" data-p="note" placeholder="例：分攤去 A 點，坦克站王前面">'+esc(p.note||"")+'</textarea></label>';
+        h+='<div class="fld"><span>參考圖片</span>'+(ims.length?imgHTML():'')+'<label class="btn" style="text-align:center">'+(uploading?"上傳中…":"上傳圖片")+'<input type="file" accept="image/*" multiple id="up" hidden></label><p class="hint">遊戲截圖、攻略圖都可以，會自動壓縮。</p></div>';
+        h+='<div class="fld"><span>連結</span>'+lkHTML()+'<div class="two"><input class="f" id="lkL" placeholder="名稱（可不填）"><input class="f" id="lkU" placeholder="https://…" inputmode="url"></div><button class="btn" data-a="ladd">新增連結</button><p class="hint">例如 Notion 攻略頁、影片。</p></div>';
+      }
+    }
 iE=h.length;
   }
   /* 分成三個分頁：攻略（解法、站位圖、連結）／分工（爆發、LB、減傷分工）／機制（名稱、時間、傷害）
@@ -692,7 +717,7 @@ iE=h.length;
   }
   h+='</div>';
   if(cm)h+='<div class="drf"><button class="ib" aria-label="上移" data-a="up">'+IC.up+'</button><button class="ib" aria-label="下移" data-a="dn">'+IC.dn+'</button><button class="btn" data-a="insbelow">在下方插入</button><button class="btn danger" data-a="rdel" style="margin-left:auto">刪除</button></div>';
-  dr.innerHTML=h;dr.querySelector(".drb").scrollTop=sc;fillXp(dr);
+  dr.innerHTML=h;dr.querySelector(".drb").scrollTop=sc;mountXp(dr,r.id);
   if(keepSel){const el=dr.querySelector(keepSel);if(el){el.focus();if(el.setSelectionRange&&el.type!=="number"){try{const n=el.value.length;el.setSelectionRange(n,n);}catch(e){}}}}
 }
 function onDrInput(e){const t=e.target;if(!sel)return;
@@ -759,6 +784,9 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="lcell"){const p=prow(b.dataset.r),L=["",...dSlots()],i2=L.indexOf(p.lb||"");setP(b.dataset.r,{lb:L[(i2+1)%L.length]});renderGrid();if(sel===b.dataset.r)renderDrawer();}
   else if(a==="pcell"){const p=prow(b.dataset.r);setP(b.dataset.r,{pot:p.pot?"":"1"});renderGrid();if(sel===b.dataset.r)renderDrawer();}
   else if(a==="open"){pvHide();sel=b.dataset.r;if(e.target.closest("[data-pv]")||b.dataset.tab){drTab="s";drTabRow=null;}renderDrawer();renderGrid();}
+  else if(a==="sedit"&&canAll()){drEdit=true;renderDrawer();const f=document.querySelector("#dr .drp-s input,#dr .drp-s textarea");if(f)f.focus();}
+  else if(a==="sdone"){drEdit=false;renderDrawer();const f=document.querySelector('#dr [data-a="sedit"]');if(f)f.focus();}
+  else if(a==="xpopen"){const xs=xpOf(prow(b.dataset.r));if(!xs.length)return;modal={k:"xp",r:b.dataset.r,s:b.querySelector("[data-s]")?b.querySelector("[data-s]").dataset.s:""};renderModal();}
   else if(a==="xpadd"&&canAll()){const L=($("#xpL").value||"").trim().slice(0,20),U=($("#xpU").value||"").trim();
     if(!xpIs(U)){toast("請貼 xivplan 的分享連結（https://xivplan.netlify.app/#/plan/…）");return;}
     setP(sel,{xp:[...xpOf(prow(sel)),{label:L||"站位圖",url:U}].slice(0,6)});renderDrawer();renderGrid();toast("已加入站位圖");}
@@ -817,6 +845,8 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
 function renderModal(){
   let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("change",onModalChange);m.addEventListener("input",onModalInput);m.addEventListener("change",onModalInput);}
   let h='<div class="sheet" role="dialog" aria-modal="true">';
+  if(modal.k==="xp"){const r=rows().find(x=>x.id===modal.r)||{};m.innerHTML='<div class="sheet xpsheet" role="dialog" aria-modal="true" aria-label="'+esc(r.mech||"")+' 站位圖"><div class="xph"><h2>'+esc(r.mech||"站位圖")+(r.t?'<span class="sub">'+esc(r.t)+'</span>':'')+'</h2><button class="ib" data-a="mclose" aria-label="關閉">'+IC.x+'</button></div>'+rnHTML(prow(modal.r),modal.s)+'<div class="xpmount"></div></div>';
+    xpMount(m.querySelector(".xpmount"),xpOf(prow(modal.r)),xpOpts(modal.s));return;}
   if(modal.k==="img"){m.innerHTML='<div class="sheet img" role="dialog" aria-modal="true" aria-label="站位圖"><img src="'+esc(modal.src)+'" alt="站位圖放大"><div class="end"><button class="btn" data-a="mclose">關閉</button></div></div>';return;}
   if(modal.k==="fxref"){m.innerHTML=h+fxRefHTML()+'</div>';return;}
   if(modal.k==="libmerge"){m.innerHTML=h+libMergeHTML()+'</div>';return;}
