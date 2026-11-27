@@ -213,11 +213,13 @@ const CSS = `.xpv{display:grid;gap:8px}
 .xpv-cap small{display:block;font-weight:400;color:var(--muted,#666);font-size:13.5px}
 .xpv-nav{display:flex;gap:4px;align-items:center}
 .xpv-nav .xpv-steps{display:flex;gap:4px;flex:1;min-width:0}
-.xpv-nav .xpv-steps button{flex:1;min-width:0;min-height:40px;border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:10px;font:inherit;font-size:13.5px;font-weight:700;color:var(--muted,#666);cursor:pointer;font-variant-numeric:tabular-nums;padding:0 4px}
+.xpv-nav .xpv-steps button{flex:1;min-width:0;min-height:40px;border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:10px;font:inherit;font-size:13.5px;font-weight:700;color:var(--muted,#666);cursor:pointer;font-variant-numeric:tabular-nums;padding:0 2px;overflow:hidden;white-space:nowrap}
 .xpv-nav .xpv-steps button[aria-current=step]{background:var(--ink,#222);border-color:var(--ink,#222);color:var(--surface,#fff)}
 .xpv-nav .xpv-play{display:grid;place-items:center}.xpv-nav .xpv-play[aria-pressed=true]{background:var(--ink,#222);color:var(--surface,#fff);border-color:var(--ink,#222)}
 .xpv-nav .xpv-arr{width:38px;min-height:40px;border:1px solid var(--line,#ddd);background:var(--surface,#fff);border-radius:10px;cursor:pointer;color:var(--ink,#222);font-size:18px;line-height:1;flex:none}
 .xpv-nav button:focus-visible,.xpv-seg button:focus-visible{outline:3px solid var(--accent,#c55);outline-offset:2px}
+.xpv{container-type:inline-size}
+@container (max-width:380px){.xpv-nav .xpv-arr:not(.xpv-play){display:none}}
 .xpv-foot{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted,#666);flex-wrap:wrap}
 .xpv-foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .xpv-err{padding:14px;border-radius:12px;background:var(--surface2,#eee);color:var(--muted,#666);font-size:14px}`;
