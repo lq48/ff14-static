@@ -41,9 +41,13 @@ async def m():
     tok=lambda k:p.locator(f'#dr .tok[aria-label="{k}"]')
     ok(await tok("MT").locator(".ring").evaluate("e=>getComputedStyle(e).display")!="none" and float(await tok("ST").evaluate("e=>e.style.opacity"))<.5,"自己有黃圈、其他人變淡")
     ok("icons/jobs/PLD.webp" in (await tok("MT").locator("image").get_attribute("href") or ""),"有職業的位置用職業圖示")
-    t0=await tok("MT").evaluate("e=>e.style.transform")
-    await p.click('#dr [data-xi="1"]');await p.wait_for_timeout(700)
-    ok("0:17" in await p.inner_text("#dr .xpv-cap") and await tok("MT").evaluate("e=>e.style.transform")!=t0,"切到 0:17：說明換了、自己移動了")
+    t0=await tok("MT").get_attribute("data-pos");a0=await tok("MT").get_attribute("transform")
+    await p.click('#dr [data-xi="1"]');await p.wait_for_timeout(350);am=await tok("MT").get_attribute("transform")
+    await p.wait_for_timeout(900);a1=await tok("MT").get_attribute("transform")
+    ok(am not in (a0,a1) and a0!=a1,"換步驟時隊員是平移過去的（中途有在半路） "+str((a0,am,a1)))
+    xy=lambda a:[float(v) for v in a[a.index("(")+1:-1].split()]
+    ok(abs(sum(v*v for v in xy(am))**.5-sum(v*v for v in xy(a0))**.5)<12,"繞著王走弧線，不是直線切過去")
+    ok("0:17" in await p.inner_text("#dr .xpv-cap") and await tok("MT").get_attribute("data-pos")!=t0,"切到 0:17：說明換了、自己移動了")
     ok(await p.locator("#dr .xa.me").count()==1 and await p.locator("#dr .xa:not(.me)").count()==0,"只看我：只剩自己的移動箭頭")
     await p.screenshot(path=OUT+"/XP-drawer-owner-1440.png")
     # 自動播放
@@ -77,6 +81,12 @@ async def m():
     # 只看 D3
     await p.click('[data-a="filt"][data-s="D3"]');await p.wait_for_timeout(800)
     ok("你（D3）" in await p.inner_text("#dr .rnme") and "只看我（D3）" in await p.inner_text("#dr .xpv-me"),"上方只看 D3：抽屜改成 D3 的走法和站位圖")
+    # 分攤錯開：D4 從 1 走過來、H2 從 B 走過來 → D4 在北（y 比較小）
+    await p.click('#dr [data-xv="0"]');await p.wait_for_timeout(500);await p.click('#dr [data-xi="1"]');await p.wait_for_timeout(1200)
+    d4=[float(v) for v in (await tok("D4").get_attribute("data-pos")).split(",")];h2=[float(v) for v in (await tok("H2").get_attribute("data-pos")).split(",")]
+    ok(d4[1]<h2[1] and abs(d4[0]-h2[0])<40,"火分攤：D4 在上、H2 略下，兩個人並排 "+str((d4,h2)))
+    mt=[float(v) for v in (await tok("MT").get_attribute("data-pos")).split(",")];d3=[float(v) for v in (await tok("D3").get_attribute("data-pos")).split(",")]
+    ok(mt[0]>d3[0],"MT 從 A 往逆時針、D3 從 4 往順時針：MT 在東側、D3 在西側")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # ---- 一般成員（不能編輯）、XSS、壞掉的資料 ----
     ctx,p,errs,calls=await open_page(b,URL.format("plain"),1440,900,init="localStorage.removeItem('mitView');");await p.wait_for_timeout(900);await view(p,"grid")
