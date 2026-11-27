@@ -209,6 +209,17 @@ textarea.f{min-height:96px;resize:vertical}
 .lk a{flex:1;word-break:break-all}
 .ib{width:34px;height:34px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib svg{width:15px;height:15px}
+.rnme{margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ffe14a 22%,var(--surface));border:1px solid color-mix(in srgb,#c9a400 40%,transparent);font-size:15px;line-height:1.6}
+.rnme b{margin-right:8px;white-space:nowrap}
+.xpb{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.xpbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:6px 14px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none;font-size:14.5px}
+.xpbtn svg{width:16px;height:16px;flex:none}.xpbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.xpall{font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:2px;margin-right:6px}
+.xpl>span{display:inline-flex;align-items:center;gap:6px;flex:1;font-weight:700}.xpl svg{width:16px;height:16px;flex:none}
+.rngrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.rngrid label{display:grid;gap:2px}.rngrid small{color:var(--muted);font-weight:700}
+.rnall summary{cursor:pointer;color:var(--muted);font-size:13.5px}.rnall ul{margin:6px 0 0;padding-left:18px;font-size:14px}.rnall b{margin-right:6px}
+.lbody .rnme{margin-top:8px;font-size:14px;padding:8px 10px}.lbody .xpb{margin-top:8px}
+.pvbox .rnme{font-size:13px;padding:6px 8px}
 .drtabs{display:flex;gap:4px;padding:3px;border-radius:999px;background:color-mix(in srgb,var(--ink) 6%,transparent);position:sticky;top:-14px;z-index:2}
 .drtabs button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px 6px;font:inherit;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer;min-height:36px}
 .drtabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
@@ -298,6 +309,7 @@ import { mountNav } from "./nav.js?v=2";
 import { JOBS as JOBS_ALL, jobIcon, safeUrl } from "./common.js?v=5";
 import { hpCheck, hpCfg, aoeOf, parseDmg, fmtN, AOE, ROLE_N, HP_DEF, CHAIN_DEF, TANK_MIT_DEF } from "./mit-hp.js?v=3";
 import { undoToast } from "./ui.js?v=1";
+import { xpIs, xpPersonal } from "./xivplan.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -392,6 +404,20 @@ function vSlots(){return dSlots().filter(s=>filt==="all"||filt===s||(filt==="min
 const stage=()=>duty&&duty.stages&&duty.stages[cur];
 const rows=()=>(stage()&&stage().rows)||[];
 const prow=id=>((plan.rows||{})[id])||{};
+/* ===== 站位圖（xivplan）與各位置的走法 =====
+   plan.rows[id].xp：[{label, url}]（全員版的 xivplan 分享連結，最多 6 個）
+   plan.rows[id].rn：{MT:"…", ST:"…"}（每個位置一句話）
+   看的人是誰：上方「只看」選了某個位置就用那個，否則用自己在固團的位置 */
+const SLOTS8=["MT","ST","H1","H2","D1","D2","D3","D4"];
+const viewSlot=()=>dSlots().includes(filt)?filt:mySlot();
+const xpOf=p=>(Array.isArray(p.xp)?p.xp:[]).filter(x=>x&&typeof x==="object"&&xpIs(x.url)).slice(0,6);
+function rnOf(p){const o={},r=p.rn&&typeof p.rn==="object"?p.rn:{};SLOTS8.forEach(k=>{if(typeof r[k]==="string"&&r[k].trim())o[k]=r[k].trim().slice(0,200);});return o;}
+function rnHTML(p,slot){const rn=rnOf(p);return slot&&rn[slot]?'<p class="rnme"><b>你（'+esc(slot)+'）</b>'+esc(rn[slot])+'</p>':'';}
+function xpBtns(p,slot){const xs=xpOf(p);if(!xs.length)return"";
+  return'<div class="xpb">'+xs.map(x=>'<a class="xpbtn" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer"'+(slot?' data-xpp="'+esc(slot)+'" data-xpu="'+esc(x.url)+'"':'')+'>'+IC.map+'<span>'+esc(x.label||"站位圖")+(slot?'・看 '+esc(slot)+' 的站位':'（全員）')+'</span></a>'+
+    (slot?'<a class="xpall" href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">全員</a>':'')).join("")+'</div>';}
+/* 「只看自己」的連結在瀏覽器裡算（不到 0.1 秒）；算好之前按下去會打開全員版 */
+function fillXp(root){(root||document).querySelectorAll("a[data-xpp]:not([data-ok])").forEach(a=>{a.dataset.ok="1";xpPersonal(a.dataset.xpu,a.dataset.xpp).then(u=>{a.href=u;}).catch(e=>console.warn("xivplan",e));});}
 const assign=(s,id)=>((((slotDocs[s]||{}).a)||{})[id])||[];
 function skIco(j,sk,cls){const role=(JOB[j]||{}).r||"dps";if(sk.img&&!badImg.has(sk.img))return '<img class="ico'+(cls?" "+cls:"")+'" src="'+esc(sk.img)+'" alt="'+esc(sk.name)+'" title="'+esc(sk.name)+'" data-role="'+esc(role)+'" data-nm="'+esc(sk.name.slice(0,2))+'">';return '<span class="tx '+role+(cls?" "+cls:"")+'" role="img" aria-label="'+esc(sk.name)+'" title="'+esc(sk.name)+'">'+esc(sk.name.slice(0,2))+'</span>';}
 
@@ -515,7 +541,8 @@ function renderList(){
     const p=prow(r.id),sk=[];
     V.forEach(x=>{const j=compOf(x);assign(x,r.id).forEach(id=>{const k=skillOf(j,id);if(!k)return;const c=C[r.id+"|"+x+"|"+id]||{};sk.push({x,j,k,eo:early(x,r.id,id),tg:target(x,r.id,id),bad:c.bad,short:c.short});});});
     const lb=p.lb&&V.includes(p.lb);
-    if(!sk.length&&!lb&&!(all&&(r.kind==="head"||p.note||(p.imgs||[]).length||(p.links||[]).length||H[r.id])))return;
+    const lvs=V.length===1?V[0]:(all?viewSlot():""),lrn=rnOf(p),lxp=xpOf(p).length;
+    if(!sk.length&&!lb&&!(lvs&&(lrn[lvs]||lxp))&&!(all&&(r.kind==="head"||p.note||(p.imgs||[]).length||(p.links||[]).length||lxp||Object.keys(lrn).length||H[r.id])))return;
     if(head&&head!==r&&!head._shown){h+='<h3 class="lhead">'+esc(head.mech||"")+'</h3>';head._shown=1;}
     if(r.kind==="head"&&!sk.length&&!lb){h+='<h3 class="lhead">'+esc(r.mech||"")+'</h3>';r._shown=1;return;}
     n++;
@@ -527,6 +554,7 @@ function renderList(){
         (o.bad?'<small class="bad2">CD 還差 '+Math.ceil(o.bad)+' 秒</small>':o.short==="judge"?'<small class="bad2">效果在判定前就結束</small>':o.short==="tail"?'<small class="warn2">效果撐不到最後一下</small>':'')+'</span></li>').join("")+'</ul>':'')+
       (lb?'<p class="lflag"><img src="'+LB_ICON+'" alt="">'+esc(p.lb)+' 放 LB</p>':'')+
       ((p.burst||p.pot)?'<p class="lteam">'+(p.burst?'全隊 '+esc(p.burst)+' 爆發':'')+(p.burst&&p.pot?'・':'')+(p.pot?'吃爆發藥':'')+'</p>':(tb.act&&tb.v==="120"?'<p class="lteam">120 爆發中</p>':''))+
+      rnHTML(p,lvs)+xpBtns(p,lvs)+
       (p.note?'<p class="lnote2"><b>解法</b>'+esc(p.note)+'</p>':'')+(r.desc?'<p class="lnote2"><b>說明</b>'+esc(r.desc)+'</p>':'')+
       ((p.imgs||[]).length?'<div class="limgs">'+p.imgs.map((id,k)=>lazyImg(id,(r.mech||"")+" 站位圖 "+(k+1))).join("")+'</div>':'')+
       ((p.links||[]).length?'<p class="llinks">'+p.links.map(l=>'<a href="'+esc(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+esc(l.label||l.url)+'</a>').join("")+'</p>':'')+
@@ -535,7 +563,7 @@ function renderList(){
   rs.forEach(r=>{if(!r.virt)delete r._shown;});
   if(!n)h+='<div class="empty">'+(all?"這個階段還沒有安排技能，也沒有填傷害。":esc(V.join("、"))+" 在「"+esc((stage()||{}).name||"")+"」沒有要放的技能。")+'</div>';
   h+='<p class="lnote">時間前面有「約」的是依前後機制推算的。要修改分配請切到「完整時間軸」。</p></div>';
-  gw.innerHTML=h;watchLazy(gw);
+  gw.innerHTML=h;watchLazy(gw);fillXp(gw);
 }
 function renderGrid(){
   const gw=$("#gw");if(!gw)return;
@@ -557,7 +585,8 @@ function renderGrid(){
     const tt=r.t?esc(r.t):(E[i].v!=null?'<span class="est">~'+fmt(E[i].v)+'</span>':'<span class="est">—</span>');
     h+='<td class="ct">'+tt+'</td><td class="cm"><button class="mb" data-a="open" data-r="'+esc(r.id)+'"><span class="n">'+esc(r.mech||"")+'</span><span class="meta">';
     if(r.tag)h+='<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>';if(r.ctag)h+='<span class="pill c">'+esc(r.ctag)+'</span>';
-    if(p.note||(p.imgs||[]).length||(p.links||[]).length)h+='<span class="pill x pv" data-pv="'+esc(r.id)+'" title="看攻略">'+IC.map+[p.note?"解法":"",(p.imgs||[]).length?"圖 "+p.imgs.length:"",(p.links||[]).length?"連結 "+p.links.length:""].filter(Boolean).join("・")+'</span>';
+    {const nx=xpOf(p).length,nr=Object.keys(rnOf(p)).length;
+    if(p.note||(p.imgs||[]).length||(p.links||[]).length||nx||nr)h+='<span class="pill x pv" data-pv="'+esc(r.id)+'" title="看攻略">'+IC.map+[nx?"站位圖 "+nx:"",nr?"走法":"",p.note?"解法":"",(p.imgs||[]).length?"圖 "+p.imgs.length:"",(p.links||[]).length?"連結 "+p.links.length:""].filter(Boolean).join("・")+'</span>';}
     const hs=r.hits||[],sp=hitSpan(r);h+='</span>'+(hs.length&&!hpOn?'<span class="dm">'+hs.map(x=>dIco(x.dtype)+'<span>'+esc(x.dmg||(DTYPE[x.dtype]?DTYPE[x.dtype].n:""))+(+x.n>1?"×"+(+x.n):"")+'</span>').join('<span class="arr">→</span>')+(sp?'<span>（'+sp+' 秒內）</span>':'')+'</span>':'')+(r.desc?'<span class="desc">'+esc(r.desc)+'</span>':'')+'</button></td>'+hpCellsHTML(r,H);}
     const tb=T[r.id+"|B"]||{},tp=T[r.id+"|P"]||{};
     h+='<td class="cell first'+(caR?" ed":"")+(tb.act&&!tb.use&&tb.v==="120"?" act-b120":"")+'" '+(caR?'data-a="bcell" ':'')+'data-r="'+esc(r.id)+'" title="'+esc(p.burst?p.burst+" 爆發"+(ca?"（點一下切換）":""):tb.act&&tb.v==="120"?"120 爆發中，剩約 "+Math.round(tb.left)+" 秒":ca?"點一下標 120，再點變 60":"")+'">'+(p.burst?'<span class="bx b'+esc(p.burst)+'">'+esc(p.burst)+'</span>':'')+'</td>';
@@ -581,7 +610,8 @@ let pvT=null,pvId=null;
 function pvShow(el){const id=el.dataset.pv,p=prow(id),r=rows().find(x=>x.id===id);if(!r)return;pvId=id;if(sel===id)return; // 抽屜已經開著同一個機制，就不用再浮出
   let box=$("#pvbox");if(!box){box=document.createElement("div");box.id="pvbox";box.className="pvbox";box.setAttribute("role","tooltip");document.body.appendChild(box);}
   const im=(p.imgs||[])[0];
-  box.innerHTML='<b>'+esc(r.mech||"")+'</b>'+(im?'<span class="lzi ld"><img data-lazy="'+esc(im)+'" alt="'+esc((r.mech||"")+" 站位圖")+'"></span>'+((p.imgs||[]).length>1?'<small>還有 '+(p.imgs.length-1)+' 張，點開看全部</small>':''):'')+(p.note?'<p>'+esc(p.note)+'</p>':'')+((p.links||[]).length?'<small>連結：'+esc(p.links.map(l=>l.label||l.url).join("、"))+'</small>':'');
+  const vs=viewSlot(),rn=rnOf(p),nx=xpOf(p).length;
+  box.innerHTML='<b>'+esc(r.mech||"")+'</b>'+(vs&&rn[vs]?'<p class="rnme"><b>你（'+esc(vs)+'）</b>'+esc(rn[vs])+'</p>':'')+(nx?'<small>xivplan 站位圖 '+nx+' 張，點開看'+(vs?'你的版本':'')+'</small>':'')+(im?'<span class="lzi ld"><img data-lazy="'+esc(im)+'" alt="'+esc((r.mech||"")+" 站位圖")+'"></span>'+((p.imgs||[]).length>1?'<small>還有 '+(p.imgs.length-1)+' 張，點開看全部</small>':''):'')+(p.note?'<p>'+esc(p.note)+'</p>':'')+((p.links||[]).length?'<small>連結：'+esc(p.links.map(l=>l.label||l.url).join("、"))+'</small>':'');
   const b=el.getBoundingClientRect(),W=Math.min(360,innerWidth-24);box.style.width=W+"px";box.hidden=false;
   const x=Math.min(innerWidth-W-12,Math.max(12,b.left)),below=b.bottom+8;box.style.left=x+"px";box.style.top=below+"px";
   if(im){if(imgCache[im])fillImgs(im);else loadImg(im);}
@@ -596,7 +626,7 @@ function renderDrawer(){
   let dr=$("#dr");const r=sel&&rows().find(x=>x.id===sel);
   if(!r){sel=null;if(dr)dr.remove();return;}
   if(!dr){dr=document.createElement("aside");dr.id="dr";dr.className="dr";dr.setAttribute("aria-label","機制詳情");document.body.appendChild(dr);dr.addEventListener("click",onClick);dr.addEventListener("input",onDrInput);dr.addEventListener("change",onDrChange);}
-  const ae=document.activeElement&&dr.contains(document.activeElement)?document.activeElement:null,keepSel=ae?(ae.dataset.f?'[data-f="'+esc(ae.dataset.f)+'"]':ae.dataset.p?'[data-p="'+esc(ae.dataset.p)+'"]':ae.dataset.h?'[data-h="'+esc(ae.dataset.h)+'"][data-i="'+esc(ae.dataset.i)+'"]':ae.dataset.e?'[data-e="'+esc(ae.dataset.e)+'"][data-s="'+esc(ae.dataset.s)+'"]':ae.dataset.tg?'[data-tg="'+esc(ae.dataset.tg)+'"][data-s="'+esc(ae.dataset.s)+'"]':null):null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
+  const ae=document.activeElement&&dr.contains(document.activeElement)?document.activeElement:null,keepSel=ae?(ae.dataset.f?'[data-f="'+esc(ae.dataset.f)+'"]':ae.dataset.p?'[data-p="'+esc(ae.dataset.p)+'"]':ae.dataset.rn?'[data-rn="'+esc(ae.dataset.rn)+'"]':ae.dataset.h?'[data-h="'+esc(ae.dataset.h)+'"][data-i="'+esc(ae.dataset.i)+'"]':ae.dataset.e?'[data-e="'+esc(ae.dataset.e)+'"][data-s="'+esc(ae.dataset.s)+'"]':ae.dataset.tg?'[data-tg="'+esc(ae.dataset.tg)+'"][data-s="'+esc(ae.dataset.s)+'"]':null):null,sc=dr.querySelector(".drb")?dr.querySelector(".drb").scrollTop:0;
   const cm=canMech(),ca=canAll(),p=prow(r.id),dis=cm?"":" disabled";
   let h='<div class="drh"><h2>'+(r.kind==="head"?"段落":"機制")+'詳情</h2><button class="ib" aria-label="關閉" data-a="dclose">'+IC.x+'</button></div><div class="drb">';
   const iM=h.length;
@@ -631,6 +661,13 @@ function renderDrawer(){
         h+='<div class="early">'+esc(sk.name)+(ed?' 提前 <input class="f" data-e="'+esc(sk.id)+'" data-s="'+esc(s)+'" value="'+(eo||"")+'" placeholder="0" inputmode="numeric" aria-label="'+esc(sk.name)+' 提前幾秒"> 秒'+(lead?'<button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="'+esc(lead)+'">讀條開始</button><button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="'+Math.round(lead/2)+'">讀條一半</button>':'')+(eo?'<button class="btn" data-a="eset" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" data-v="0">清除</button>':''):'：提前 '+eo+' 秒開')+'</div>';});});
     h+='</div></div>';
     iS=h.length;
+    {const vs=viewSlot(),xs=xpOf(p),rn=rnOf(p);
+      h+=rnHTML(p,vs)+xpBtns(p,vs);
+      if(!ca&&Object.keys(rn).length&&!(vs&&Object.keys(rn).length===1&&rn[vs]))h+='<details class="rnall"><summary>其他位置的走法</summary><ul>'+SLOTS8.filter(k=>rn[k]&&k!==vs).map(k=>'<li><b>'+k+'</b>'+esc(rn[k])+'</li>').join("")+'</ul></details>';
+      if(ca){h+='<div class="fld"><span>站位圖（xivplan）</span>'+xs.map((x,i)=>'<div class="lk xpl"><span>'+IC.map+esc(x.label||"站位圖")+'</span><button class="ib" aria-label="刪除站位圖 '+esc(x.label||"")+'" data-a="xpdel" data-i="'+i+'">'+IC.x+'</button></div>').join("")+
+          (xs.length<6?'<div class="two"><input class="f" id="xpL" placeholder="名稱，例：火" maxlength="20"><input class="f" id="xpU" placeholder="https://xivplan.netlify.app/#/plan/…" inputmode="url"></div><button class="btn" data-a="xpadd">新增站位圖</button>':'')+
+          '<p class="hint">貼 xivplan 的「分享」連結（全員版）。網站會依每個人的位置，自動產生「只看自己」的版本：自己黃圈、其他人變淡。</p></div>';
+        h+='<div class="fld"><span>各位置的走法（一句話，每個人會看到自己那句）</span><div class="rngrid">'+SLOTS8.map(k=>{const j=compOf(k);return'<label><small>'+k+(j&&JOB[j]?' '+jobIcon(j,14):'')+'</small><input class="f" data-rn="'+k+'" value="'+esc(rn[k]||"")+'" maxlength="200"></label>';}).join("")+'</div></div>';}}
     h+='<label class="fld"><span>本團解法</span>'+(ca?'<textarea class="f" data-p="note" placeholder="例：分攤去 A 點，坦克站王前面">'+esc(p.note||"")+'</textarea>':'<div class="ro">'+(p.note?esc(p.note):'<span class="hint">（沒有）</span>')+'</div>')+'</label>';
     const ims=p.imgs||[];h+='<div class="fld"><span>站位圖</span>';
     if(ims.length)h+='<div class="imgs">'+ims.map((id,i)=>{loadImg(id);const src=imgCache[id];return '<div class="im">'+(src?'<img src="'+esc(src)+'" alt="'+esc(r.mech)+' 站位圖 '+(i+1)+'" data-a="zoom" data-id="'+esc(id)+'">':'<span class="hint">'+(src===""?"讀取失敗":"載入中…")+'</span>')+(ca?'<button class="ib" aria-label="移除這張圖" data-a="idel" data-id="'+esc(id)+'">'+IC.x+'</button>':'')+'</div>';}).join("")+'</div>';
@@ -646,7 +683,7 @@ iE=h.length;
   /* 分成三個分頁：攻略（解法、站位圖、連結）／分工（爆發、LB、減傷分工）／機制（名稱、時間、傷害）
      有攻略內容時預設打開「攻略」；自己點過分頁之後，換到別的機制也維持同一個分頁 */
   if(tid&&r.kind!=="head"){
-    const nS=(p.note?1:0)+(p.imgs||[]).length+(p.links||[]).length;
+    const nS=(p.note?1:0)+(p.imgs||[]).length+(p.links||[]).length+xpOf(p).length+(Object.keys(rnOf(p)).length?1:0);
     if(!drTabPick||drTabRow!==r.id){if(!drTabPick)drTab=nS?"s":cm?"m":"t";drTabRow=r.id;}
     const head=h.slice(0,iM),M=h.slice(iM,iT),T=h.slice(iT,iS),S=h.slice(iS,iE);
     const tabs=[["s","攻略"+(nS?" "+nS:"")],["t","分工"],["m","機制"]];
@@ -655,13 +692,14 @@ iE=h.length;
   }
   h+='</div>';
   if(cm)h+='<div class="drf"><button class="ib" aria-label="上移" data-a="up">'+IC.up+'</button><button class="ib" aria-label="下移" data-a="dn">'+IC.dn+'</button><button class="btn" data-a="insbelow">在下方插入</button><button class="btn danger" data-a="rdel" style="margin-left:auto">刪除</button></div>';
-  dr.innerHTML=h;dr.querySelector(".drb").scrollTop=sc;
+  dr.innerHTML=h;dr.querySelector(".drb").scrollTop=sc;fillXp(dr);
   if(keepSel){const el=dr.querySelector(keepSel);if(el){el.focus();if(el.setSelectionRange&&el.type!=="number"){try{const n=el.value.length;el.setSelectionRange(n,n);}catch(e){}}}}
 }
 function onDrInput(e){const t=e.target;if(!sel)return;
   if(t.dataset.f&&canMech()){const r=rows().find(x=>x.id===sel);r[t.dataset.f]=t.value;if((t.dataset.f==="t0"||t.dataset.f==="aoe")&&!t.value)delete r[t.dataset.f];saveDutySoon();gridSoon();}
   else if(t.dataset.h&&canMech()){const r=rows().find(x=>x.id===sel),x=r.hits[+t.dataset.i],f=t.dataset.h;x[f]=(f==="n"||f==="off"||f==="tk"||f==="iv")?(t.value===""?"":+t.value||0):t.value;if(x[f]==="")delete x[f];saveDutySoon();gridSoon();}
-  else if(t.dataset.p==="note"&&canAll()){setP(sel,{note:t.value});gridSoon();}}
+  else if(t.dataset.p==="note"&&canAll()){setP(sel,{note:t.value});gridSoon();}
+  else if(t.dataset.rn&&canAll()&&SLOTS8.includes(t.dataset.rn)){const rn={...rnOf(prow(sel)),[t.dataset.rn]:t.value.slice(0,200)};Object.keys(rn).forEach(k=>{if(!String(rn[k]).trim())delete rn[k];});setP(sel,{rn:Object.keys(rn).length?rn:null});gridSoon();}}
 function onDrChange(e){const t=e.target;if(t.id==="up"){upload(t.files);return;}if(t.dataset.e){setEarly(t.dataset.s,sel,t.dataset.e,parseInt(t.value,10)||0);return;}if(t.dataset.tg){setTarget(t.dataset.s,sel,t.dataset.tg,t.value.trim().slice(0,20));return;}if(t.dataset.h){if(t.dataset.h==="dtype")renderDrawer();return;}if(t.dataset.p==="burst"||t.dataset.p==="pot"||t.dataset.p==="lb"){setP(sel,{[t.dataset.p]:t.value});renderGrid();}else if(t.dataset.f)renderGrid();}
 
 /* ===== 寫入 ===== */
@@ -713,7 +751,7 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="names"){showNames=!showNames;try{localStorage.setItem("mitNames",showNames?"1":"0");}catch(err){}render();}
   else if(a==="tcompact"){modal.compact=b.checked;try{localStorage.setItem("mitTextCompact",b.checked?"1":"0");}catch(e){}renderModal();}
   else if(a==="tmode"){modal.slot=b.dataset.s;try{localStorage.setItem("mitTextMode",b.dataset.s===mySlot()?"mine":b.dataset.s);}catch(e){}renderModal();}
-  else if(a==="filt"){filt=b.dataset.s;render();}
+  else if(a==="filt"){filt=b.dataset.s;render();if(sel)renderDrawer();}
   else if(a==="vmode"){vmode=b.dataset.v;try{localStorage.setItem("mitView",vmode);}catch(err){}if(vmode==="list"&&filt==="all"&&mySlot()&&dSlots().includes(mySlot()))filt="mine";render();}
   else if(a==="cell")toggleSkill(b.dataset.s,b.dataset.r,b.dataset.k);
   else if(a==="dtog")toggleSkill(b.dataset.s,sel,b.dataset.k);
@@ -721,6 +759,10 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="lcell"){const p=prow(b.dataset.r),L=["",...dSlots()],i2=L.indexOf(p.lb||"");setP(b.dataset.r,{lb:L[(i2+1)%L.length]});renderGrid();if(sel===b.dataset.r)renderDrawer();}
   else if(a==="pcell"){const p=prow(b.dataset.r);setP(b.dataset.r,{pot:p.pot?"":"1"});renderGrid();if(sel===b.dataset.r)renderDrawer();}
   else if(a==="open"){pvHide();sel=b.dataset.r;if(e.target.closest("[data-pv]")||b.dataset.tab){drTab="s";drTabRow=null;}renderDrawer();renderGrid();}
+  else if(a==="xpadd"&&canAll()){const L=($("#xpL").value||"").trim().slice(0,20),U=($("#xpU").value||"").trim();
+    if(!xpIs(U)){toast("請貼 xivplan 的分享連結（https://xivplan.netlify.app/#/plan/…）");return;}
+    setP(sel,{xp:[...xpOf(prow(sel)),{label:L||"站位圖",url:U}].slice(0,6)});renderDrawer();renderGrid();toast("已加入站位圖");}
+  else if(a==="xpdel"&&canAll()){const i=+b.dataset.i,xs=xpOf(prow(sel));if(!armed(b,"再按一次刪除"))return;xs.splice(i,1);setP(sel,{xp:xs.length?xs:null});renderDrawer();renderGrid();}
   else if(a==="drtab"){drTab=b.dataset.k;drTabPick=true;renderDrawer();const t=document.querySelector('#dr [data-a="drtab"][data-k="'+drTab+'"]');if(t)t.focus();}
   else if(a==="dclose"){sel=null;renderDrawer();renderGrid();}
   else if((a==="addrow"||a==="addhead")&&canMech()){const nr=newRow(a==="addhead"?"head":"");rs.push(nr);sel=nr.id;saveDutySoon();renderGrid();renderDrawer();const g=$("#gw");g.scrollTop=g.scrollHeight;const m=$('#dr [data-f="mech"]');if(m)m.focus();}
@@ -966,6 +1008,16 @@ function textSheet(only,compact){const out=[];(duty.stages||[]).forEach(s=>{if(!
   if(r.desc)out.push("    說明："+r.desc.replace(/\n/g," "));if(p.note)out.push("    解法："+p.note.replace(/\n/g," "));if((p.imgs||[]).length)out.push("    站位圖 "+p.imgs.length+" 張（請到網站看）");(p.links||[]).forEach(l=>out.push("    "+(l.label?l.label+" ":"")+l.url));});out.push("");});return out.join("\n")||(only?only+" 目前沒有要放的技能":"還沒有內容");}
 function copyTA(){const ta=$("#ta");ta.select();let ok=false;try{ok=document.execCommand("copy");}catch(e){}if(!ok&&navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast("已複製"),()=>toast("請長按文字手動複製"));else toast(ok?"已複製":"請長按文字手動複製");}
 function exportData(){const o={type:"mit-seed",v:1};if(duty){const d=clone(duty);o.duty=d;}if(tid&&duty){o.plan={comp:plan.comp||{},rows:plan.rows||{},slots:Object.fromEntries(dSlots().map(s=>[s,{a:(slotDocs[s]||{}).a||{}}]))};}return o;}
+/* 匯入某些機制的站位圖與走法：{type:"mit-strat", rows:[{t:"0:15", mech:"暴風破", xp:[{label,url}], rn:{MT:"…"}}]}
+   依「時間＋機制名稱」在目前副本的所有階段找對應的列；只寫本團攻略，不動機制本身 */
+function importStrat(o,b){if(!tid||!canAll()){toast("要從固團頁面進來，才能匯入本團攻略");return;}
+  const all=(duty&&duty.stages||[]).flatMap(st=>st.rows||[]);let n=0,miss=[];
+  if(!armed(b,"再按一次匯入"))return;
+  (Array.isArray(o.rows)?o.rows:[]).forEach(x=>{if(!x||typeof x!=="object")return;const r=all.find(r=>r.kind!=="head"&&String(r.t||"")===String(x.t||"")&&String(r.mech||"")===String(x.mech||""));
+    if(!r){miss.push((x.t||"")+" "+(x.mech||""));return;}
+    const patch={};const xs=(Array.isArray(x.xp)?x.xp:[]).filter(y=>y&&xpIs(y.url)).slice(0,6).map(y=>({label:String(y.label||"站位圖").slice(0,20),url:y.url}));if(xs.length)patch.xp=xs;
+    const rn=rnOf({rn:x.rn});if(Object.keys(rn).length)patch.rn=rn;if(Object.keys(patch).length){setP(r.id,patch);n++;}});
+  closeModal();render();toast(n?"已匯入 "+n+" 個機制的站位圖與走法"+(miss.length?"（找不到："+miss.join("、")+"）":""):"找不到對應的機制："+miss.join("、"));}
 async function importStage(o,b){
   if(!duty||o.duty!==duty.id){toast("請先切換到「"+(o.dutyName||o.duty)+"」再匯入");return;}
   const st=(duty.stages||[]).find(s=>s.id===o.stage)||(duty.stages||[]).find(s=>s.name===o.stageName);
@@ -978,6 +1030,7 @@ async function importStage(o,b){
   const si=duty.stages.indexOf(st);try{await saveDuty();closeModal();cur=Math.max(0,si);sel=null;renderDrawer();render();toast("已匯入「"+st.name+"」"+add.length+" 個機制");}catch(e){console.error(e);toast("匯入失敗："+(e.code||e.message));}}
 async function doImport(b){if(!isOwner)return;let o;try{o=JSON.parse($("#ta").value);}catch(e){toast("資料格式不對");return;}
   if(o&&o.type==="mit-stage"){importStage(o,b);return;}
+  if(o&&o.type==="mit-strat"){importStrat(o,b);return;}
   if(!o||o.type!=="mit-seed"){toast("這不是減傷軸的匯入檔");return;}
   if(!armed(b,"再按一次匯入"))return;
   try{
