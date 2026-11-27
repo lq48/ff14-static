@@ -572,7 +572,7 @@ function renderGrid(){
     h+='</tr>';});
   h+='</tbody></table>';
   if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
-  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+(hpOn?'<b>血量檢查</b>（坦克 '+fmtN(HC.hp.tank)+'・遠敏 '+fmtN(HC.hp.ranged)+'・法系 '+fmtN(HC.hp.caster)+'；坦克自帶減傷 '+HC.tankMit+'%；在「副本設定」改）'+(tid?'':'<b class="warn2">從固團頁面進入，才會扣掉本團排的減傷。</b>')+'<br>物理看法系、魔法看遠敏、死刑和雙坦分攤看坦克；'+HC.chain+' 秒內接連的傷害會疊加（中間不算補血）。減傷用技能庫的「效果」計算，多個減傷相乘，護盾會被前面的傷害吃掉；有填條件的效果不算。'+(hpSkipped?'<br><b class="warn2">有 '+hpSkipped+' 次單體技能沒選對象，沒有算進減傷。點機制在「減傷分工」選給誰。</b>':'')+'<br>':'')+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
+  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+(hpOn?'<b>血量檢查</b>（坦克 '+fmtN(HC.hp.tank)+'・遠敏 '+fmtN(HC.hp.ranged)+'・法系 '+fmtN(HC.hp.caster)+'；坦克自帶減傷 '+HC.tankMit+'%（原始傷害是否已含這 20% 待 logs 驗證）；在「副本設定」改）'+(tid?'':'<b class="warn2">從固團頁面進入，才會扣掉本團排的減傷。</b>')+'<br>物理看法系、魔法看遠敏、死刑和雙坦分攤看坦克；'+HC.chain+' 秒內接連的傷害會疊加（中間不算補血）。減傷用技能庫的「效果」計算，多個減傷相乘，護盾會被前面的傷害吃掉；有填條件的效果不算。'+(hpSkipped?'<br><b class="warn2">有 '+hpSkipped+' 次單體技能沒選對象，沒有算進減傷。點機制在「減傷分工」選給誰。</b>':'')+'<br>':'')+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
   const wy=window.scrollY;gw.innerHTML=h;gw.scrollLeft=sx;gw.scrollTop=sy;if(wy)window.scrollTo(0,wy);
 }
 const gridSoon=()=>{clearTimeout(gridT);gridT=setTimeout(renderGrid,250);};
@@ -886,18 +886,22 @@ function libMergeHTML(){let h='<h2>匯入完整技能庫</h2>';
   h+='<p class="lmsum">新增 <b>'+n.add+'</b> 個・更新 <b>'+n.upd+'</b> 個'+(n.skip?'・略過 <b>'+n.skip+'</b> 個':'')+'</p>';
   const byJ={};P.forEach(p=>(byJ[p.j]=byJ[p.j]||[]).push(p));
   h+='<div class="lmlist">'+JOBS.filter(J=>byJ[J.k]).map(J=>'<div class="lmj"><b>'+jobIcon(J.k,18)+esc(J.n)+'</b><span>'+byJ[J.k].map(p=>'<span class="lm '+p.act+'" title="'+(p.act==="add"?"新增":p.act==="upd"?"更新數值":"略過")+'">'+esc(p.x.name)+'</span>').join("")+'</span></div>').join("")+'</div>';
-  h+='<p class="hint"><span class="lm add">新增</span><span class="lm upd">更新</span><span class="lm skip">略過</span>　等級分頁依這份資料的等級（例：雪仇 Lv98），比較低等級的副本會用技能原本的分頁。</p>';
+  h+='<p class="hint"><span class="lm add">新增</span><span class="lm upd">更新</span><span class="lm skip">略過</span>　這份是 Lv100 的數值。新技能從 1 級就能用；技能庫原本就有的技能，會把新數值放在它開始生效的等級（例：雪仇 98 級起），比較低等級的副本沿用原本的數值。</p>';
   h+='<div class="end"><button class="btn" data-a="fxrefback">返回技能庫</button><button class="btn primary" data-a="lmapply">匯入 '+(n.add+n.upd)+' 個技能</button></div>';
   return h;}
 function applyLibMerge(){const before=clone(lib.jobs||{}),P=lmPlan();let c=0;lib.jobs=lib.jobs||{};
   P.forEach(p=>{if(p.act==="skip")return;const J=lib.jobs[p.j]=lib.jobs[p.j]||{skills:[]};const x=p.x;
-    const tiers=(x.tiers||[]).filter(t=>t&&Number.isFinite(+t.lv)).map(t=>{const o={lv:+t.lv,cd:+t.cd||0,dur:+t.dur||0,fx:(t.fx||[]).filter(f=>f&&["mit","shield","heal","other"].includes(f.k)).map(f=>{const q={k:f.k,v:String(f.v||""),w:["self","target","party","enemy"].includes(f.w)?f.w:"self"};if(f.k==="mit")q.t=["all","phys","magic"].includes(f.t)?f.t:"all";if(+f.d)q.d=+f.d;return q;})};const ch=parseInt(t.ch,10);if(ch>1&&ch<=5)o.ch=ch;return o;});
+    const tiers=(x.tiers||[]).filter(t=>t&&Number.isFinite(+t.lv)).map(t=>{const o={lv:+t.lv,from:Math.max(1,parseInt(t.from,10)||+t.lv||1),cd:+t.cd||0,dur:+t.dur||0,fx:(t.fx||[]).filter(f=>f&&["mit","shield","heal","other"].includes(f.k)).map(f=>{const q={k:f.k,v:String(f.v||""),w:["self","target","party","enemy"].includes(f.w)?f.w:"self"};if(f.k==="mit")q.t=["all","phys","magic"].includes(f.t)?f.t:"all";if(+f.d)q.d=+f.d;return q;})};const ch=parseInt(t.ch,10);if(ch>1&&ch<=5)o.ch=ch;return o;});
     if(!tiers.length)return;
     const img=typeof x.img==="string"&&/^https:\/\/[\w.-]+\//.test(x.img)?x.img:"";
-    if(p.act==="add"){const sk={id:p.j.toLowerCase()+uid(),name:x.name.slice(0,30),desc:"",tiers};if(x.tgt==="ally")sk.tgt="ally";if(img)sk.img=img;J.skills.push(sk);c++;return;}
+    /* 等級：新技能從 1 級開始；既有技能若有比「生效等級」更低的分頁，就把這組數值放在生效等級（低等級副本沿用原本的數值），否則更新最低那一頁 */
+    const strip=t=>{const o={...t};delete o.from;return o;};
+    if(p.act==="add"){const sk={id:p.j.toLowerCase()+uid(),name:x.name.slice(0,30),desc:"",tiers:tiers.map(t=>({...strip(t),lv:1}))};if(x.tgt==="ally")sk.tgt="ally";if(img)sk.img=img;J.skills.push(sk);c++;return;}
     const sk=J.skills.find(s=>s.id===p.ex.id);if(!sk)return;
     if(!Array.isArray(sk.tiers)||!sk.tiers.length){sk.tiers=tiersOf(sk);["cd","dur","minLv","lv"].forEach(k=>delete sk[k]);}
-    tiers.forEach(t=>{const i=sk.tiers.findIndex(o=>+o.lv===t.lv);if(i>=0)sk.tiers[i]=t;else sk.tiers.push(t);});sk.tiers.sort((a,b)=>(+a.lv||0)-(+b.lv||0));
+    sk.tiers.sort((a,b)=>(+a.lv||0)-(+b.lv||0));
+    tiers.forEach(t=>{const lowest=+sk.tiers[0].lv||1,lv=lowest<t.from?t.from:lowest,n={...strip(t),lv};const i=sk.tiers.findIndex(o=>(+o.lv||1)===lv);if(i>=0)sk.tiers[i]=n;else sk.tiers.push(n);});
+    sk.tiers.sort((a,b)=>(+a.lv||0)-(+b.lv||0));
     if(x.tgt==="ally"&&!sk.tgt)sk.tgt="ally";if(img&&!sk.img)sk.img=img;c++;});
   if(!c){toast("沒有要匯入的技能");return;}
   saveLibSoon();modal={k:"skills",j:modal.j||Object.keys(lib.jobs)[0]||"PLD"};renderModal();render();

@@ -54,7 +54,10 @@ async def m():
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # 出席調查：清除勾選 → 復原；團長清除回覆 → 復原
     ctx,p,errs,calls=await open_page(b,"schedule.html?mock=member&s=sv1");await p.wait_for_timeout(500)
-    await p.wait_for_selector("#fillGrid td.cell:not(.ev)");await p.wait_for_selector(".lvnote");await p.wait_for_timeout(300)  # 等請假提醒到齊再開始點（CI 機器較慢）
+    await p.wait_for_selector("#fillGrid td.cell:not(.ev)")
+    try:await p.wait_for_selector(".lvnote",timeout=8000)   # 請假提醒到了會重畫一次表格，先等它（不是這裡要測的，等不到就繼續）
+    except Exception:pass
+    await p.wait_for_timeout(300)  # 等請假提醒到齊再開始點（CI 機器較慢）
     c=p.locator("#fillGrid td.cell:not(.ev)");await c.nth(10).click();await c.nth(11).click()
     await p.click('[data-act="clear"]');await p.wait_for_timeout(200)
     ok(await p.locator("#fillGrid td.cell.on").count()==0,"全部清除")

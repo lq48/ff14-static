@@ -27,8 +27,10 @@ async def m():
     lib=await p.evaluate("window.__MOCK.db['mitSkills/lib']")
     pld=lib["jobs"]["PLD"]["skills"];names=[s["name"] for s in pld]
     ok("雪仇" in names and "極致防禦" in names,"騎士加上雪仇、極致防禦等技能")
+    rep=[s for s in pld if s["name"]=="雪仇"][0]
+    ok([t["lv"] for t in rep["tiers"]]==[1] and "from" not in rep["tiers"][0],"新技能從 1 級開始（表上的 Lv98 是效果生效等級，不是學會等級）")
     sh=[s for s in pld if s["name"]=="聖盾陣"][0]
-    ok(sh["id"]=="p1" and any(t["lv"]==82 and t["cd"]==5 and t["dur"]==8 for t in sh["tiers"]),"同名的聖盾陣保留原本的代碼 p1，加上 Lv82 的數值")
+    ok(sh["id"]=="p1" and any(t["lv"]==82 and t["cd"]==5 and t["dur"]==8 for t in sh["tiers"]),"同名的聖盾陣保留原本的代碼 p1，新數值放在生效等級 82（原本 1 級的數值保留給低等級副本）")
     ok(len([s for s in pld if s["name"]=="聖盾陣"])==1,"不會重複出現同名技能")
     whm=lib["jobs"]["WHM"]["skills"];ben=[s for s in whm if s["name"]=="神祝禱"][0]
     ok(ben["tiers"][-1].get("ch")==2 and ben.get("tgt")=="ally","神祝禱：可存 2 次、對隊友")
