@@ -45,27 +45,42 @@ export async function xpSlots(url) {
    - 自己：放大一點、外面加黃圈；箭頭變黃色加粗
    - 其他人：透明度 30%；他們的箭頭拿掉（箭頭終點最靠近誰就是誰的）
    - 沒認出是誰的箭頭（例如王的移動）保留 */
-export function xpPersonalScene(sc, slot) {
-  sc = JSON.parse(JSON.stringify(sc));
-  let next = Math.max(sc.nextId || 1, 1), prev = {};
+/* 每個箭頭是誰的：終點靠近他這一步的位置，起點靠近他上一步的位置（兩人分攤站同一點時靠起點分辨）
+   回傳 Map(箭頭物件 → 位置)；認不出來的箭頭（例如王的移動）不放進去 */
+export function xpArrowOwners(sc) {
+  const map = new Map(); let prev = {};
   sc.steps.forEach(st => {
     const objs = st.objects || [], cur = {};
-    objs.forEach(o => { if (o.type === "party") { const k = xpSlotOf(o.name); if (k) cur[k] = o; } });
-    /* 箭頭是誰的：終點靠近他這一步的位置，起點靠近他上一步的位置（兩人分攤站同一點時靠起點分辨） */
-    const owner = a => {
+    objs.forEach(o => { if (o && o.type === "party") { const k = xpSlotOf(o.name); if (k) cur[k] = o; } });
+    objs.forEach(a => {
+      if (!a || a.type !== "arrow") return;
       const r = (a.rotation || 0) * Math.PI / 180, ex = a.x + (a.length || 0) * Math.sin(r), ey = a.y + (a.length || 0) * Math.cos(r);
       let best = "", bs = 1e9;
       Object.entries(cur).forEach(([k, p]) => {
         const de = Math.hypot(p.x - ex, p.y - ey); if (de > 30) return;
-        const q = prev[k], ds = q ? Math.hypot(q.x - a.x, q.y - a.y) : 0, sc2 = de + ds;
-        if (sc2 < bs) { bs = sc2; best = k; }
+        const q = prev[k], ds = q ? Math.hypot(q.x - a.x, q.y - a.y) : 0, s2 = de + ds;
+        if (s2 < bs) { bs = s2; best = k; }
       });
-      return best;
-    };
+      if (best) map.set(a, best);
+    });
+    Object.entries(cur).forEach(([k, p]) => { prev[k] = { x: p.x, y: p.y }; });
+  });
+  return map;
+}
+
+/* 只看自己（xivplan 版）：
+   - 自己：放大一點、外面加黃圈；箭頭變黃色加粗
+   - 其他人：透明度 30%；他們的箭頭拿掉
+   - 沒認出是誰的箭頭保留 */
+export function xpPersonalScene(sc, slot) {
+  sc = JSON.parse(JSON.stringify(sc));
+  const owners = xpArrowOwners(sc);
+  let next = Math.max(sc.nextId || 1, 1);
+  sc.steps.forEach(st => {
     const out = [];
-    objs.forEach(o => {
+    (st.objects || []).forEach(o => {
       if (o.type === "arrow") {
-        const k = owner(o);
+        const k = owners.get(o) || "";
         if (k && k !== slot) return;
         if (k === slot) { o.color = "#ffe14a"; o.width = Math.max(o.width || 8, 14); o.opacity = 100; }
         out.push(o); return;
@@ -79,7 +94,6 @@ export function xpPersonalScene(sc, slot) {
       out.push(o);
     });
     st.objects = out;
-    Object.entries(cur).forEach(([k, p]) => { prev[k] = { x: p.x, y: p.y }; });
   });
   sc.nextId = next;
   return sc;
