@@ -15,6 +15,8 @@ export const JOBS=[
   ["BLM","黑魔道士","黑魔","magic"],["SMN","召喚士","召喚","magic"],["RDM","赤魔道士","赤魔","magic"],["PCT","繪靈法師","繪靈","magic"]
 ].map(([k,n,s,c])=>({k,n,s,c,r:c==="tank"||c==="heal"?c:"dps"}));
 export const JOB=Object.fromEntries(JOBS.map(j=>[j.k,j]));
+/* 職業圖示（icons/jobs/XXX.webp）。只認 JOBS 裡的代碼，資料庫裡的怪字串不會變成網址 */
+export const jobIcon=(k,sz=18)=>JOB[k]?'<img class="jico" src="icons/jobs/'+k+'.webp" alt="" width="'+sz+'" height="'+sz+'" style="width:'+sz+'px;height:'+sz+'px" loading="lazy" decoding="async">':'';
 
 /* ---------- 輸出到畫面 ---------- */
 export const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));

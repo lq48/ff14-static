@@ -297,7 +297,7 @@ a{color:var(--accent)}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=12">
+<link rel="stylesheet" href="cozy.css?v=14">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -329,7 +329,7 @@ import { initAwayMini } from "./away-mini.js?v=gr3";
 import { startIcons, icon } from "./icons.js?v=5";
 import { mountNav, setNavUser, setNavActive } from "./nav.js?v=2";
 import { undoToast } from "./ui.js?v=1";
-import { JOBS as JOBS_ALL, readyState, bestSlot, cleanRsvp, safeUrl, slotTimeTxt, evDue, dueOver, dueTxt, dueLeft } from "./common.js?v=3";
+import { JOBS as JOBS_ALL, jobIcon, readyState, bestSlot, cleanRsvp, safeUrl, slotTimeTxt, evDue, dueOver, dueTxt, dueLeft } from "./common.js?v=5";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, collectionGroup, doc, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -895,7 +895,7 @@ function memoriesPanelHTML(){
 function membersPanelHTML(){
   const ids=Object.keys(users).sort((a,b)=>(a===me.uid?-1:b===me.uid?1:nameOf(users[a]).localeCompare(nameOf(users[b]),"zh-Hant")));
   if(!ids.length)return'<div class="panel" id="members"><h2>飛地成員</h2><p class="muted">還沒有人建立靈魂水晶。</p></div>';
-  const chips='<div class="mchips">'+ids.map(id=>{const u=users[id],j=JOB[u.job];return'<span class="mc r-'+(j?j.r:"dps")+'"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb">'+esc(j.n)+'</span>':'')+(id===me.uid?'<span class="you">你</span>':'')+'</span>';}).join("")+'</div>';
+  const chips='<div class="mchips">'+ids.map(id=>{const u=users[id],j=JOB[u.job];return'<span class="mc r-'+(j?j.r:"dps")+'"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><span>'+esc(nameOf(u))+'</span>'+(j?'<span class="jb">'+jobIcon(j.k,16)+esc(j.n)+'</span>':'')+(id===me.uid?'<span class="you">你</span>':'')+'</span>';}).join("")+'</div>';
   return'<div class="panel" id="members"><h2>飛地成員（'+ids.length+'）</h2>'+
     (membersOpen?'<div class="crystals">'+ids.map(crystalHTML).join("")+'</div>':chips)+
     '<div class="morebar"><button type="button" class="btn sm" data-act="membersToggle" aria-expanded="'+membersOpen+'">'+(membersOpen?'收起':'看大家的靈魂水晶')+'</button></div></div>';
@@ -934,7 +934,7 @@ function crystalHTML(id){
   return'<div class="crystal r-'+(j?j.r:"dps")+'"><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy"><div class="cbody">'+
     '<div class="nm">'+esc(nameOf(u))+(id===me.uid?'<span class="you">你</span>':'')+phTag(u)+'</div>'+
     '<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
-    (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+
+    (j?'<div class="jb">'+jobIcon(j.k)+esc(j.n)+'</div>':'')+(u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+
     (teams.length?'<div class="tags">'+teams.map(n=>'<span class="target">'+esc(n)+'</span>').join("")+'</div>':'')+'</div></div>';
 }
 /* 工具與推薦網站 */
@@ -1512,7 +1512,7 @@ function cardHTML(slot,uid){
   const tj=teamJob(curTid,uid),j=JOB[tj],alts=teamAlts(curTid,uid).filter(k=>JOB[k]);
   return'<div class="slot r-'+slot.r+pk+'" data-slotpick="'+esc(slot.k)+'" role="button" tabindex="0" title="點一下看誰能補 '+slot.k+'"><span class="lab">'+slot.k+'</span><img src="'+esc(avatarUrl(u))+'" alt="" loading="lazy">'+
     '<div class="nm">'+esc(nameOf(u))+'</div>'+phTag(u)+'<div class="ch">'+esc([u.charName,u.server].filter(Boolean).join(" @ "))+'</div>'+
-    (j?'<div class="jb">'+esc(j.n)+'</div>':'')+(alts.length?'<div class="alts">備用：'+esc(alts.map(jobLabel).join("、"))+'</div>':'')+
+    (j?'<div class="jb">'+jobIcon(j.k)+esc(j.n)+'</div>':'')+(alts.length?'<div class="alts">備用：'+esc(alts.map(jobLabel).join("、"))+'</div>':'')+
     (also.length?'<div class="alts">也可打 '+esc(also.join("、"))+'</div>':'')+
     (u.bio?'<div class="bio">「'+esc(u.bio)+'」</div>':'')+'</div>';
 }
@@ -1528,7 +1528,7 @@ function rosterHTML(st){
       ' <button class="linkbtn" data-slotpick="'+esc(slotPick)+'">關閉</button></div>';
   }
   return'<div class="panel"><h2>陣容</h2><div class="roster">'+slotsOf(st).map(s=>cardHTML(s,roles[s.k])).join("")+'</div>'+pick+
-    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=alsoOf(st.id,id).join("、");return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">也可打 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
+    (rest.length?'<h3>替補成員（'+rest.length+'）</h3><div class="others">'+rest.map(id=>{const u=users[id];const j=JOB[teamJob(st.id,id)];const cv=alsoOf(st.id,id).join("、");return'<div class="person"><img src="'+esc(avatarUrl(u))+'" alt=""><span>'+esc(nameOf(u))+'</span>'+phTag(u)+(j?'<span class="jb '+j.r+'">'+jobIcon(j.k,16)+esc(j.n)+'</span>':'')+(cv?'<span class="small muted">也可打 '+esc(cv)+'</span>':'')+'</div>';}).join("")+'</div>':'')+'</div>';
 }
 function modulesHTML(st){
   const mods=st.modules||{};const vis=MODULES.filter(x=>canSee(x.k));const mgr=isOwner||capsOf(st).modules;

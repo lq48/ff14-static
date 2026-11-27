@@ -12,7 +12,7 @@ async def m():
         print("  ---\n"+t+"\n  ---")
         ok("坦 1/2" in t and "補 2/2" in t and "輸出 2/4" in t,"職能統計依第一志願（坦 1/2、補 2/2、輸出 2/4）")
         ok("山壯 也能坦" in t,"缺的職能列出可以轉的人")
-        lu=await p.inner_text(".res.best .lineup");ok("山壯 武僧" in lu and "諾爾 暗騎" in lu and "楓之旋律 占星" in lu,"排位明細顯示每個人排到的職業")
+        lu=" ".join((await p.inner_text(".res.best .lineup")).split());ok("山壯 武僧" in lu and "諾爾 暗騎" in lu and "楓之旋律 占星" in lu,"排位明細顯示每個人排到的職業")
         ok("志願" not in lu,"大家都排到第一志願時，不顯示志願標記")
       # 「最多人」：::after 是 inline-block + nowrap，量它的高度 = 一行
       h=await p.evaluate("(()=>{const el=document.querySelector('.res.best .when');const cs=getComputedStyle(el,'::after');return [cs.display,cs.whiteSpace]})()")

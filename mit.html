@@ -145,7 +145,7 @@ table.g.names .r1 th{height:62px}
 /* 血量檢查欄 */
 .g .hc{background:var(--surface);font-size:12px;vertical-align:middle;padding:4px 6px}
 .g thead .hc{font-weight:700;line-height:1.25}.g thead .hc small{display:block;font-weight:400;color:var(--muted);font-size:10.5px;white-space:normal}
-.g .h1{width:34px;min-width:34px;text-align:center}.g .h1 .dt{width:18px;height:18px}
+.g .h1{width:44px;min-width:44px;text-align:center}.g thead .hc{white-space:nowrap}.g .h1 .dt{width:18px;height:18px}
 .g .h2{width:60px;min-width:60px;text-align:center}
 .g .h3{width:80px;min-width:80px;text-align:right}.g .h3 small{display:block;color:var(--muted);font-size:10.5px;white-space:nowrap}
 .g .h4{width:150px;min-width:150px;max-width:150px}
@@ -175,7 +175,7 @@ tr.head .hc{background:var(--headbg)}
 @media (max-width:560px){.hpset{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1100px){
   .g .hc{position:sticky;z-index:1}.g thead .hc{z-index:3}
-  .g .h1{left:222px}.g .h2{left:256px}.g .h3{left:316px}.g .h5{left:396px}.g .h4{left:476px;box-shadow:2px 0 0 var(--line)}
+  .g .h1{left:222px}.g .h2{left:266px}.g .h3{left:326px}.g .h5{left:406px}.g .h4{left:486px;box-shadow:2px 0 0 var(--line)}
 }
 table.g.names .r2 th{top:62px}
 .jh .who{display:block;font-weight:500;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:1px auto 0}
@@ -281,7 +281,7 @@ textarea.f{min-height:96px;resize:vertical}
 .lnote{margin:0;font-size:12.5px;color:var(--muted)}
 @media (max-width:480px){.litem{grid-template-columns:52px 1fr;gap:10px;padding:10px 12px}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=12">
+<link rel="stylesheet" href="cozy.css?v=14">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -289,7 +289,7 @@ textarea.f{min-height:96px;resize:vertical}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
-import { JOBS as JOBS_ALL, safeUrl } from "./common.js?v=3";
+import { JOBS as JOBS_ALL, jobIcon, safeUrl } from "./common.js?v=5";
 import { hpCheck, hpCfg, aoeOf, parseDmg, fmtN, AOE, ROLE_N, HP_DEF, CHAIN_DEF } from "./mit-hp.js?v=2";
 import { undoToast } from "./ui.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -430,7 +430,7 @@ function render(){
   if(duty){
     h+='<div class="scrollx">'+(duty.stages||[]).map((s,i)=>'<button class="tab'+(i===cur?" on":"")+'" data-a="stage" data-i="'+esc(i)+'">'+esc(s.name)+'</button>').join("")+'</div>';
     h+='<div class="scrollx"><span class="lbl">只看</span><button class="tab'+(filt==="all"?" on":"")+'" data-a="filt" data-s="all">全部</button>'+(mySlot()&&dSlots().includes(mySlot())?'<button class="tab'+(filt==="mine"?" on":"")+'" data-a="filt" data-s="mine">我的</button>':'')+
-      dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+esc(s)+'">'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
+      dSlots().map(s=>'<button class="tab'+(filt===s?" on":"")+'" data-a="filt" data-s="'+esc(s)+'">'+s+(compOf(s)?" "+jobIcon(compOf(s),16)+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</button>').join("")+'</div>';
     if(vmode==="list"&&tid){const R2=(st&&st.roles)||{},mem=dSlots().filter(x=>R2[x]&&users[R2[x]]),jobs=[...new Set(dSlots().map(compOf).filter(Boolean))];
       h+='<div class="lsel"><label><span class="lbl">依成員</span><select class="f" data-lf="mem"><option value="">選擇成員…</option>'+mem.map(x=>'<option value="'+esc(x)+'"'+(filt===x?" selected":"")+'>'+esc(nameOf(users[R2[x]]))+'（'+x+'）</option>').join("")+'</select></label>'+
         '<label><span class="lbl">依職業</span><select class="f" data-lf="job"><option value="">選擇職業…</option>'+jobs.map(j=>'<option value="job:'+j+'"'+(filt==="job:"+j?" selected":"")+'>'+esc((JOB[j]||{}).n||j)+'</option>').join("")+'</select></label></div>';}
@@ -527,10 +527,10 @@ function renderGrid(){
   if(vmode==="list"&&duty){renderList();return;}
   if(!duty){gw.innerHTML='<div class="empty">'+(!ready.duties?"載入中…":duties.length?"找不到這個副本。":isOwner?"還沒有副本。按「副本設定」新增，或用「匯出／匯入」匯入資料。":"還沒有副本，請等團長建立。")+'</div>';return;}
   const sx=gw.scrollLeft,sy=gw.scrollTop,rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),V=vSlots(),ms=mySlot(),ca=canAll(),H=hpOf(rs,E),HC=hpCfg(duty);
-  let h='<table class="g'+(showNames?" names":"")+'"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th>'+(hpOn?'<th class="hc h1" rowspan="2">類型</th><th class="hc h2" rowspan="2">對象</th><th class="hc h3" rowspan="2">原始傷害<small>每人</small></th><th class="hc h5" rowspan="2">減傷後<small>'+(tid?'依本團分工':'從固團進入才算')+'</small></th><th class="hc h4" rowspan="2" title="物理看法系、魔法看遠敏、死刑看坦克；'+HC.chain+' 秒內接連的傷害會疊加，不算補血">血量檢查<small>坦 '+fmtN(HC.hp.tank)+'・遠 '+fmtN(HC.hp.ranged)+'・法 '+fmtN(HC.hp.caster)+'</small></th>':'')+'<th class="jh bh" colspan="2">爆發</th><th class="jh bh">LB</th>';
+  let h='<table class="g'+(showNames?" names":"")+'"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th>'+(hpOn?'<th class="hc h1" rowspan="2">類型</th><th class="hc h2" rowspan="2">對象</th><th class="hc h3" rowspan="2">原始傷害</th><th class="hc h5" rowspan="2">減傷後</th><th class="hc h4" rowspan="2" title="物理看法系、魔法看遠敏、死刑看坦克；'+HC.chain+' 秒內接連的傷害會疊加，不算補血">血量檢查</th>':'')+'<th class="jh bh" colspan="2">爆發</th><th class="jh bh">LB</th>';
   V.forEach(s=>{const j=compOf(s),n=jobSkills(j).length,role=(JOB[j]||{}).r||SLOT_ROLE[s],u=((st&&st.roles)||{})[s];
     const U=u&&users[u],pid=U?(U.charName||nameOf(U)):"",full=s+" "+(j?((JOB[j]||{}).n||j):"未設定")+(U?"・"+nameOf(U)+(U.charName&&U.charName!==nameOf(U)?"（"+U.charName+"）":""):"");
-    h+='<th class="jh '+role+(s===ms?" mine":"")+'" colspan="'+Math.max(n,1)+'" title="'+esc(full)+'">'+s+'<br>'+esc(j?((JOB[j]||{}).s||j):"未設定")+(showNames&&pid?'<span class="who" style="max-width:'+(Math.max(n,1)*36-6)+'px">'+esc(pid)+'</span>':'')+'</th>';});
+    h+='<th class="jh '+role+(s===ms?" mine":"")+'" colspan="'+Math.max(n,1)+'" title="'+esc(full)+'">'+s+'<br>'+(j&&JOB[j]?jobIcon(j,n>1?16:20)+(n>1?esc(JOB[j].s||j):''):esc(j?j:"未設定"))+(showNames&&pid?'<span class="who" style="max-width:'+(Math.max(n,1)*36-6)+'px">'+esc(pid)+'</span>':'')+'</th>';});
   h+='</tr><tr class="r2"><th class="sh first" title="團隊爆發｜點格子切換 120 → 60 → 無"><div class="shi"><span class="bx">爆</span><div class="nm">爆發</div><div class="cdv"><b>'+BURST_DUR+'</b><br>60</div></div></th><th class="sh" title="爆發藥｜持續 '+POT.dur+' 秒，CD '+POT.cd+' 秒"><div class="shi"><img class="ico" src="'+POT_ICON+'" alt=""><div class="nm">藥水</div><div class="cdv"><b>'+POT.dur+'</b><br>'+POT.cd+'</div></div></th><th class="sh first" title="極限技｜點格子選擇由哪個位置施放"><div class="shi"><span class="lbh"><img src="'+LB_ICON+'" alt=""></span><div class="nm">極限技</div></div></th>';
   V.forEach(s=>{const j=compOf(s),l=jobSkills(j);if(!l.length){h+='<th class="sh first" style="width:auto;min-width:96px;max-width:none"><div class="shi" style="justify-content:center;color:var(--muted);font-size:12px">'+(j?"技能庫沒有<br>"+esc((JOB[j]||{}).n||j)+"的技能":"先到「陣容」<br>設定職業")+'</div></th>';return;}
     l.forEach((sk,k)=>{const v=sv(sk);h+='<th class="sh'+(k===0?" first":"")+'" title="'+esc(sk.name+(v.dur?"｜持續 "+v.dur+" 秒":"")+(v.cd?"｜CD "+v.cd+" 秒":"")+(fxText(sk)?"\n"+fxText(sk):"")+(sk.desc?"\n"+sk.desc:""))+'"><div class="shi">'+skIco(j,sk)+'<div class="nm">'+esc(sk.name)+'</div><div class="cdv">'+(v.dur?"<b>"+v.dur+"</b><br>":"")+(v.cd||"")+'</div></div></th>';});});
@@ -557,7 +557,7 @@ function renderGrid(){
     h+='</tr>';});
   h+='</tbody></table>';
   if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
-  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+(hpOn?'血量檢查：物理看法系、魔法看遠敏、死刑和雙坦分攤看坦克；'+HC.chain+' 秒內接連的傷害會疊加（中間不算補血）。減傷用技能庫的「效果」計算，多個減傷相乘，護盾會被前面的傷害吃掉；有填條件的效果不算。各職能血量在「副本設定」改。'+(hpSkipped?'<br><b class="warn2">有 '+hpSkipped+' 次單體技能沒選對象，沒有算進減傷。點機制在「減傷分工」選給誰。</b>':'')+'<br>':'')+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
+  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+(hpOn?'<b>血量檢查</b>（坦克 '+fmtN(HC.hp.tank)+'・遠敏 '+fmtN(HC.hp.ranged)+'・法系 '+fmtN(HC.hp.caster)+'，在「副本設定」改）'+(tid?'':'<b class="warn2">從固團頁面進入，才會扣掉本團排的減傷。</b>')+'<br>物理看法系、魔法看遠敏、死刑和雙坦分攤看坦克；'+HC.chain+' 秒內接連的傷害會疊加（中間不算補血）。減傷用技能庫的「效果」計算，多個減傷相乘，護盾會被前面的傷害吃掉；有填條件的效果不算。'+(hpSkipped?'<br><b class="warn2">有 '+hpSkipped+' 次單體技能沒選對象，沒有算進減傷。點機制在「減傷分工」選給誰。</b>':'')+'<br>':'')+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
   const wy=window.scrollY;gw.innerHTML=h;gw.scrollLeft=sx;gw.scrollTop=sy;if(wy)window.scrollTo(0,wy);
 }
 const gridSoon=()=>{clearTimeout(gridT);gridT=setTimeout(renderGrid,250);};

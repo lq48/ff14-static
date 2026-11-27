@@ -101,7 +101,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .jb.heal[aria-pressed="true"]{background:var(--heal);border-color:var(--heal)}
 .jb.dps[aria-pressed="true"]{background:var(--dps);border-color:var(--dps)}
 .jb i{position:absolute;top:-7px;right:-6px;font-style:normal;font-size:10px;background:var(--ink);color:var(--bg);border-radius:999px;min-width:16px;height:16px;line-height:16px;text-align:center}
-.jt{display:inline-block;font-size:11.5px;font-weight:700;border-radius:5px;padding:0 5px;margin:1px 2px 1px 0;color:#fff}
+.jt{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;border-radius:5px;padding:1px 5px 1px 2px;margin:1px 2px 1px 0;color:#fff}
 .jt.tank{background:var(--tank)}.jt.heal{background:var(--heal)}.jt.dps{background:var(--dps)}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th,.tbl td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:middle}
@@ -138,7 +138,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
 @media (max-width:640px){.slot,.res{grid-template-columns:1fr}.srow{grid-template-columns:1fr auto 1fr 40px}.srow input[type=date]{grid-column:1/-1}.three{grid-template-columns:1fr 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="cozy.css?v=12">
+<link rel="stylesheet" href="cozy.css?v=14">
 </head>
 <body>
 <header class="sitebar" id="sitebar"></header>
@@ -146,7 +146,7 @@ textarea.f{min-height:110px;resize:vertical;line-height:1.6}
 <script type="module">
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID, WORKER_URL } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
-import { JOBS as JOBS_ALL, assignComp, fillComp, readyState, slotTally, cleanRsvp, slotTimeTxt, slotStart, evDue, dueOver, dueTxt, dueLeft } from "./common.js?v=3";
+import { JOBS as JOBS_ALL, jobIcon, assignComp, fillComp, readyState, slotTally, cleanRsvp, slotTimeTxt, slotStart, evDue, dueOver, dueTxt, dueLeft } from "./common.js?v=5";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -192,7 +192,7 @@ function nextDow(dow){const d=new Date();d.setHours(0,0,0,0);while(d.getDay()!==
 const canFillFor=t=>!!me&&(t===me.uid||isOwner||!!(((ecfg.proxies||{})[t]||{})[me.uid]));
 const canProxy=()=>!!me&&(isOwner||Object.values(ecfg.proxies||{}).some(h=>h&&h[me.uid]));
 const canManage=e=>!!me&&(isOwner||e.by===me.uid);
-const jt=k=>{const j=JOB[k];return j?'<span class="jt '+j.r+'" title="'+esc(j.n)+'">'+esc(j.n)+'</span>':'';};
+const jt=k=>{const j=JOB[k];return j?'<span class="jt '+j.r+'" title="'+esc(j.n)+'">'+jobIcon(k,15)+esc(j.n)+'</span>':'';};
 function lastDay(e){const ds=(e.slots||[]).map(s=>s.d).filter(Boolean).sort();if(e.status==="fixed"){const f=(e.slots||[]).find(s=>s.id===e.fixed);if(f)return f.d;}return ds[ds.length-1]||"";}
 const isPast=e=>e.status==="closed"||(lastDay(e)&&lastDay(e)<today());
 
@@ -273,7 +273,7 @@ function detailHTML(id,e){
       '<div class="fld"><span>要參加嗎？</span><div class="seg">'+[["y","想參加"],["m","看時間"],["n","這次不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="go" data-v="'+esc(v)+'" aria-pressed="'+(draft.go===v)+'">'+t+'</button>').join("")+'</div></div>';
     if(draft.go!=="n"){
       if(slots.length&&!fx)h+='<div class="fld"><span>每個時間可不可以？</span>'+slots.map(s=>'<div class="slot"><span class="when">'+esc(whenTxt(s))+(s.note?' <small class="muted">'+esc(s.note)+'</small>':'')+'</span><div class="seg">'+[["y","可以"],["m","勉強"],["n","不行"]].map(([v,t])=>'<button type="button" class="'+v+'" data-a="sl" data-s="'+esc(s.id)+'" data-v="'+esc(v)+'" aria-pressed="'+(draft.slots[s.id]===v)+'">'+t+'</button>').join("")+'</div></div>').join("")+'</div>';
-      if(e.roles)h+='<div class="fld"><span>你可以打的職業（依想打的順序點，第一個是主職）</span><div class="jobs">'+["tank","heal","dps"].map(r=>'<div class="grp"><span>'+ROLE_N[r]+'</span>'+JOBS.filter(j=>j.r===r).map(j=>{const i=draft.jobs.indexOf(j.k);return '<button type="button" class="jb '+r+'" data-a="job" data-k="'+esc(j.k)+'" aria-pressed="'+(i>=0)+'">'+esc(j.n)+(i>=0?'<i>'+(i+1)+'</i>':'')+'</button>';}).join("")+'</div>').join("")+'</div></div>';
+      if(e.roles)h+='<div class="fld"><span>你可以打的職業（依想打的順序點，第一個是主職）</span><div class="jobs">'+["tank","heal","dps"].map(r=>'<div class="grp"><span>'+ROLE_N[r]+'</span>'+JOBS.filter(j=>j.r===r).map(j=>{const i=draft.jobs.indexOf(j.k);return '<button type="button" class="jb '+r+'" data-a="job" data-k="'+esc(j.k)+'" aria-pressed="'+(i>=0)+'">'+jobIcon(j.k,20)+esc(j.n)+(i>=0?'<i>'+(i+1)+'</i>':'')+'</button>';}).join("")+'</div>').join("")+'</div></div>';
     }
     h+='<label class="fld"><span>備註（可不填）</span><input class="f" id="note" maxlength="60" value="'+esc(draft.note)+'" placeholder="例如：週六要 22 點後才能上線"></label>'+
       '<div class="end" style="margin-top:4px">'+(mine?'<button class="btn" data-a="unrsvp">撤回回覆</button>':'')+'<button class="btn primary" data-a="save"'+(draft.go?'':' disabled')+'>'+(mine?"更新回覆":"送出")+'</button></div></div>';
