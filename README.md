@@ -62,3 +62,9 @@ FF14 固定團的線上小據點：大廳（今日飛地）、固定團、BiS、
 - `mit-ref.json`：技能效果參考資料（日文 7.11 減傷表 Skill 分頁轉出），技能庫「從參考資料補效果」使用。重新產生：`python _tests/data/build_ref.py 試算表匯出.txt mit-ref.json`（需要 `pip install opencc-python-reimplemented`）。
 - 絕光暗未來匯入檔：`python _tests/data/build_fru_seed.py 試算表匯出.txt [譯名對照.csv]`。
 - 測試：`_tests/test_mit_hp.py`、`_tests/test_mit_ref.py`（含絕光暗未來的匯入檔 `_tests/data/fru-mit-seed.json`）。
+
+## 技能庫匯入（mit-lib-tc.json）
+- 繁中技能表（Lv100、135 個技能）：減傷 %、護盾、可存次數、對象、官方圖示網址（xivapi v2，載不到時顯示文字方塊）。
+- 技能庫「匯入完整技能庫」是**合併**：同名技能保留代碼與圖示、只加入／更新同等級分頁；新技能加在最後；可選類別；可復原。
+- 重新產生：`python _tests/data/build_lib.py 日文減傷表匯出.txt mit-lib-tc.json`（資料在 `_tests/data/tc_lib.py`）。
+- 血量計算另有：坦克自帶減傷（預設 20%，副本設定可改）、無敵（效果「其他：無敵」，最多打到剩 1）、可存次數（CD 檢查）。

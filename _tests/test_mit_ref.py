@@ -52,7 +52,7 @@ async def m():
     await p.evaluate(W,"lib");await p.evaluate(W,"slot");await p.wait_for_timeout(600)
     t=await p.inner_text("#gw .foot");ok("有 1 次單體技能沒選對象" in t,"單體技能沒選對象時提醒沒算進去")
     await p.evaluate(W,"tg");await p.wait_for_timeout(600)
-    t=await row(p,"死刑 B").inner_text();ok("-15%" in t,"選了對象（給 MT）就算進坦克的減傷")
+    t=await row(p,"死刑 B").inner_text();ok("-32%" in t,"選了對象（給 MT）就算進坦克的減傷（自帶 20%×水流幕 15%＝-32%）")
     t=await p.inner_text("#gw .foot");ok("沒選對象" not in t,"選了對象就不再提醒")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # 手機

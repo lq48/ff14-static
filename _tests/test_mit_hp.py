@@ -15,7 +15,7 @@ async def m():
     b=await browser(pw)
     # ---- 純計算（在瀏覽器裡載入 mit-hp.js）
     ctx,p,errs,calls=await open_page(b,"mit.html?mock=owner",1280,900);await p.wait_for_timeout(400)
-    r=await p.evaluate("""async()=>{const m=await import('./mit-hp.js?v=2');const c=m.hpCfg({});
+    r=await p.evaluate("""async()=>{const m=await import('./mit-hp.js?v=3');const c=m.hpCfg({});
       const R=[{id:"a",hits:[{dtype:"phys",dmg:"92,000"}]},{id:"b",hits:[{dtype:"magic",dmg:"115,000"}]},{id:"c",tag:"死刑",hits:[{dtype:"magic",dmg:"800,000"}]},
         {id:"d",hits:[{dtype:"magic",dmg:"132,000",dot:"92,000",tk:5}]},{id:"x",aoe:"<img src=x>",hits:[{dmg:"<b>1</b>"}]}];
       const o=m.hpCheck(R,[15,17,24,86,200],c);
@@ -23,7 +23,7 @@ async def m():
     ok(r["p"]==[92000,80000,1200000,0],"傷害文字解析（9.2萬、80k、1,200,000）")
     ok(r["a"]==["caster",50000],"物理看法系")
     ok(r["b"]==["ranged",-65000,True],"魔法看遠敏，2 秒內接連的傷害疊加")
-    ok(r["c"]==["tank",225800-800000],"死刑看坦克，不疊全體傷害以外的連段")
+    ok(r["c"]==["tank",225800-640000],"死刑看坦克（含坦克自帶 20%），不疊全體傷害以外的連段")
     ok(r["d"]==[10000,10000-460000],"持續傷害：每 3 秒一跳，跳完的剩餘血量")
     ok(r["x"] and r["aoe"]=="","看不懂的數值和對象會被忽略")
     await ctx.close()
