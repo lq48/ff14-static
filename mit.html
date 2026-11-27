@@ -164,6 +164,12 @@ tr.head .hc{background:var(--headbg)}
 .hpb.cp{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;margin-top:6px}.hpb.cp .hpbar{margin:0;min-width:60px}.hpb.cp .hpt small{display:inline;margin-left:4px}
 .hit.dotl{grid-template-columns:auto 1fr 64px 64px}.hit.dotl .hint{font-size:12px;white-space:nowrap}
 .refbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 4px;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.lmsum{font-size:15px;margin:8px 0}
+.lmlist{display:grid;gap:6px;max-height:46vh;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:12px}
+.lmj{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:start;font-size:13px}.lmj>span{display:flex;flex-wrap:wrap;gap:4px}
+.lm{display:inline-block;padding:1px 7px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+.lm.add{background:color-mix(in srgb,var(--heal) 16%,transparent);border-color:transparent}.lm.upd{background:color-mix(in srgb,var(--tank) 16%,transparent);border-color:transparent}.lm.skip{color:var(--muted);text-decoration:line-through}
+@media (max-width:560px){.lmj{grid-template-columns:1fr}}
 .rfover{display:flex;gap:6px;align-items:center;font-size:13.5px;margin:6px 0}
 .rfj{margin:14px 0 4px;font-size:15px}
 .rfrow{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1.3fr);gap:8px;align-items:center;padding:6px 4px;border-top:1px solid var(--line)}
@@ -171,7 +177,7 @@ tr.head .hc{background:var(--headbg)}
 .rfrow small{display:block;color:var(--muted);font-size:11.5px;line-height:1.4;margin-top:2px}
 .rfck input{width:20px;height:20px}
 @media (max-width:560px){.rfrow{grid-template-columns:28px minmax(0,1fr)}.rfr{grid-column:2}}
-.hpset{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.hpset label{display:grid;gap:2px}.hpset small{color:var(--muted)}
+.hpset{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.hpset label{display:grid;gap:2px}.hpset small{color:var(--muted)}
 @media (max-width:560px){.hpset{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1100px){
   .g .hc{position:sticky;z-index:1}.g thead .hc{z-index:3}
@@ -290,7 +296,7 @@ textarea.f{min-height:96px;resize:vertical}
 import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
 import { mountNav } from "./nav.js?v=2";
 import { JOBS as JOBS_ALL, jobIcon, safeUrl } from "./common.js?v=5";
-import { hpCheck, hpCfg, aoeOf, parseDmg, fmtN, AOE, ROLE_N, HP_DEF, CHAIN_DEF } from "./mit-hp.js?v=2";
+import { hpCheck, hpCfg, aoeOf, parseDmg, fmtN, AOE, ROLE_N, HP_DEF, CHAIN_DEF, TANK_MIT_DEF } from "./mit-hp.js?v=3";
 import { undoToast } from "./ui.js?v=1";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -330,6 +336,10 @@ let listInit=false;
 let dutyDirty=false,dutyT=null,libDirty=false,libT=null,planDirty=false,planT=null;
 let imgCache={},uploading=0;
 let drTab="s",drTabPick=false,drTabRow=null;
+/* 技能圖示是外部網址（官方圖示）時，載入失敗就換成文字方塊；同一張圖之後不再試 */
+const badImg=new Set();
+document.addEventListener("error",e=>{const im=e.target;if(!(im instanceof HTMLImageElement)||!im.classList.contains("ico")||!im.dataset.nm)return;
+  badImg.add(im.getAttribute("src"));const sp=document.createElement("span");sp.className=im.className.replace(/\bico\b/,"tx "+(im.dataset.role||"dps"));sp.setAttribute("role","img");sp.setAttribute("aria-label",im.alt);sp.title=im.title;sp.textContent=im.dataset.nm;im.replaceWith(sp);},true);
 let unDuty=null,unPlan=null,unSlots=null,ready={duties:false,lib:false};
 
 /* ===== 小工具 ===== */
@@ -367,7 +377,7 @@ function tiersOf(sk){if(Array.isArray(sk.tiers)&&sk.tiers.length)return sk.tiers
   const t=[{lv:+sk.minLv||1,cd:+sk.cd||0,dur:+sk.dur||0,fx:[]}],l=(sk.lv||{})[100];
   if(l)t.push({lv:100,cd:l.cd!=null&&l.cd!==""?+l.cd:+sk.cd||0,dur:l.dur!=null&&l.dur!==""?+l.dur:+sk.dur||0,fx:[]});return t;}
 function tierAt(sk,lv){let r=null;tiersOf(sk).forEach(t=>{if((+t.lv||0)<=lv)r=t;});return r;}
-function sv(sk){const t=tierAt(sk,LV())||tiersOf(sk)[0];return{cd:+t.cd||0,dur:+t.dur||0};}
+function sv(sk){const t=tierAt(sk,LV())||tiersOf(sk)[0];return{cd:+t.cd||0,dur:+t.dur||0,ch:Math.max(1,Math.min(5,parseInt(t.ch,10)||1))};}
 function fxLine(f){const v=String(f.v||"").trim(),num=/^[\d.]+$/.test(v);
   const val=f.k==="mit"?(v?(num?v+"%":v):""):f.k==="heal"?(v?"恢復力 "+v:""):v;
   return [(f.w&&f.w!=="self"&&FXW[f.w])||"",FXK[f.k]||"",val,(f.t&&f.t!=="all"?"（"+FXT[f.t]+"）":"")].filter(Boolean).join(" ")+(f.d?" "+f.d+" 秒":"")+(f.c?"，"+f.c:"");}
@@ -383,7 +393,7 @@ const stage=()=>duty&&duty.stages&&duty.stages[cur];
 const rows=()=>(stage()&&stage().rows)||[];
 const prow=id=>((plan.rows||{})[id])||{};
 const assign=(s,id)=>((((slotDocs[s]||{}).a)||{})[id])||[];
-function skIco(j,sk,cls){const role=(JOB[j]||{}).r||"dps";if(sk.img)return '<img class="ico'+(cls?" "+cls:"")+'" src="'+esc(sk.img)+'" alt="'+esc(sk.name)+'" title="'+esc(sk.name)+'">';return '<span class="tx '+role+(cls?" "+cls:"")+'" role="img" aria-label="'+esc(sk.name)+'" title="'+esc(sk.name)+'">'+esc(sk.name.slice(0,2))+'</span>';}
+function skIco(j,sk,cls){const role=(JOB[j]||{}).r||"dps";if(sk.img&&!badImg.has(sk.img))return '<img class="ico'+(cls?" "+cls:"")+'" src="'+esc(sk.img)+'" alt="'+esc(sk.name)+'" title="'+esc(sk.name)+'" data-role="'+esc(role)+'" data-nm="'+esc(sk.name.slice(0,2))+'">';return '<span class="tx '+role+(cls?" "+cls:"")+'" role="img" aria-label="'+esc(sk.name)+'" title="'+esc(sk.name)+'">'+esc(sk.name.slice(0,2))+'</span>';}
 
 /* ===== 時間推估與 CD ===== */
 function normRow(r){if(r.tag==="小怪")r.tag="";if(!Array.isArray(r.hits)){let d=(r.dmg||"").trim(),ty=r.dtype||"";const m=d.match(/^(魔法|物理|真實)(?:｜(.*))?$/);
@@ -399,13 +409,17 @@ function dispRows(base){const E0=est(base),vs=[],byT={};base.forEach((r,i)=>{con
   if(byT[s0]){byT[s0].all.push(r);return;}const v={id:"v_"+r.id,virt:true,of:r,all:[r],t:r.t0,s:s0,mi:i};byT[s0]=v;vs.push(v);});vs.sort((a,b)=>a.s-b.s);
   const out=[];base.forEach((r,i)=>{vs.forEach(v=>{if(v.done)return;if(v.mi===i||(v.mi>i&&E0[i].v!=null&&(r.kind==="head"?v.s<E0[i].v:v.s<=E0[i].v))){out.push(v);v.done=1;}});out.push(r);});return out;}
 function est(rs){const t=rs.map(r=>secs(r.t)),out=[];for(let i=0;i<rs.length;i++){if(t[i]!=null){out.push({v:t[i],e:false});continue;}let a=i-1;while(a>=0&&t[a]==null)a--;let b=i+1;while(b<rs.length&&t[b]==null)b++;out.push(a>=0&&b<rs.length?{v:t[a]+(t[b]-t[a])*(i-a)/(b-a),e:true}:{v:null,e:true});}return out;}
-function cdState(L,E){const out={};dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const{cd,dur}=sv(sk),uses=[];
+/* CD：可存次數 ch＞1 的技能（例：獻奉 ×2），每用一次扣一格，CD 轉完補回一格；ch＝1 時就是原本的「上次用完 CD 秒內不能再用」 */
+function cdState(L,E){const out={};dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const{cd,dur,ch}=sv(sk),uses=[];
   L.forEach((r,i)=>{if(r.virt||!assign(s,r.id).includes(sk.id))return;const t=E[i].v,eo=early(s,r.id,sk.id);uses.push({id:r.id,r,t,eo,st:t!=null?t-eo:null});});
-  let prev=null;uses.forEach(u=>{const k=u.id+"|"+s+"|"+sk.id;if(u.st!=null&&prev!=null&&cd&&u.st-prev<cd){out[k]={bad:cd-(u.st-prev),eo:u.eo};return;}u.ok=1;const o={use:1,eo:u.eo};
-    if(u.st!=null&&dur){if(u.st+dur<u.t)o.short="judge";else if(u.st+dur<u.t+hitSpan(u.r))o.short="tail";}out[k]=o;if(u.st!=null)prev=u.st;});
+  let charges=ch,nextAt=null;const regen=t=>{while(charges<ch&&nextAt!=null&&nextAt<=t+1e-9){charges++;nextAt=charges<ch?nextAt+cd:null;}};
+  uses.forEach(u=>{const k=u.id+"|"+s+"|"+sk.id;if(u.st!=null&&cd){regen(u.st);if(charges<=0){out[k]={bad:nextAt-u.st,eo:u.eo};return;}}u.ok=1;const o={use:1,eo:u.eo};
+    if(u.st!=null&&dur){if(u.st+dur<u.t)o.short="judge";else if(u.st+dur<u.t+hitSpan(u.r))o.short="tail";}out[k]=o;if(u.st!=null&&cd){charges--;if(nextAt==null)nextAt=u.st+cd;}});
+  /* 某個時間點還剩幾格（給「CD 還在轉」的底色用） */
+  const chargesAt=t=>{let c=ch,n=null;uses.filter(u=>u.ok&&u.st!=null&&u.st<=t).forEach(u=>{while(c<ch&&n!=null&&n<=u.st+1e-9){c++;n=c<ch?n+cd:null;}c--;if(n==null)n=u.st+cd;});while(c<ch&&n!=null&&n<=t+1e-9){c++;n=c<ch?n+cd:null;}return{c,n};};
   const ok=uses.filter(u=>u.ok&&u.st!=null);
   L.forEach((r,i)=>{const k=r.id+"|"+s+"|"+sk.id,t=E[i].v;if(out[k]||t==null)return;let last=null;ok.forEach(u=>{if(u.st<=t&&(last==null||u.st>last))last=u.st;});if(last==null)return;const d=t-last;
-    if(dur&&d<=dur)out[k]={act:1,left:dur-d};else if(cd&&d<cd)out[k]={cd:1,left:cd-d};});});});return out;}
+    if(dur&&d<=dur)out[k]={act:1,left:dur-d};else if(cd&&d<cd){if(ch<=1)out[k]={cd:1,left:cd-d};else{const q=chargesAt(t);if(q.c<=0)out[k]={cd:1,left:q.n-t};}}});});});return out;}
 function teamState(rs,E){const out={};let lb=null,lbv="",lp=null;rs.forEach((r,i)=>{const t=E[i].v,p=prow(r.id);
   if(p.burst){out[r.id+"|B"]={use:1};if(t!=null){lb=t;lbv=p.burst;}}else if(lb!=null&&t!=null&&t-lb<=BURST_DUR)out[r.id+"|B"]={act:1,left:BURST_DUR-(t-lb),v:lbv};
   const d=(lp!=null&&t!=null)?t-lp:null;if(p.pot){if(d!=null&&d<POT.cd)out[r.id+"|P"]={bad:POT.cd-d};else{out[r.id+"|P"]={use:1};if(t!=null)lp=t;}}else if(d!=null){if(d<=POT.dur)out[r.id+"|P"]={act:1,left:POT.dur-d};else if(d<POT.cd)out[r.id+"|P"]={cd:1,left:POT.cd-d};}});return out;}
@@ -453,7 +467,7 @@ function hpBar(o,compact){
   return'<div class="hpb '+cls+(compact?' cp':'')+'" title="'+esc(tip)+'"><div class="hpw">'+esc(who)+'</div><div class="hpbar" role="img" aria-label="'+esc(ROLE_N[o.role]+(w<=0?"會死":"剩 "+fmtN(w)))+'"><span style="width:'+pct.toFixed(1)+'%"></span></div><div class="hpt">'+t+'</div></div>';
 }
 function mitCell(o){const pct=Math.round((1-o.mult)*100),sh=Math.round(o.abs);
-  return (pct||sh?fmtN(o.mitd):'<span class="muted">'+fmtN(o.mitd)+'</span>')+(pct?'<small>-'+pct+'%</small>':'')+(sh?'<small>盾 '+fmtN(sh)+'</small>':'');}
+  return (pct||sh?fmtN(o.mitd):'<span class="muted">'+fmtN(o.mitd)+'</span>')+(pct?'<small>-'+pct+'%</small>':'')+(sh?'<small>盾 '+fmtN(sh)+'</small>':'')+(o.invuln?'<small>無敵</small>':'');}
 function hpCellsHTML(r,H){
   if(!hpOn)return"";
   if(r.virt||r.kind==="head")return'<td class="hc h1"></td><td class="hc h2"></td><td class="hc h3"></td><td class="hc h5"></td><td class="hc h4"></td>';
@@ -475,11 +489,12 @@ let hpSkipped=0;
 function hpEffects(rs,E){const fx=[];hpSkipped=0;if(!tid)return fx;
   dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const tr=tierAt(sk,LV());if(!tr||!(tr.fx||[]).length)return;const D=+tr.dur||0;
     rs.forEach((r,i)=>{if(r.virt||!assign(s,r.id).includes(sk.id))return;const t=E[i].v;if(t==null)return;const s0=t-early(s,r.id,sk.id);
-      tr.fx.forEach(f=>{if((f.k!=="mit"&&f.k!=="shield")||String(f.c||"").trim())return;const dur=+f.d||D;if(!dur)return;
+      tr.fx.forEach(f=>{const inv=f.k==="other"&&/無敵/.test(String(f.v||""));if((f.k!=="mit"&&f.k!=="shield"&&!inv)||String(f.c||"").trim())return;const dur=+f.d||D;if(!dur)return;
         let who;if(f.w==="party"||f.w==="enemy")who="all";else if(f.w==="target"){const tg=target(s,r.id,sk.id);if(!tg){hpSkipped++;return;}who=slotCls(tg);}else who=slotCls(s);
         if(who!=="all"&&who!=="tank"&&who!=="ranged"&&who!=="caster")return;
         const v=String(f.v||"").trim(),base={start:s0,end:s0+dur,who,name:sk.name};
-        if(f.k==="mit"){const p=parseFloat(v);if(p>0&&p<=100)fx.push({...base,k:"mit",t:f.t||"all",pct:p});}
+        if(inv)fx.push({...base,k:"inv"});
+        else if(f.k==="mit"){const p=parseFloat(v);if(p>0&&p<=100)fx.push({...base,k:"mit",t:f.t||"all",pct:p});}
         else if(/%$/.test(v)){const p=parseFloat(v);if(p>0&&p<=100)fx.push({...base,k:"shield",hpPct:p});}
         else{const a=parseDmg(v);if(a)fx.push({...base,k:"shield",amt:a});}});});});});
   return fx;}
@@ -557,7 +572,7 @@ function renderGrid(){
     h+='</tr>';});
   h+='</tbody></table>';
   if(canMech())h+='<div class="addrow"><button data-a="addrow">＋ 新增機制</button><button data-a="addhead">＋ 新增段落</button></div>';
-  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+(hpOn?'<b>血量檢查</b>（坦克 '+fmtN(HC.hp.tank)+'・遠敏 '+fmtN(HC.hp.ranged)+'・法系 '+fmtN(HC.hp.caster)+'，在「副本設定」改）'+(tid?'':'<b class="warn2">從固團頁面進入，才會扣掉本團排的減傷。</b>')+'<br>物理看法系、魔法看遠敏、死刑和雙坦分攤看坦克；'+HC.chain+' 秒內接連的傷害會疊加（中間不算補血）。減傷用技能庫的「效果」計算，多個減傷相乘，護盾會被前面的傷害吃掉；有填條件的效果不算。'+(hpSkipped?'<br><b class="warn2">有 '+hpSkipped+' 次單體技能沒選對象，沒有算進減傷。點機制在「減傷分工」選給誰。</b>':'')+'<br>':'')+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
+  h+='<div class="foot">'+(rs.length?"":"這個階段還沒有機制。")+(hpOn?'<b>血量檢查</b>（坦克 '+fmtN(HC.hp.tank)+'・遠敏 '+fmtN(HC.hp.ranged)+'・法系 '+fmtN(HC.hp.caster)+'；坦克自帶減傷 '+HC.tankMit+'%；在「副本設定」改）'+(tid?'':'<b class="warn2">從固團頁面進入，才會扣掉本團排的減傷。</b>')+'<br>物理看法系、魔法看遠敏、死刑和雙坦分攤看坦克；'+HC.chain+' 秒內接連的傷害會疊加（中間不算補血）。減傷用技能庫的「效果」計算，多個減傷相乘，護盾會被前面的傷害吃掉；有填條件的效果不算。'+(hpSkipped?'<br><b class="warn2">有 '+hpSkipped+' 次單體技能沒選對象，沒有算進減傷。點機制在「減傷分工」選給誰。</b>':'')+'<br>':'')+'點格子放技能。淡色底是效果持續中，斜線是 CD 還在轉，橘底是 CD 沒好就排上去。表頭粗體是持續秒數，下面是 CD。沒填時間的機制會用前後時間推估（斜體「~」）。點機制名稱可以看解法、站位圖、連結和整列分工。'+(tid?"":"<br>從固團頁面進入才能排自己團的軸。")+'</div>';
   const wy=window.scrollY;gw.innerHTML=h;gw.scrollLeft=sx;gw.scrollTop=sy;if(wy)window.scrollTo(0,wy);
 }
 const gridSoon=()=>{clearTimeout(gridT);gridT=setTimeout(renderGrid,250);};
@@ -723,6 +738,10 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
   else if(a==="ldel"){const l=(prow(sel).links||[]).slice();l.splice(+b.dataset.i,1);setP(sel,{links:l});renderDrawer();renderGrid();}
   else if(a==="skills"){modal={k:"skills",j:modal&&modal.j||compOf(dSlots()[0])||"PLD"};renderModal();}
   else if(a==="fxref"&&isOwner){openFxRef();}
+  else if(a==="libmerge"&&isOwner){openLibMerge();}
+  else if(a==="lmcat"){modal.cats[b.dataset.k]=!modal.cats[b.dataset.k];renderModal();}
+  else if(a==="lmover"){modal.over=!modal.over;renderModal();}
+  else if(a==="lmapply"&&isOwner){if(!armed(b,"再按一次匯入"))return;applyLibMerge();}
   else if(a==="fxrefapply"&&isOwner){if(!armed(b,"再按一次套用"))return;applyFxRef();}
   else if(a==="fxrefback"){modal={k:"skills",j:modal.j||"PLD"};renderModal();}
   else if(a==="skjob"){modal.j=b.dataset.j;modal.edit="";modal.draft=null;modal.ti=0;modal.img=null;renderModal();}
@@ -758,6 +777,7 @@ function renderModal(){
   let h='<div class="sheet" role="dialog" aria-modal="true">';
   if(modal.k==="img"){m.innerHTML='<div class="sheet img" role="dialog" aria-modal="true" aria-label="站位圖"><img src="'+esc(modal.src)+'" alt="站位圖放大"><div class="end"><button class="btn" data-a="mclose">關閉</button></div></div>';return;}
   if(modal.k==="fxref"){m.innerHTML=h+fxRefHTML()+'</div>';return;}
+  if(modal.k==="libmerge"){m.innerHTML=h+libMergeHTML()+'</div>';return;}
   if(modal.k==="skills"){
     h+='<h2>技能庫'+(duty?'<span class="sub">（目前副本 Lv'+esc(duty.level)+'）</span>':'')+'</h2><div class="scrollx">';
     const shown=JOBS.filter(j=>isOwner||allJobSkills(j.k).length||j.k===modal.j);
@@ -766,7 +786,8 @@ function renderModal(){
     if(!l.length)h+='<p class="hint" style="margin-top:10px">'+esc((JOB[modal.j]||{}).n||modal.j)+' 還沒有技能。</p>';
     l.forEach((s,i)=>{const v=sv(s);h+='<div class="sk">'+skIco(modal.j,s)+'<span class="n">'+esc(s.name)+(tiersOf(s).length>1||(+tiersOf(s)[0].lv||1)>1?'<span class="hint">　'+tiersOf(s).map(t=>(+t.lv||1)>1?t.lv+"級":"初始").join("／")+'</span>':'')+(fxText(s)?'<br><span class="hint">'+esc(fxText(s))+'</span>':'')+(tgtOf(s)?'<span class="hint">　'+(tgtOf(s)==="ally"?"對隊友":"對敵人")+'</span>':'')+(s.desc?'<br><span class="hint">'+esc(s.desc)+'</span>':'')+'</span><span class="c">CD '+(v.cd||"—")+'<br>持續 '+(v.dur||"—")+'</span>'+
       (isOwner?'<button class="ib" aria-label="編輯 '+esc(s.name)+'" data-a="skedit" data-id="'+esc(s.id)+'">✎</button><button class="ib" aria-label="上移" data-a="skup" data-i="'+esc(i)+'">'+IC.up+'</button><button class="ib" aria-label="刪除 '+esc(s.name)+'" data-a="skdel" data-i="'+esc(i)+'">'+IC.x+'</button>':'')+'</div>';});
-    if(isOwner)h+='<div class="refbar"><button class="btn" data-a="fxref">從參考資料補效果</button><span class="hint">用日文 7.11 減傷表的數值，補上減傷 %、護盾，血量檢查才算得出減傷。</span></div>';
+    if(isOwner)h+='<div class="refbar"><button class="btn" data-a="libmerge">匯入完整技能庫</button><span class="hint">繁中技能表（Lv100、135 個技能，含減傷 %、護盾、可存次數與官方圖示）。同名的技能只更新數值，不會打亂已經排好的分工。</span></div>'+
+      '<div class="refbar"><button class="btn" data-a="fxref">從參考資料補效果</button><span class="hint">只幫現有技能補上減傷 %、護盾（日文 7.11 減傷表）。</span></div>';
     if(isOwner)h+=skEditorHTML();
     h+='<div class="end"><button class="btn" data-a="mclose">關閉</button></div>';
   }else if(modal.k==="text"){
@@ -789,13 +810,13 @@ function renderModal(){
     h+='<div class="end"><button class="btn" data-a="mclose">關閉</button>'+(ca?'<button class="btn primary" data-a="compsave">儲存</button>':'')+'</div>';
   }else if(modal.k==="duty"){
     if(!modal.stages){const d=modal.isNew?null:duty;modal.name=d?d.name:"";modal.id=d?d.id:"";modal.level=d?d.level:100;modal.slots=d?(d.slots||[]).slice():["MT","ST","H1","H2","D1","D2","D3","D4"];modal.stages=d?(d.stages||[]).map(s=>({id:s.id,name:s.name,rows:null})):[{id:"s"+uid(),name:"一王",rows:[]}];
-      const hp0=(d&&d.hp)||{};modal.hp={tank:hp0.tank||"",ranged:hp0.ranged||"",caster:hp0.caster||""};modal.chain=(d&&d.chain)||"";}
+      const hp0=(d&&d.hp)||{};modal.hp={tank:hp0.tank||"",ranged:hp0.ranged||"",caster:hp0.caster||""};modal.chain=(d&&d.chain)||"";modal.tankMit=d&&d.tankMit!=null?d.tankMit:"";}
     h+='<h2>'+(modal.isNew||!duty?"新增副本":"副本設定")+'</h2>';
     if(!modal.isNew&&duty)h+='<div class="end" style="margin:0 0 8px;justify-content:flex-start"><button class="btn" data-a="dutynew">＋ 新增另一個副本</button></div>';
     h+='<div class="two"><label class="fld"><span>副本名稱</span><input class="f" id="dn" value="'+esc(modal.name)+'"></label><label class="fld"><span>等級</span><input class="f" id="dl" inputmode="numeric" value="'+esc(modal.level)+'"></label></div>';
     if(modal.isNew||!duty)h+='<label class="fld" style="margin-top:8px"><span>代號（網址用，英數字）</span><input class="f" id="did" value="'+esc(modal.id)+'" placeholder="例：aloalo"></label>';
     h+='<div class="fld" style="margin-top:8px"><span>位置</span><div class="scrollx" style="flex-wrap:wrap">'+SLOTS.map(s=>'<label class="tab'+(modal.slots.includes(s)?" on":"")+'"><input type="checkbox" data-slot="'+esc(s)+'"'+(modal.slots.includes(s)?" checked":"")+' hidden>'+s+'</label>').join("")+'</div></div>';
-    h+='<div class="fld" style="margin-top:8px"><span>血量檢查（每個職能裡血最少的人；連段秒數內的傷害會疊加）</span><div class="hpset">'+[["tank","坦克"],["ranged","遠敏"],["caster","法系"]].map(([k,n])=>'<label><small>'+n+'</small><input class="f" data-hp="'+k+'" inputmode="numeric" value="'+esc(modal.hp[k])+'" placeholder="'+HP_DEF[k]+'"></label>').join("")+'<label><small>連段（秒）</small><input class="f" data-hp="chain" inputmode="numeric" value="'+esc(modal.chain)+'" placeholder="'+CHAIN_DEF+'"></label></div></div>';
+    h+='<div class="fld" style="margin-top:8px"><span>血量檢查（每個職能裡血最少的人；連段秒數內的傷害會疊加）</span><div class="hpset">'+[["tank","坦克"],["ranged","遠敏"],["caster","法系"]].map(([k,n])=>'<label><small>'+n+'</small><input class="f" data-hp="'+k+'" inputmode="numeric" value="'+esc(modal.hp[k])+'" placeholder="'+HP_DEF[k]+'"></label>').join("")+'<label><small>連段（秒）</small><input class="f" data-hp="chain" inputmode="numeric" value="'+esc(modal.chain)+'" placeholder="'+CHAIN_DEF+'"></label><label><small>坦克自帶減傷 %</small><input class="f" data-hp="tankMit" inputmode="numeric" value="'+esc(modal.tankMit)+'" placeholder="'+TANK_MIT_DEF+'"></label></div></div>';
     h+='<div class="fld" style="margin-top:8px"><span>階段</span>'+modal.stages.map((s,i)=>'<div class="slotrow"><input class="f" data-stn="'+esc(i)+'" value="'+esc(s.name)+'" aria-label="階段名稱"><button class="ib" aria-label="上移" data-a="stup" data-i="'+esc(i)+'">'+IC.up+'</button><button class="ib" aria-label="刪除階段" data-a="stdel" data-i="'+esc(i)+'">'+IC.x+'</button></div>').join("")+'<button class="btn" data-a="stadd">＋ 新增階段</button></div>';
     h+='<div class="end"><button class="btn" data-a="mclose">取消</button><button class="btn primary" data-a="dutysave">儲存</button></div>';
   }
@@ -844,6 +865,43 @@ function applyFxRef(){const before=clone(lib.jobs||{});let n=0;
   if(!n){toast("沒有勾選要套用的技能");return;}
   saveLibSoon();modal={k:"skills",j:modal.j||Object.keys(lib.jobs)[0]||"PLD"};renderModal();render();
   undoToast("已補上 "+n+" 個技能的效果",()=>{lib.jobs=before;saveLibSoon();if(modal&&modal.k==="skills")renderModal();render();toast("已復原");});}
+/* ===== 匯入完整技能庫（mit-lib-tc.json）：合併，不取代 =====
+   - 同名技能（忽略空白、符號）保留原本的代碼、圖示和其他等級分頁，只加入或更新同等級的分頁；可選擇不更新
+   - 新技能加在該職業最後面；技能庫裡原本有、匯入檔沒有的技能不動
+   - 依類別挑：減傷／護盾（預設）、能力技治療、GCD 治療；套用後 8 秒內可以復原 */
+const LM_CAT=[["m","減傷・護盾"],["h","能力技治療"],["g","GCD 治療"]];
+async function openLibMerge(){modal={k:"libmerge",data:null,cats:{m:true,h:false,g:false},over:true,j:(modal&&modal.j)||""};renderModal();
+  try{const r=await fetch("mit-lib-tc.json?v=1");if(!r.ok)throw new Error(r.status);const o=await r.json();if(!o||o.type!=="mit-lib"||!o.jobs)throw new Error("格式不對");modal.data=o;}catch(e){console.error(e);modal.err="讀不到技能資料（"+(e.message||e)+"）";}
+  renderModal();}
+function lmPlan(){const D=modal.data,out=[];if(!D)return out;
+  Object.keys(D.jobs).forEach(j=>{if(!JOB[j])return;const cur=allJobSkills(j);(D.jobs[j]||[]).forEach(x=>{if(!modal.cats[x.cat||"m"])return;if(!x||typeof x.name!=="string")return;
+    const ex=cur.find(s=>rfNorm(s.name)===rfNorm(x.name));out.push({j,x,ex,act:ex?(modal.over?"upd":"skip"):"add"});});});return out;}
+function libMergeHTML(){let h='<h2>匯入完整技能庫</h2>';
+  if(modal.err)return h+'<p class="hint">'+esc(modal.err)+'</p><div class="end"><button class="btn" data-a="fxrefback">返回技能庫</button></div>';
+  if(!modal.data)return h+'<p class="hint">讀取技能資料中…</p>';
+  const P=lmPlan(),n={add:0,upd:0,skip:0};P.forEach(p=>n[p.act]++);
+  h+='<p class="hint">資料來源：'+esc(modal.data.src||"")+'。</p>';
+  h+='<div class="fld"><span>要匯入哪些技能</span><div class="chips">'+LM_CAT.map(([k,t])=>'<button type="button" class="chip" data-a="lmcat" data-k="'+k+'" aria-pressed="'+!!modal.cats[k]+'">'+t+'</button>').join("")+'</div><p class="hint">技能越多，減傷軸的欄位越多。治療技能沒有減傷數值，只是方便排補血。</p></div>';
+  h+='<label class="rfover"><input type="checkbox" data-a="lmover"'+(modal.over?" checked":"")+'> 技能庫裡已經有的同名技能，也更新成這份的數值（不改代碼、圖示，已排的分工不受影響）</label>';
+  h+='<p class="lmsum">新增 <b>'+n.add+'</b> 個・更新 <b>'+n.upd+'</b> 個'+(n.skip?'・略過 <b>'+n.skip+'</b> 個':'')+'</p>';
+  const byJ={};P.forEach(p=>(byJ[p.j]=byJ[p.j]||[]).push(p));
+  h+='<div class="lmlist">'+JOBS.filter(J=>byJ[J.k]).map(J=>'<div class="lmj"><b>'+jobIcon(J.k,18)+esc(J.n)+'</b><span>'+byJ[J.k].map(p=>'<span class="lm '+p.act+'" title="'+(p.act==="add"?"新增":p.act==="upd"?"更新數值":"略過")+'">'+esc(p.x.name)+'</span>').join("")+'</span></div>').join("")+'</div>';
+  h+='<p class="hint"><span class="lm add">新增</span><span class="lm upd">更新</span><span class="lm skip">略過</span>　等級分頁依這份資料的等級（例：雪仇 Lv98），比較低等級的副本會用技能原本的分頁。</p>';
+  h+='<div class="end"><button class="btn" data-a="fxrefback">返回技能庫</button><button class="btn primary" data-a="lmapply">匯入 '+(n.add+n.upd)+' 個技能</button></div>';
+  return h;}
+function applyLibMerge(){const before=clone(lib.jobs||{}),P=lmPlan();let c=0;lib.jobs=lib.jobs||{};
+  P.forEach(p=>{if(p.act==="skip")return;const J=lib.jobs[p.j]=lib.jobs[p.j]||{skills:[]};const x=p.x;
+    const tiers=(x.tiers||[]).filter(t=>t&&Number.isFinite(+t.lv)).map(t=>{const o={lv:+t.lv,cd:+t.cd||0,dur:+t.dur||0,fx:(t.fx||[]).filter(f=>f&&["mit","shield","heal","other"].includes(f.k)).map(f=>{const q={k:f.k,v:String(f.v||""),w:["self","target","party","enemy"].includes(f.w)?f.w:"self"};if(f.k==="mit")q.t=["all","phys","magic"].includes(f.t)?f.t:"all";if(+f.d)q.d=+f.d;return q;})};const ch=parseInt(t.ch,10);if(ch>1&&ch<=5)o.ch=ch;return o;});
+    if(!tiers.length)return;
+    const img=typeof x.img==="string"&&/^https:\/\/[\w.-]+\//.test(x.img)?x.img:"";
+    if(p.act==="add"){const sk={id:p.j.toLowerCase()+uid(),name:x.name.slice(0,30),desc:"",tiers};if(x.tgt==="ally")sk.tgt="ally";if(img)sk.img=img;J.skills.push(sk);c++;return;}
+    const sk=J.skills.find(s=>s.id===p.ex.id);if(!sk)return;
+    if(!Array.isArray(sk.tiers)||!sk.tiers.length){sk.tiers=tiersOf(sk);["cd","dur","minLv","lv"].forEach(k=>delete sk[k]);}
+    tiers.forEach(t=>{const i=sk.tiers.findIndex(o=>+o.lv===t.lv);if(i>=0)sk.tiers[i]=t;else sk.tiers.push(t);});sk.tiers.sort((a,b)=>(+a.lv||0)-(+b.lv||0));
+    if(x.tgt==="ally"&&!sk.tgt)sk.tgt="ally";if(img&&!sk.img)sk.img=img;c++;});
+  if(!c){toast("沒有要匯入的技能");return;}
+  saveLibSoon();modal={k:"skills",j:modal.j||Object.keys(lib.jobs)[0]||"PLD"};renderModal();render();
+  undoToast("已匯入 "+c+" 個技能",()=>{lib.jobs=before;saveLibSoon();if(modal&&modal.k==="skills")renderModal();render();toast("已復原");});}
 function closeModal(){modal=null;const m=$("#modal");if(m)m.remove();}
 function readIcon(f){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=c.height=40;const x=c.getContext("2d"),s=Math.min(img.width,img.height);x.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,40,40);res(c.toDataURL("image/png"));URL.revokeObjectURL(img.src);};img.onerror=rej;img.src=URL.createObjectURL(f);});}
 function newDraft(){return{name:"",tgt:"",desc:"",tiers:[{lv:"",cd:"",dur:"",fx:[]}]};}
@@ -854,7 +912,7 @@ function skEditorHTML(){const D=modal.draft=modal.draft||newDraft(),ed=!!modal.e
     '<label class="btn" style="text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">'+((modal.img||D.img)?'<img class="ico" style="width:24px;height:24px" src="'+esc(modal.img||D.img)+'" alt="">':'')+'圖示<input type="file" accept="image/*" id="skimg" hidden></label>'+
     '<input class="f w" data-d="desc" placeholder="簡短說明（可不填）" aria-label="簡短說明" value="'+esc(D.desc||"")+'"></div>';
   h+='<div class="scrollx" style="margin-top:12px">'+D.tiers.map((t,i)=>'<button class="tab'+(i===modal.ti?" on":"")+'" data-a="tsel" data-i="'+esc(i)+'">'+((+t.lv||1)>1?esc(t.lv)+" 級":"初始")+'</button>').join("")+'<button class="tab" data-a="tadd">＋ 新增等級</button></div>';
-  h+='<div class="tier"><div class="addsk"><label class="fld"><span>從幾級開始</span><input class="f" data-dt="lv" inputmode="numeric" placeholder="1" value="'+esc(T.lv)+'"></label><label class="fld"><span>CD 秒</span><input class="f" data-dt="cd" inputmode="numeric" value="'+esc(T.cd)+'"></label><label class="fld"><span>持續 秒</span><input class="f" data-dt="dur" inputmode="numeric" value="'+esc(T.dur)+'"></label></div>';
+  h+='<div class="tier"><div class="addsk"><label class="fld"><span>從幾級開始</span><input class="f" data-dt="lv" inputmode="numeric" placeholder="1" value="'+esc(T.lv)+'"></label><label class="fld"><span>CD 秒</span><input class="f" data-dt="cd" inputmode="numeric" value="'+esc(T.cd)+'"></label><label class="fld"><span>持續 秒</span><input class="f" data-dt="dur" inputmode="numeric" value="'+esc(T.dur)+'"></label><label class="fld"><span>可存次數</span><input class="f" data-dt="ch" inputmode="numeric" placeholder="1" value="'+esc(T.ch||"")+'"></label></div>';
   h+='<div class="fld" style="margin-top:10px"><span>效果</span>'+(T.fx||[]).map((f,i)=>'<div class="fxb"><div class="fx1"><select class="f" data-fx="k" data-i="'+esc(i)+'" aria-label="效果類型">'+Object.entries(FXK).map(([k,n])=>'<option value="'+esc(k)+'"'+(f.k===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="v" data-i="'+esc(i)+'" value="'+esc(f.v||"")+'" placeholder="'+(f.k==="mit"?"10（%）":f.k==="heal"?"250（恢復力）":"數值")+'" aria-label="數值"><input class="f" data-fx="d" data-i="'+esc(i)+'" value="'+esc(f.d||"")+'" placeholder="秒" inputmode="numeric" aria-label="效果秒數"><button class="ib" aria-label="刪除這個效果" data-a="fxdel" data-i="'+esc(i)+'">'+IC.x+'</button></div>'+
     '<div class="fx2"><select class="f" data-fx="w" data-i="'+esc(i)+'" aria-label="對象">'+Object.entries(FXW).map(([k,n])=>'<option value="'+esc(k)+'"'+((f.w||"self")===k?" selected":"")+'>對象：'+n+'</option>').join("")+'</select><select class="f" data-fx="t" data-i="'+esc(i)+'" aria-label="適用傷害"'+(f.k==="mit"?"":" hidden")+'>'+Object.entries(FXT).map(([k,n])=>'<option value="'+esc(k)+'"'+((f.t||"all")===k?" selected":"")+'>'+n+'</option>').join("")+'</select><input class="f" data-fx="c" data-i="'+esc(i)+'" value="'+esc(f.c||"")+'" placeholder="條件（可不填），例：自身有鐵壁或預警" aria-label="條件"></div></div>').join("")+
     '<button class="btn" data-a="fxadd">＋ 新增效果</button></div>';
@@ -869,7 +927,7 @@ function onModalInput(e){const t=e.target,D=modal&&modal.draft;if(!D)return;
       const ty=document.querySelector('#modal [data-fx="t"][data-i="'+esc(t.dataset.i)+'"]');if(ty){ty.hidden=t.value!=="mit";if(t.value!=="mit"){ty.value="all";f.t="all";}}}}
   if(t.dataset.dt==="lv"){const tb=document.querySelector('#modal [data-a="tsel"][data-i="'+esc(modal.ti)+'"]');if(tb)tb.textContent=(+t.value||1)>1?t.value+" 級":"初始";}}
 function skAdd(){if(!isOwner)return;const D=modal.draft;if(!D||!D.name.trim()){toast("請輸入技能名稱");return;}
-  const ti=D.tiers.map((t,i)=>{const lv=parseInt(t.lv,10);return{lv:isNaN(lv)?(i===0?1:NaN):lv,cd:parseInt(t.cd,10)||0,dur:parseInt(t.dur,10)||0,
+  const ti=D.tiers.map((t,i)=>{const lv=parseInt(t.lv,10),ch=parseInt(t.ch,10);return{lv:isNaN(lv)?(i===0?1:NaN):lv,cd:parseInt(t.cd,10)||0,dur:parseInt(t.dur,10)||0,...(ch>1&&ch<=5?{ch}:{}),
     fx:(t.fx||[]).filter(f=>String(f.v||"").trim()||String(f.c||"").trim()).map(f=>{const o={k:f.k||"mit",v:String(f.v||"").trim(),w:f.w||"self",t:f.t||"all"};const d=parseInt(f.d,10);if(d)o.d=d;if(String(f.c||"").trim())o.c=String(f.c).trim();return o;})};});
   if(ti.some(t=>isNaN(t.lv))){toast("每個等級分頁都要填「從幾級開始」");return;}
   if(new Set(ti.map(t=>t.lv)).size!==ti.length){toast("等級分頁的等級重複了");return;}
@@ -880,15 +938,15 @@ function skAdd(){if(!isOwner)return;const D=modal.draft;if(!D||!D.name.trim()){t
   if(modal.img)s.img=modal.img;if(!ed)J.skills.push(s);
   modal.edit="";modal.img=null;modal.draft=null;modal.ti=0;saveLibSoon();renderModal();render();toast(ed?"已更新":"已新增");}
 function compSave(){if(!canAll())return;const c={};document.querySelectorAll("[data-comp]").forEach(el=>{if(el.value)c[el.dataset.comp]=el.value;});plan.comp=c;savePlanSoon();closeModal();render();toast("陣容已更新");}
-function readHpInputs(){document.querySelectorAll("[data-hp]").forEach(el=>{if(el.dataset.hp==="chain")modal.chain=el.value.trim();else modal.hp[el.dataset.hp]=el.value.trim();});}
-function hpToSave(){const o={};for(const k of ["tank","ranged","caster"]){const v=parseDmg(modal.hp[k]);if(v)o[k]=v;}const c=parseInt(modal.chain,10);return{hp:o,chain:c>0&&c<=30?c:0};}
+function readHpInputs(){document.querySelectorAll("[data-hp]").forEach(el=>{if(el.dataset.hp==="chain")modal.chain=el.value.trim();else if(el.dataset.hp==="tankMit")modal.tankMit=el.value.trim();else modal.hp[el.dataset.hp]=el.value.trim();});}
+function hpToSave(){const o={};for(const k of ["tank","ranged","caster"]){const v=parseDmg(modal.hp[k]);if(v)o[k]=v;}const c=parseInt(modal.chain,10),tm=String(modal.tankMit??"").trim()===""?null:parseInt(modal.tankMit,10);return{hp:o,chain:c>0&&c<=30?c:0,tankMit:tm!=null&&tm>=0&&tm<=50?tm:null};}
 async function dutySave(){if(!isOwner)return;readHpInputs();const HS=hpToSave();const name=$("#dn").value.trim(),level=parseInt($("#dl").value,10)||100;document.querySelectorAll("[data-stn]").forEach(el=>{modal.stages[+el.dataset.stn].name=el.value.trim()||"未命名";});
   if(!name){toast("請輸入副本名稱");return;}if(!modal.slots.length){toast("至少選一個位置");return;}
   if(modal.isNew||!duty){const id=($("#did").value||"").trim();if(!/^[A-Za-z0-9_-]{2,40}$/.test(id)){toast("代號只能用英數字");return;}if(duties.some(d=>d.id===id)){toast("代號已經有人用了");return;}
-    const nd={name,level,slots:modal.slots,stages:modal.stages.map(s=>({id:s.id,name:s.name,rows:[]})),updatedAt:Date.now()};if(Object.keys(HS.hp).length)nd.hp=HS.hp;if(HS.chain)nd.chain=HS.chain;
+    const nd={name,level,slots:modal.slots,stages:modal.stages.map(s=>({id:s.id,name:s.name,rows:[]})),updatedAt:Date.now()};if(Object.keys(HS.hp).length)nd.hp=HS.hp;if(HS.chain)nd.chain=HS.chain;if(HS.tankMit!=null)nd.tankMit=HS.tankMit;
     await setDoc(doc(db,"mitDuties",id),nd);closeModal();switchDuty(id);toast("已新增副本");return;}
   const old=Object.fromEntries((duty.stages||[]).map(s=>[s.id,s]));
-  duty.name=name;duty.level=level;duty.slots=modal.slots;if(Object.keys(HS.hp).length)duty.hp=HS.hp;else delete duty.hp;if(HS.chain)duty.chain=HS.chain;else delete duty.chain;duty.stages=modal.stages.map(s=>({id:s.id,name:s.name,rows:old[s.id]?old[s.id].rows:[]}));
+  duty.name=name;duty.level=level;duty.slots=modal.slots;if(Object.keys(HS.hp).length)duty.hp=HS.hp;else delete duty.hp;if(HS.chain)duty.chain=HS.chain;else delete duty.chain;if(HS.tankMit!=null)duty.tankMit=HS.tankMit;else delete duty.tankMit;duty.stages=modal.stages.map(s=>({id:s.id,name:s.name,rows:old[s.id]?old[s.id].rows:[]}));
   if(cur>=duty.stages.length)cur=0;await saveDuty();closeModal();render();toast("已儲存");}
 function textSheet(only,compact){const out=[];(duty.stages||[]).forEach(s=>{if(!s.rows.length)return;
   const rs=only?s.rows.filter(r=>(assign(only,r.id).some(id=>skillOf(compOf(only),id))||prow(r.id).lb===only)):s.rows;if(!rs.length)return;

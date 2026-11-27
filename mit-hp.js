@@ -16,6 +16,7 @@
 
 export const HP_DEF = { tank: 225800, ranged: 142000, caster: 142000 };
 export const CHAIN_DEF = 5;
+export const TANK_MIT_DEF = 20;   // 坦克職業特性：受到的傷害 -20%（坦克姿態）
 export const AOE = { all: "全體", tank: "死刑", tanks: "雙坦分攤", share: "分攤", spread: "分散", single: "單體" };
 export const ROLE_N = { tank: "坦克", ranged: "遠敏", caster: "法系" };
 const TAG_AOE = { "死刑": "tank", "全體AOE": "all", "分攤": "share", "分散": "spread" };
@@ -36,7 +37,8 @@ export function hpCfg(duty) {
   const h = (duty && duty.hp) || {};
   return {
     hp: { tank: posNum(h.tank, HP_DEF.tank), ranged: posNum(h.ranged, HP_DEF.ranged), caster: posNum(h.caster, HP_DEF.caster) },
-    chain: Math.min(30, posNum(duty && duty.chain, CHAIN_DEF))
+    chain: Math.min(30, posNum(duty && duty.chain, CHAIN_DEF)),
+    tankMit: (duty && duty.tankMit === 0) ? 0 : Math.min(50, posNum(duty && duty.tankMit, TANK_MIT_DEF))
   };
 }
 
@@ -44,6 +46,8 @@ export function hpCfg(duty) {
    effects：排進去的減傷／護盾（由頁面依分工換算好），每筆
      { start, end, who: "all"|"tank"|"ranged"|"caster", k: "mit"|"shield", t: "all"|"phys"|"magic",
        pct（減傷 %）, amt（護盾 HP）或 hpPct（護盾＝吃到的人最大 HP 的 %）, name }
+     k: "inv"＝無敵（死鬥、行屍走肉這類 HP 不會歸零的技能）：期間內最多打到剩 1
+   坦克另外有 cfg.tankMit（職業特性，預設 20%），一樣用乘的
    規則：減傷用乘的疊加；物理／魔法只減對應類型，「全部傷害」都減；真實傷害不吃減傷
          持續傷害用「出現那一下」當下的減傷（遊戲是附加時就定好）
          護盾依時間先到期的先扣，被前面的傷害吃掉就沒了
@@ -69,7 +73,7 @@ export function hpCheck(rows, times, cfg, effects) {
   /* 這個人、這種傷害、這個時間點吃到的減傷倍率 */
   const mult = (role, dt, t) => {
     if (dt === "true") return 1;
-    let m = 1;
+    let m = role === "tank" ? 1 - (cfg.tankMit || 0) / 100 : 1;
     effects.forEach(f => { if (f.k === "mit" && hits(f, role) && live(f, t) && (f.t === "all" || !f.t || f.t === dt)) m *= Math.max(0, 1 - (+f.pct || 0) / 100); });
     return m;
   };
@@ -90,6 +94,9 @@ export function hpCheck(rows, times, cfg, effects) {
       const s = st[k], m = mult(k, e.dt, e.mt), a = absorb(k, e.t, e.d * m);
       if (e.t - s.last > cfg.chain) { s.sum = 0; s.from = e.r; }
       s.sum += a.dmg; s.last = e.t;
+      const inv = effects.some(f => f.k === "inv" && hits(f, k) && live(f, e.t));
+      if (inv && s.sum > cfg.hp[k] - 1) s.sum = cfg.hp[k] - 1;
+      if (inv && !e.dot) o.inv = o.inv || {}, o.inv[k] = true;
       if (!e.dot) {
         const p = o.per[k] || (o.per[k] = { mit: 0, abs: 0, mult: m });
         p.mit += e.d * m; p.abs += a.got;
@@ -112,6 +119,7 @@ export function hpCheck(rows, times, cfg, effects) {
     o.role = role; o.hp = cfg.hp[role];
     o.mitd = p.mit;                         // 減傷後（還沒扣盾）
     o.mult = p.mult;                        // 第一下的減傷倍率
+    o.invuln = !!(o.inv && o.inv[role]);    // 無敵期間（不會死）
     o.abs = p.abs;                          // 被盾吸收
     o.chainFrom = o.from[role] || null;
     o.left = L ? L[role] : null;            // 這一下打完剩多少（只有持續傷害的列是 null）
@@ -119,8 +127,8 @@ export function hpCheck(rows, times, cfg, effects) {
     o.chain = !!(o.after && (o.after[role] > Math.max(0, p.mit - p.abs) + 0.5));
     const worst = o.dotLeft != null ? Math.min(o.left == null ? Infinity : o.left, o.dotLeft) : o.left;
     o.worst = worst;
-    o.level = worst <= 0 ? "dead" : worst < o.hp * 0.2 ? "warn" : "ok";
-    delete o.after; delete o.dotAfter; delete o.per; delete o.from;
+    o.level = o.invuln && worst >= 1 ? "ok" : worst <= 0 ? "dead" : worst < o.hp * 0.2 ? "warn" : "ok";
+    delete o.after; delete o.dotAfter; delete o.per; delete o.from; delete o.inv;
   });
   return out;
 }
