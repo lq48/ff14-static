@@ -32,6 +32,8 @@ async def m():
     sh=[s for s in pld if s["name"]=="聖盾陣"][0]
     ok(sh["id"]=="p1" and any(t["lv"]==82 and t["cd"]==5 and t["dur"]==8 for t in sh["tiers"]),"同名的聖盾陣保留原本的代碼 p1，新數值放在生效等級 82（原本 1 級的數值保留給低等級副本）")
     ok(len([s for s in pld if s["name"]=="聖盾陣"])==1,"不會重複出現同名技能")
+    sam=lib["jobs"]["SAM"]["skills"][0]
+    ok([t["lv"] for t in sam["tiers"]]==[1],"牽制也是從 1 級開始")
     whm=lib["jobs"]["WHM"]["skills"];ben=[s for s in whm if s["name"]=="神祝禱"][0]
     ok(ben["tiers"][-1].get("ch")==2 and ben.get("tgt")=="ally","神祝禱：可存 2 次、對隊友")
     ok(ben.get("img","").startswith("https://v2.xivapi.com/"),"附官方圖示網址")
@@ -46,6 +48,14 @@ async def m():
     await p.click("#utoast .ut-undo");await p.wait_for_timeout(1300)
     lib2=await p.evaluate("window.__MOCK.db['mitSkills/lib']")
     ok(json.dumps(lib2["jobs"],sort_keys=True)==json.dumps(before["jobs"],sort_keys=True),"按復原：技能庫回到原本")
+    ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
+    # 修正先前以 98 級匯入的技能：再匯入一次就改成從 1 級開始
+    ctx,p,errs,calls=await open_page(b,URL,1280,900,init="localStorage.setItem('mitView','grid');");await p.wait_for_timeout(900)
+    L=json.loads(json.dumps(before));L["jobs"]["PLD"]["skills"].append({"id":"prep","name":"雪仇","tiers":[{"lv":98,"cd":60,"dur":15,"fx":[]}]})
+    await p.evaluate(W,{"path":["mitSkills","lib"],"data":L});await p.wait_for_timeout(400)
+    await merge(p);btn=p.locator('[data-a="lmapply"]');await btn.click();await btn.click();await p.wait_for_timeout(1300)
+    rep=[s for s in (await p.evaluate("window.__MOCK.db['mitSkills/lib']"))["jobs"]["PLD"]["skills"] if s["name"]=="雪仇"]
+    ok(len(rep)==1 and rep[0]["id"]=="prep" and [t["lv"] for t in rep[0]["tiers"]]==[1] and rep[0]["tiers"][0]["fx"],"之前以 98 級匯入的雪仇：再匯入一次改成從 1 級開始、補上效果，代碼不變")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # 可存次數：神祝禱 ×2（CD 30）在 0:12、0:30 連用不算衝突；只能存 1 次時會標衝突
     ctx,p,errs,calls=await open_page(b,URL,1440,900,init="localStorage.setItem('mitView','grid');");await p.wait_for_timeout(900)

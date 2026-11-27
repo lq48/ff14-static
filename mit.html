@@ -894,13 +894,15 @@ function applyLibMerge(){const before=clone(lib.jobs||{}),P=lmPlan();let c=0;lib
     const tiers=(x.tiers||[]).filter(t=>t&&Number.isFinite(+t.lv)).map(t=>{const o={lv:+t.lv,from:Math.max(1,parseInt(t.from,10)||+t.lv||1),cd:+t.cd||0,dur:+t.dur||0,fx:(t.fx||[]).filter(f=>f&&["mit","shield","heal","other"].includes(f.k)).map(f=>{const q={k:f.k,v:String(f.v||""),w:["self","target","party","enemy"].includes(f.w)?f.w:"self"};if(f.k==="mit")q.t=["all","phys","magic"].includes(f.t)?f.t:"all";if(+f.d)q.d=+f.d;return q;})};const ch=parseInt(t.ch,10);if(ch>1&&ch<=5)o.ch=ch;return o;});
     if(!tiers.length)return;
     const img=typeof x.img==="string"&&/^https:\/\/[\w.-]+\//.test(x.img)?x.img:"";
-    /* 等級：新技能從 1 級開始；既有技能若有比「生效等級」更低的分頁，就把這組數值放在生效等級（低等級副本沿用原本的數值），否則更新最低那一頁 */
+    /* 等級：新技能從 1 級開始；既有技能若有比「生效等級」更低的分頁，就把這組數值放在生效等級（低等級副本沿用原本的數值），否則把最低那一頁換掉並改成從 1 級開始 */
     const strip=t=>{const o={...t};delete o.from;return o;};
     if(p.act==="add"){const sk={id:p.j.toLowerCase()+uid(),name:x.name.slice(0,30),desc:"",tiers:tiers.map(t=>({...strip(t),lv:1}))};if(x.tgt==="ally")sk.tgt="ally";if(img)sk.img=img;J.skills.push(sk);c++;return;}
     const sk=J.skills.find(s=>s.id===p.ex.id);if(!sk)return;
     if(!Array.isArray(sk.tiers)||!sk.tiers.length){sk.tiers=tiersOf(sk);["cd","dur","minLv","lv"].forEach(k=>delete sk[k]);}
     sk.tiers.sort((a,b)=>(+a.lv||0)-(+b.lv||0));
-    tiers.forEach(t=>{const lowest=+sk.tiers[0].lv||1,lv=lowest<t.from?t.from:lowest,n={...strip(t),lv};const i=sk.tiers.findIndex(o=>(+o.lv||1)===lv);if(i>=0)sk.tiers[i]=n;else sk.tiers.push(n);});
+    tiers.forEach(t=>{const lowest=+sk.tiers[0].lv||1;
+      if(lowest<t.from){const n={...strip(t),lv:t.from},i=sk.tiers.findIndex(o=>(+o.lv||1)===t.from);if(i>=0)sk.tiers[i]=n;else sk.tiers.push(n);}
+      else sk.tiers[0]={...strip(t),lv:1};});  // 沒有更低的分頁：最低那一頁換成新數值、從 1 級開始（也修正先前以 98 級匯入的技能）
     sk.tiers.sort((a,b)=>(+a.lv||0)-(+b.lv||0));
     if(x.tgt==="ally"&&!sk.tgt)sk.tgt="ally";if(img&&!sk.img)sk.img=img;c++;});
   if(!c){toast("沒有要匯入的技能");return;}
