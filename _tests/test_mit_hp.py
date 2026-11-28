@@ -58,7 +58,7 @@ async def m():
     t=await row(p,"暴風破").inner_text();ok("持續 10,000×3" in t,"表格顯示新填的持續傷害")
     await p.click('#dr [data-a="dclose"]')
     # 副本設定：法系血量改 160,000
-    await p.click('[data-a="dutyset"]');await p.wait_for_timeout(300)
+    await p.click('[data-a="tools"]');await p.click('[data-a="dutyset"]');await p.wait_for_timeout(300)
     await p.fill('[data-hp="caster"]',"160000");await p.fill('[data-hp="chain"]',"3");await p.click('[data-a="dutysave"]');await p.wait_for_timeout(700)
     d=await p.evaluate("window.__MOCK.db['mitDuties/fru']")
     ok(d["hp"]["caster"]==160000 and d["chain"]==3 and d["hp"]["tank"]==225800,"副本設定存各職能血量和連段秒數")
@@ -66,7 +66,7 @@ async def m():
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]))
     await p.screenshot(path=OUT+"/H-grid-1440.png")
     # 關掉
-    await p.click('[data-a="hpchk"]');await p.wait_for_timeout(300)
+    await p.click('[data-a="tools"]');await p.click('[data-a="hpchk"]');await p.wait_for_timeout(300)
     ok(await p.locator("#gw .hc").count()==0 and await p.locator("#gw .cm .dm").count()>0,"關掉血量檢查：回到原本的表格")
     ok(await p.evaluate("localStorage.getItem('mitHp')")=="0","開關記在這台裝置")
     await ctx.close()

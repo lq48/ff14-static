@@ -5,7 +5,7 @@ URL="mit.html?mock=owner&team=s1&duty=d1"
 row=lambda p,mech:p.locator("#gw tbody tr",has=p.locator(".cm .n",has_text=re.compile("^"+re.escape(mech)+"$"))).first
 W="""async(a)=>{const fs=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');const db=fs.getFirestore();await fs.setDoc(fs.doc(db,...a.path),a.data);}"""
 async def merge(p,cats=None):
-    await p.click('[data-a="skills"]');await p.wait_for_timeout(300)
+    await p.click('[data-a="tools"]');await p.click('[data-a="skills"]');await p.wait_for_timeout(300)
     await p.click('[data-a="libmerge"]');await p.wait_for_selector(".lmsum")
     for k in (cats or []):await p.click(f'[data-a="lmcat"][data-k="{k}"]');await p.wait_for_timeout(100)
 async def m():
@@ -80,7 +80,7 @@ async def m():
     await p.evaluate(W,{"path":["statics","s1","mit","d1","slots","ST"],"data":{"a":{"r2":["wh"]},"o":{}}})
     await p.wait_for_timeout(500)
     t=await row(p,"死刑 B").inner_text();ok("無敵" in t,"排了死鬥：減傷後欄標示無敵")
-    await p.click('[data-a="dutyset"]');await p.wait_for_timeout(300)
+    await p.click('[data-a="tools"]');await p.click('[data-a="dutyset"]');await p.wait_for_timeout(300)
     await p.fill('[data-hp="tankMit"]',"0");await p.click('[data-a="dutysave"]');await p.wait_for_timeout(700)
     d=await p.evaluate("window.__MOCK.db['mitDuties/d1']");ok(d.get("tankMit")==0,"副本設定可以把坦克自帶減傷設成 0")
     t=await p.inner_text("#gw .foot");ok("坦克自帶減傷 0%" in t,"下方說明顯示坦克自帶減傷")
