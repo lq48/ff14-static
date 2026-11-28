@@ -227,6 +227,8 @@ textarea.f{min-height:96px;resize:vertical}
 .xpthb{display:flex;align-items:center;gap:12px;width:100%;margin-top:8px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-align:left;cursor:pointer;font:inherit;color:inherit}
 .xpthi{width:84px;height:84px;flex:none;border-radius:9px;overflow:hidden;background:#2a2a2a}.xpthi svg{display:block;width:100%;height:100%}
 .xpthb b{display:block;font-size:14.5px}.xpthb small{color:var(--muted);font-size:12.5px}
+.sheet.xpedsheet{max-width:min(1100px,94vw);width:min(1100px,94vw);max-height:94vh}
+.xpedsheet .xpv-edit .xpv-stage{max-width:min(100%,calc(94vh - 170px));margin:0 auto;width:100%}
 .xpsheet{max-width:520px;display:grid;gap:10px}.xph{display:flex;align-items:center;justify-content:space-between;gap:8px}.xph h2{margin:0;font-size:18px}.xph .sub{margin-left:8px;color:var(--muted);font-size:14px;font-weight:400}
 .rnme{margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#ffe14a 22%,var(--surface));border:1px solid color-mix(in srgb,#c9a400 40%,transparent);font-size:15px;line-height:1.6}
 .rnme b{margin-right:8px;white-space:nowrap}
@@ -440,7 +442,8 @@ function rnHTML(p,slot){const rn=rnOf(p);return slot&&rn[slot]?'<p class="rnme">
 const xpOpts=me=>({me,job:s=>{const j=compOf(s);return j&&JOB[j]?j:"";},jobImg:j=>"icons/jobs/"+j+".webp"});
 function mountXp(root,rowId){const el=root.querySelector(".xpmount");if(!el)return;const xs=xpOf(prow(rowId));if(!xs.length)return;
   if(xpSt.row!==rowId){xpSt.row=rowId;xpSt.v=0;xpSt.i=0;}
-  xpMount(el,xs,{...xpOpts(viewSlot()),v:xpSt.v,i:xpSt.i,mine:xpSt.mine,onVersion:v=>{xpSt.v=v;},onStep:i=>{xpSt.i=i;},onMine:m=>{xpSt.mine=m;}});}
+  xpMount(el,xs,{...xpOpts(viewSlot()),v:xpSt.v,i:xpSt.i,mine:xpSt.mine,onVersion:v=>{xpSt.v=v;},onStep:i=>{xpSt.i=i;},onMine:m=>{xpSt.mine=m;},
+    onEdit:canAll()?(({v,i})=>{modal={k:"xped",r:rowId,v,i};renderModal();}):null});}
 /* 手機清單：小縮圖（第一步、只看自己），點了開完整播放器 */
 function xpThumbBtn(p,rowId,slot){const xs=xpOf(p);if(!xs.length)return"";
   return'<button type="button" class="xpthb" data-a="xpopen" data-r="'+esc(rowId)+'"><span class="xpthi" data-xpt="'+esc(rowId)+'" data-s="'+esc(slot||"")+'"></span><span><b>站位圖</b><small>'+xs.map(x=>esc(x.label||"站位圖")).join("／")+'・點開看每一步</small></span></button>';}
@@ -863,8 +866,18 @@ function onClick(e){const b=e.target.closest("[data-a]");if(!b)return;const a=b.
 
 /* ===== 對話框 ===== */
 function renderModal(){
-  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m)closeModal();else onClick(e);});m.addEventListener("change",onModalChange);m.addEventListener("input",onModalInput);m.addEventListener("change",onModalInput);}
+  let m=$("#modal");if(!m){m=document.createElement("div");m.id="modal";m.className="modal";document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m){if(modal&&modal.k==="xped"&&modal.h&&modal.h.dirty()){toast("還有沒儲存的調整：按「儲存」或「取消」");return;}closeModal();return;}else onClick(e);});m.addEventListener("change",onModalChange);m.addEventListener("input",onModalInput);m.addEventListener("change",onModalInput);}
   let h='<div class="sheet" role="dialog" aria-modal="true">';
+  /* 調整站位（電腦版）：大視窗編輯，存回同一個站位圖 */
+  if(modal.k==="xped"){const r=rows().find(x=>x.id===modal.r)||{},xs=xpOf(prow(modal.r));if(!xs.length||!canAll()){closeModal();return;}
+    m.innerHTML='<div class="sheet xpedsheet" role="dialog" aria-modal="true" aria-label="調整站位：'+esc(r.mech||"")+'"><div class="xph"><h2>調整站位<span class="sub">'+esc((r.t?r.t+" ":"")+(r.mech||""))+'</span></h2></div><div class="xpmount"></div></div>';
+    const rid=modal.r;
+    modal.h=xpMount(m.querySelector(".xpmount"),xs,{...xpOpts(""),edit:true,v:modal.v,i:modal.i,
+      onClose:()=>closeModal(),
+      onError:()=>toast("存檔失敗，請再試一次"),
+      onSave:async(url,v)=>{if(!xpIs(url))throw new Error("站位圖太大或格式不對");const cur=xpOf(prow(rid));if(!cur[v])throw new Error("站位圖已被刪除");
+        cur[v]={label:cur[v].label,url};setP(rid,{xp:cur});xpSt.row=rid;xpSt.v=v;closeModal();renderDrawer();renderGrid();toast("站位圖已儲存");}});
+    return;}
   if(modal.k==="xp"){const r=rows().find(x=>x.id===modal.r)||{};m.innerHTML='<div class="sheet xpsheet" role="dialog" aria-modal="true" aria-label="'+esc(r.mech||"")+' 站位圖"><div class="xph"><h2>'+esc(r.mech||"站位圖")+(r.t?'<span class="sub">'+esc(r.t)+'</span>':'')+'</h2><button class="ib" data-a="mclose" aria-label="關閉">'+IC.x+'</button></div>'+rnHTML(prow(modal.r),modal.s)+'<div class="xpmount"></div></div>';
     xpMount(m.querySelector(".xpmount"),xpOf(prow(modal.r)),xpOpts(modal.s));return;}
   if(modal.k==="img"){m.innerHTML='<div class="sheet img" role="dialog" aria-modal="true" aria-label="站位圖"><img src="'+esc(modal.src)+'" alt="站位圖放大"><div class="end"><button class="btn" data-a="mclose">關閉</button></div></div>';return;}
@@ -1119,7 +1132,7 @@ document.getElementById("app").addEventListener("click",onClick);
 document.addEventListener("change",e=>{if(e.target.id==="dutySel")switchDuty(e.target.value);else if(e.target.dataset&&e.target.dataset.lf){filt=e.target.value||"all";render();}});
 /* 工具選單：點外面或按 Esc 收起來 */
 document.addEventListener("click",e=>{if(toolsOpen&&!e.target.closest(".tmw")){toolsOpen=false;render();}},true);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&toolsOpen){toolsOpen=false;render();const t=document.querySelector('[data-a="tools"]');if(t)t.focus();return;}if(e.key==="Escape"){if(modal)closeModal();else if(sel){sel=null;renderDrawer();renderGrid();}}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal&&modal.k==="xped"&&modal.h&&modal.h.dirty()){toast("還有沒儲存的調整：按「儲存」或「取消」");e.preventDefault();return;}if(e.key==="Escape"&&toolsOpen){toolsOpen=false;render();const t=document.querySelector('[data-a="tools"]');if(t)t.focus();return;}if(e.key==="Escape"){if(modal)closeModal();else if(sel){sel=null;renderDrawer();renderGrid();}}});
 window.addEventListener("beforeunload",()=>{if(dutyDirty)saveDuty();if(libDirty)saveLib();if(planDirty&&tid)savePlan();});
 
 let started=false;
