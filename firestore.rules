@@ -167,6 +167,38 @@ service cloud.firestore {
         || (signedIn() && request.auth.uid in get(/databases/$(database)/documents/statics/$(tid)).data.get('leaders', {}))
         || (mitCanView(tid) && isActiveMember(tid) && mitPerm(tid) == 'all');
     }
+    // ===== 攻略法（圖文攻略）=====
+    //  看得到：總團長、該團團長（leaders），或依「攻略法整理」功能開放狀態的成員
+    //  權限「編輯全部」：新增、修改、刪除任何文章；「編輯自己的」：新增文章、只能改自己寫的（作者不能改）
+    function guidePerm(tid) {
+      return myMemberDoc(tid).get('perms', {}).get('guide', 'none');
+    }
+    function guideCanView(tid) {
+      let st = get(/databases/$(database)/documents/statics/$(tid)).data;
+      let status = st.get('modules', {}).get('guide', 'owner');
+      return isOwner()
+        || (signedIn() && request.auth.uid in st.get('leaders', {}))
+        || (isActiveMember(tid) && (status == 'all' || (status == 'selected' && guidePerm(tid) != 'none')));
+    }
+    function guideCanEditAll(tid) {
+      return isOwner()
+        || (signedIn() && request.auth.uid in get(/databases/$(database)/documents/statics/$(tid)).data.get('leaders', {}))
+        || (guideCanView(tid) && isActiveMember(tid) && guidePerm(tid) == 'all');
+    }
+    function guideCanEditOwn(tid) {
+      return guideCanEditAll(tid) || (guideCanView(tid) && isActiveMember(tid) && guidePerm(tid) == 'own');
+    }
+    // 文章欄位：只允許這些；標題、區塊數有上限（區塊內容在網站顯示時一律當純文字處理）
+    function guideValid(d) {
+      return d.keys().hasOnly(['did', 'stage', 'title', 'order', 'blocks', 'by', 'createdAt', 'updatedAt', 'updatedBy'])
+        && d.did is string && d.did.size() <= 60
+        && d.stage is string && d.stage.size() <= 60
+        && d.title is string && d.title.size() <= 80
+        && d.order is number
+        && d.blocks is list && d.blocks.size() <= 300
+        && d.by is string;
+    }
+
     function mitCanEditSlot(tid, slot) {
       return mitCanEditAll(tid) || (
         mitCanView(tid) && isActiveMember(tid) && mitPerm(tid) in ['own', 'all']
@@ -226,6 +258,27 @@ service cloud.firestore {
             && request.resource.data.a is map;
           allow delete: if mitCanEditAll(tid);
         }
+      }
+
+      // ===== 攻略法：文章與圖片 =====
+      match /guides/{gid} {
+        allow read: if guideCanView(tid);
+        allow create: if guideCanEditOwn(tid)
+          && guideValid(request.resource.data)
+          && request.resource.data.by == request.auth.uid;
+        allow update: if guideValid(request.resource.data)
+          && request.resource.data.by == resource.data.by
+          && (guideCanEditAll(tid) || (guideCanEditOwn(tid) && resource.data.by == request.auth.uid));
+        allow delete: if guideCanEditAll(tid);
+      }
+      match /guideImgs/{id} {
+        allow read: if guideCanView(tid);
+        allow create: if guideCanEditOwn(tid)
+          && request.resource.data.keys().hasOnly(['gid', 'data', 'by', 'createdAt'])
+          && request.resource.data.data is string
+          && request.resource.data.data.size() <= 950000
+          && request.resource.data.by == request.auth.uid;
+        allow delete: if guideCanEditAll(tid) || (guideCanEditOwn(tid) && resource.data.by == request.auth.uid);
       }
 
       // 減傷軸的站位圖：壓縮後的圖片，一張一份文件
