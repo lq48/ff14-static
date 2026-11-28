@@ -27,7 +27,7 @@ async def m():
     ok(sorted(r4.get("rn",{}))==sorted(["MT","ST","H1","H2","D1","D2","D3","D4"]),"匯入：八個位置的走法，不存在的位置被忽略")
     ok(r4.get("note") is None and (d.get("rows") or {}).get("r1",{}).get("note")=="大家集合在中間","匯入不動其他攻略欄位")
     chip=row(p,"全體 AOE D").locator("[data-pv]")
-    ok(await chip.count()==1 and "站位圖 2" in await chip.inner_text() and "走法" in await chip.inner_text(),"表格上的攻略標籤：站位圖 2・走法")
+    ok(await chip.count()==1 and "站位圖 火・雷" in await chip.inner_text() and "走法" in await chip.inner_text(),"表格上的攻略標籤：站位圖 火・雷・走法")
     # 團主是 MT：先看到「看」的畫面
     await chip.click();await p.wait_for_timeout(1000)
     ok(await p.locator('#dr [data-a="sedit"]').count()==1 and await p.locator('#dr [data-rn]').count()==0,"有內容時先顯示閱讀畫面，編輯欄位收起來")
@@ -93,6 +93,7 @@ async def m():
       x,y=[float(v) for v in (await tok(k).get_attribute("data-pos")).split(",")];rs.append(round((x*x+y*y)**.5))
     ok(all(95<=r<=115 for r in rs),"雷 0:21：所有人回到內圈（不用再散開） "+str(rs))
     ok(await p.locator("#dr .xm [stroke-dasharray]").count()==8,"場地標記是虛線框")
+    ok(await p.locator("#dr .xe path").count()>=6,"王有身位圈（正面三角、兩側箭頭）")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # ---- 一般成員（不能編輯）、XSS、壞掉的資料 ----
     ctx,p,errs,calls=await open_page(b,URL.format("plain"),1440,900,init="localStorage.removeItem('mitView');");await p.wait_for_timeout(900);await view(p,"grid")
@@ -108,7 +109,7 @@ async def m():
     await row(p,"全體 AOE A").locator(".mb .n").click();await p.wait_for_timeout(800)
     await p.click('#dr [data-a="drtab"][data-k="s"]');await p.wait_for_timeout(800)
     ok(await p.locator("#dr .xpv-err").count()==1 and await p.locator("#dr .xpv-err a").get_attribute("rel")=="noopener noreferrer","讀不出來的站位圖：顯示提示和原始連結")
-    th=await p.evaluate("""async(u)=>{const m=await import('./xp-render.js?v=1');return await m.xpThumb(u,{me:'',job:()=>''});}""",FIRE)
+    th=await p.evaluate("""async(u)=>{const m=await import('./xp-render.js?v=6');return await m.xpThumb(u,{me:'',job:()=>''});}""",FIRE)
     ok(">MT<" in th and "<image" not in th,"沒設定職業時用位置文字")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # ---- 手機清單 ----

@@ -15,6 +15,21 @@ async def m():
       sh=p.locator("#gw .sh").nth(3)
       ok((await sh.locator(".cdv").inner_text()).endswith("s") and await sh.locator(".nm").evaluate("e=>e.offsetWidth<=1") and "CD" in (await sh.get_attribute("title")),f"[{w}] 技能表頭只顯示圖示和 CD，名稱在提示裡")
       if w==1440:await p.screenshot(path=OUT+"/LAY-grid-1440.png")
+      # 技能圖示不超出格子
+      fit=await p.evaluate("""[...document.querySelectorAll('#gw .sh')].slice(0,12).every(th=>{const i=th.querySelector('.ico,.bx,.tx,.lbh img');if(!i)return true;const a=th.getBoundingClientRect(),b=i.getBoundingClientRect();return b.left>=a.left+1&&b.right<=a.right-1;})""")
+      ok(fit,f"[{w}] 表頭技能圖示在格子裡面")
+      # 拖曳表格移動
+      await p.evaluate("document.getElementById('gw').style.maxWidth='900px'")
+      g=await p.locator("#gw").bounding_box();n0=len(await p.evaluate("window.__writes"))
+      x0,y0=g["x"]+g["width"]-120,g["y"]+260
+      sl0=await p.evaluate("document.getElementById('gw').scrollLeft")
+      await p.mouse.move(x0,y0);await p.mouse.down()
+      for k in range(1,11):await p.mouse.move(x0-30*k,y0)
+      await p.mouse.up();await p.wait_for_timeout(300)
+      sl1=await p.evaluate("document.getElementById('gw').scrollLeft")
+      ok(sl1-sl0>=150,f"[{w}] 按住表格往左拖：往右捲 {sl1-sl0}px")
+      ok(len(await p.evaluate("window.__writes"))==n0 and await p.locator("#dr.on,#dr.open").count()==0,f"[{w}] 拖曳放開不會誤點格子")
+      await p.evaluate("document.getElementById('gw').style.maxWidth=''")
       # 工具選單
       await p.click('[data-a="tools"]');await p.wait_for_timeout(250)
       ok(await p.get_attribute('[data-a="tools"]',"aria-expanded")=="true" and await p.locator(".tmenu button").count()==6,f"[{w}] 工具選單：6 個項目")

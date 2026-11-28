@@ -72,6 +72,7 @@ select.f.duty{min-height:36px;font-weight:700;max-width:260px}
 .perm{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .perm.ed{border-color:var(--heal);color:var(--heal)}
 .gw{flex:1;min-height:0;overflow:auto;position:relative}
+.gw.panning{cursor:grabbing;user-select:none}.gw.panning *{cursor:grabbing!important}
 .bar{flex:none}
 .empty{padding:40px 16px;text-align:center;color:var(--muted)}
 table.g{border-collapse:separate;border-spacing:0;width:max-content}
@@ -88,9 +89,10 @@ table.g{border-collapse:separate;border-spacing:0;width:max-content}
 .jh.mine{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
 .sh{width:36px;min-width:36px;max-width:36px;text-align:center}
 /* 表頭：技能圖示＋CD，名稱、持續時間、效果在滑鼠移上去的提示裡 */
-.shi{display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:2px}
+.shi{display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:3px;width:100%;overflow:hidden}
+.g .shi .ico,.g .shi .bx,.g .shi .tx{width:28px;height:28px;border-radius:6px;margin:0!important;flex:none}.shi .lbh img{width:28px;height:28px}
 .sh .nm{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.sh .cdv{font-size:10.5px;color:var(--muted);line-height:1.2;font-variant-numeric:tabular-nums;min-height:13px;font-weight:700}
+.sh .cdv{font-size:10px;letter-spacing:-.2px;color:var(--muted);line-height:1.2;font-variant-numeric:tabular-nums;min-height:13px;font-weight:700}
 .sh .cdv b{color:var(--ink)}
 .sh.first,.cell.first{border-left:2px solid var(--line)}
 .mb{width:100%;text-align:left;background:transparent;border:0;padding:5px 6px;min-height:40px;display:flex;flex-direction:column;gap:2px}
@@ -331,7 +333,7 @@ import { JOBS as JOBS_ALL, jobIcon, safeUrl } from "./common.js?v=5";
 import { hpCheck, hpCfg, aoeOf, parseDmg, fmtN, AOE, ROLE_N, HP_DEF, CHAIN_DEF, TANK_MIT_DEF } from "./mit-hp.js?v=3";
 import { undoToast } from "./ui.js?v=1";
 import { xpIs } from "./xivplan.js?v=2";
-import { xpMount, xpThumb } from "./xp-render.js?v=1";
+import { xpMount, xpThumb } from "./xp-render.js?v=6";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -623,7 +625,7 @@ function renderGrid(){
     h+='<td class="ct">'+tt+'</td><td class="cm"><button class="mb" data-a="open" data-r="'+esc(r.id)+'"><span class="n">'+esc(r.mech||"")+'</span><span class="meta">';
     if(r.tag)h+='<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>';if(r.ctag)h+='<span class="pill c">'+esc(r.ctag)+'</span>';
     {const nx=xpOf(p).length,nr=Object.keys(rnOf(p)).length;
-    if(p.note||(p.imgs||[]).length||(p.links||[]).length||nx||nr)h+='<span class="pill x pv" data-pv="'+esc(r.id)+'" title="看攻略">'+IC.map+[nx?"站位圖 "+nx:"",nr?"走法":"",p.note?"解法":"",(p.imgs||[]).length?"圖 "+p.imgs.length:"",(p.links||[]).length?"連結 "+p.links.length:""].filter(Boolean).join("・")+'</span>';}
+    if(p.note||(p.imgs||[]).length||(p.links||[]).length||nx||nr)h+='<span class="pill x pv" data-pv="'+esc(r.id)+'" title="看攻略">'+IC.map+[nx?"站位圖 "+xpOf(p).map(x=>esc(String(x.label||"").slice(0,8))).filter(Boolean).slice(0,3).join("・"):"",nr?"走法":"",p.note?"解法":"",(p.imgs||[]).length?"圖 "+p.imgs.length:"",(p.links||[]).length?"連結 "+p.links.length:""].filter(Boolean).join("・")+'</span>';}
     const hs=r.hits||[],sp=hitSpan(r);h+='</span>'+(hs.length&&!hpOn?'<span class="dm">'+hs.map(x=>dIco(x.dtype)+'<span>'+esc(x.dmg||(DTYPE[x.dtype]?DTYPE[x.dtype].n:""))+(+x.n>1?"×"+(+x.n):"")+'</span>').join('<span class="arr">→</span>')+(sp?'<span>（'+sp+' 秒內）</span>':'')+'</span>':'')+(r.desc?'<span class="desc">'+esc(r.desc)+'</span>':'')+'</button></td>'+hpCellsHTML(r,H);}
     const tb=T[r.id+"|B"]||{},tp=T[r.id+"|P"]||{};
     h+='<td class="cell first'+(caR?" ed":"")+(tb.act&&!tb.use&&tb.v==="120"?" act-b120":"")+'" '+(caR?'data-a="bcell" ':'')+'data-r="'+esc(r.id)+'" title="'+esc(p.burst?p.burst+" 爆發"+(ca?"（點一下切換）":""):tb.act&&tb.v==="120"?"120 爆發中，剩約 "+Math.round(tb.left)+" 秒":ca?"點一下標 120，再點變 60":"")+'">'+(p.burst?'<span class="bx b'+esc(p.burst)+'">'+esc(p.burst)+'</span>':'')+'</td>';
@@ -1038,7 +1040,7 @@ function onModalInput(e){const t=e.target,D=modal&&modal.draft;if(!D)return;
       const ty=document.querySelector('#modal [data-fx="t"][data-i="'+esc(t.dataset.i)+'"]');if(ty){ty.hidden=t.value!=="mit";if(t.value!=="mit"){ty.value="all";f.t="all";}}}}
   if(t.dataset.dt==="lv"){const tb=document.querySelector('#modal [data-a="tsel"][data-i="'+esc(modal.ti)+'"]');if(tb)tb.textContent=(+t.value||1)>1?t.value+" 級":"初始";}}
 function skAdd(){if(!isOwner)return;const D=modal.draft;if(!D||!D.name.trim()){toast("請輸入技能名稱");return;}
-  const ti=D.tiers.map((t,i)=>{const lv=parseInt(t.lv,10),ch=parseInt(t.ch,10);return{lv:isNaN(lv)?(i===0?1:NaN):lv,cd:parseInt(t.cd,10)||0,dur:parseInt(t.dur,10)||0,...(ch>1&&ch<=5?{ch}:{}),
+  const ti=D.tiers.map((t,i)=>{const lv=parseInt(t.lv,10),ch=parseInt(t.ch,10);return{lv:isNaN(lv)?(i===0?1:NaN):lv,cd:Math.round((parseFloat(t.cd)||0)*10)/10,dur:Math.round((parseFloat(t.dur)||0)*10)/10,...(ch>1&&ch<=5?{ch}:{}),
     fx:(t.fx||[]).filter(f=>String(f.v||"").trim()||String(f.c||"").trim()).map(f=>{const o={k:f.k||"mit",v:String(f.v||"").trim(),w:f.w||"self",t:f.t||"all"};const d=parseInt(f.d,10);if(d)o.d=d;if(String(f.c||"").trim())o.c=String(f.c).trim();return o;})};});
   if(ti.some(t=>isNaN(t.lv))){toast("每個等級分頁都要填「從幾級開始」");return;}
   if(new Set(ti.map(t=>t.lv)).size!==ti.length){toast("等級分頁的等級重複了");return;}
@@ -1130,6 +1132,16 @@ function start(){
 
 document.getElementById("app").addEventListener("click",onClick);
 document.addEventListener("change",e=>{if(e.target.id==="dutySel")switchDuty(e.target.value);else if(e.target.dataset&&e.target.dataset.lf){filt=e.target.value||"all";render();}});
+/* 完整時間軸：用滑鼠按住表格拖曳，可以左右上下移動（拖超過 6px 才算，放開後不會誤點格子） */
+{let pan=null,eat=false;const gwOf=()=>document.getElementById("gw");
+  document.addEventListener("pointerdown",e=>{const g=gwOf();if(!g||e.pointerType!=="mouse"||e.button!==0||vmode!=="grid"||!g.contains(e.target)||e.target.closest("input,select,textarea,a,.mb,[contenteditable]"))return;
+    if(g.scrollWidth<=g.clientWidth&&g.scrollHeight<=g.clientHeight)return;pan={g,x:e.clientX,y:e.clientY,sl:g.scrollLeft,st:g.scrollTop,on:false,id:e.pointerId};});
+  document.addEventListener("pointermove",e=>{if(!pan||e.pointerId!==pan.id)return;const dx=e.clientX-pan.x,dy=e.clientY-pan.y;
+    if(!pan.on&&Math.hypot(dx,dy)>6){pan.on=true;pan.g.classList.add("panning");try{pan.g.setPointerCapture(e.pointerId);}catch(err){}}
+    if(pan.on){pan.g.scrollLeft=pan.sl-dx;pan.g.scrollTop=pan.st-dy;e.preventDefault();}});
+  const end=e=>{if(!pan||e.pointerId!==pan.id)return;if(pan.on){eat=true;pan.g.classList.remove("panning");setTimeout(()=>{eat=false;},0);}pan=null;};
+  document.addEventListener("pointerup",end);document.addEventListener("pointercancel",end);
+  document.addEventListener("click",e=>{if(eat){e.stopPropagation();e.preventDefault();eat=false;}},true);}
 /* 工具選單：點外面或按 Esc 收起來 */
 document.addEventListener("click",e=>{if(toolsOpen&&!e.target.closest(".tmw")){toolsOpen=false;render();}},true);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal&&modal.k==="xped"&&modal.h&&modal.h.dirty()){toast("還有沒儲存的調整：按「儲存」或「取消」");e.preventDefault();return;}if(e.key==="Escape"&&toolsOpen){toolsOpen=false;render();const t=document.querySelector('[data-a="tools"]');if(t)t.focus();return;}if(e.key==="Escape"){if(modal)closeModal();else if(sel){sel=null;renderDrawer();renderGrid();}}});

@@ -127,11 +127,28 @@ function markerSVG(o) {
   return `<g class="xm" data-oid="${esc(o.id)}" transform="translate(${x} ${y})">` + (sq ? `<rect x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" rx="4" fill="${c}" fill-opacity=".1" stroke="${c}" stroke-width="2" stroke-dasharray="5 3.5"/>` : `<circle r="${s / 2}" fill="${c}" fill-opacity=".1" stroke="${c}" stroke-width="2" stroke-dasharray="5 3.5"/>`) +
     `<text y="7.5" fill="${c}">${esc(n)}</text></g>`;
 }
+/* 王：中間是王的圖示，外圈是「身位圈」——
+   有面向（ring 不是 omni）：正前方三角形、左右兩側雙箭頭、背後留缺口，一眼看出正面／側面／背面 */
 function enemySVG(o) {
-  const x = num(o.x), y = -num(o.y), r = Math.max(8, Math.min(num(o.radius, 40), 200)), c = col(o.color, "#e0384a"), b = num(o.rotation);
-  let s = `<g class="xe"><circle cx="${x}" cy="${y}" r="${r}" fill="${c}" fill-opacity=".16" stroke="${c}" stroke-width="2.5" stroke-opacity=".85"/>`;
-  if (o.ring && o.ring !== "omni") { const [fx, fy] = dir(b, r + 2), [lx, ly] = dir(b - 14, r - 12), [rx, ry] = dir(b + 14, r - 12); s += `<path d="M${x + fx} ${y + fy}L${x + lx} ${y + ly}L${x + rx} ${y + ry}Z" fill="${c}"/>`; }
-  return s + `<circle cx="${x}" cy="${y}" r="5" fill="${c}"/></g>`;
+  const x = num(o.x), y = -num(o.y), r = Math.max(14, Math.min(num(o.radius, 40), 200)), c = col(o.color, "#e0243a"), b = num(o.rotation);
+  const facing = o.ring && o.ring !== "omni", ri = r * .84, gap = 70;
+  const arc = (R, w, op2) => {
+    if (!facing) return `<circle r="${R}" fill="none" stroke="${c}" stroke-width="${w}" stroke-opacity="${op2}"/>`;
+    const a0 = 180 + gap / 2, a1 = 180 - gap / 2 + 360, [sx, sy] = dir(a0, R), [ex, ey] = dir(a1, R);
+    return `<path d="M${sx.toFixed(1)} ${sy.toFixed(1)}A${R} ${R} 0 1 1 ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-opacity="${op2}" stroke-linecap="round"/>`;
+  };
+  let s = `<g class="xe" transform="translate(${x} ${y}) rotate(${b})"><circle r="${r}" fill="${c}" fill-opacity=".1"/>` + arc(r, 3.5, .95) + arc(ri, 1.8, .7);
+  if (facing) {
+    const t = Math.max(9, r * .22);
+    s += `<path d="M0 ${-(r + t * 1.25)}L${t * .62} ${-r + 1}L${-t * .62} ${-r + 1}Z" fill="${c}"/>`;
+    const ch = (sx) => { const h = Math.max(5, r * .1), X = sx * r; return [0, 1].map(k => { const d = k * h * .9; return `<path d="M${X - sx * (h * .2 - d)} ${-h}L${X + sx * (h * .75 + d)} 0L${X - sx * (h * .2 - d)} ${h}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`; }).join(""); };
+    s += ch(1) + ch(-1);
+  }
+  /* 王的圖示（自己畫的惡魔盾牌）：大小跟著身位圈，不跟著轉 */
+  const k = Math.min(r * .42, 34);
+  s += `<g transform="rotate(${-b}) scale(${(k / 50).toFixed(3)})"><path d="M-46 -44L-20 -26Q0 -36 20 -26L46 -44L42 2Q32 34 0 54Q-32 34 -42 2Z" fill="#3a2350" stroke="#c48ee6" stroke-width="4" stroke-linejoin="round"/>` +
+    `<path d="M-26 -6L-8 2L-10 8L-26 2Z M26 -6L8 2L10 8L26 2Z" fill="#ef7fe0"/><path d="M-20 18L-12 30L-6 20L0 32L6 20L12 30L20 18L20 26Q0 40 -20 26Z" fill="#ef7fe0"/></g>`;
+  return s + "</g>";
 }
 function textSVG(o) {
   const x = num(o.x), y = -num(o.y), fs = Math.max(10, Math.min(num(o.fontSize, 18), 40));
