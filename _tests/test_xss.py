@@ -42,7 +42,7 @@ async def m():
       await visit(b,"away.html?mock=member","請假行事曆",[("打開請假",C('[data-a="edit"]'))])
       await visit(b,"schedule.html?mock=member&s=sv1","出席調查",[("結果",C('.tab[data-tab="results"]')),("管理",C('.tab[data-tab="manage"]'))])
       await visit(b,"schedule.html","出席調查（未登入）")
-      await visit(b,"mit.html?mock=member&team=s1&duty=d1","減傷軸",[("我的減傷",C('[data-a="vmode"][data-v="list"]')),("完整",C('[data-a="vmode"][data-v="grid"]')),("文字小抄",C('[data-a="text"]')),("機制詳情",C('[data-a="open"]'))])
+      await visit(b,"mit.html?mock=member&team=s1&duty=d1","減傷軸",[("我的減傷",C('[data-a="vmode"][data-v="list"]')),("完整",C('[data-a="vmode"][data-v="grid"]')),("文字小抄",C('[data-a="tools"]')+";"+C('[data-a="text"]')),("機制詳情",C('[data-a="open"]'))])
       await visit(b,"memories.html?mock=member","回憶錄",[("首通",C('[data-kind="first"]'))])
       await visit(b,"memories.html?mock=member&m=m1","回憶詳情")
       await visit(b,"memories.html?mock=member&edit=m1","回憶編輯")

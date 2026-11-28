@@ -13,7 +13,7 @@ async def m():
     t=await row(p,"全體 AOE A").inner_text()
     ok("80,000" in t and "剩 62,000" in t and "-" not in t.split("80,000")[1].split("遠敏")[0],"還沒有效果時，減傷後等於原始（遠敏剩 62,000）")
     # 打開補效果工具
-    await p.click('[data-a="skills"]');await p.wait_for_timeout(300)
+    await p.click('[data-a="tools"]');await p.click('[data-a="skills"]');await p.wait_for_timeout(300)
     await p.click('[data-a="fxref"]');await p.wait_for_selector(".rfrow");await p.wait_for_timeout(200)
     on=await p.evaluate("[...document.querySelectorAll('.rfrow.on b')].map(x=>x.textContent)")
     ok(set(on)>={"野戰治療陣","聖盾陣","神聖領域","節制"},"依名稱自動對到：野戰治療陣、聖盾陣、神聖領域、節制 "+str(on))
@@ -57,7 +57,7 @@ async def m():
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # 手機
     ctx,p,errs,calls=await open_page(b,URL,390,850,init="localStorage.removeItem('mitView');");await p.wait_for_timeout(900)
-    await p.click('[data-a="skills"]');await p.wait_for_timeout(300);await p.click('[data-a="fxref"]');await p.wait_for_selector(".rfrow")
+    await p.click('[data-a="tools"]');await p.click('[data-a="skills"]');await p.wait_for_timeout(300);await p.click('[data-a="fxref"]');await p.wait_for_selector(".rfrow")
     ok(await p.evaluate("document.documentElement.scrollWidth-innerWidth")<=0,"[390] 補效果工具無水平溢位")
     await p.screenshot(path=OUT+"/R-ref-390.png")
     ok(errs==[],"[390] 沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()

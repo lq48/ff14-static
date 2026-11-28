@@ -1,0 +1,50 @@
+from lib import *
+# 減傷軸：電腦版上方縮成兩行、工具收進選單、表頭只放技能圖示＋CD
+URL="mit.html?mock={}&team=s1&duty=d1"
+async def m():
+  async with async_playwright() as pw:
+    b=await browser(pw)
+    for w,hh in ((1440,900),(1920,1000)):
+      ctx,p,errs,calls=await open_page(b,URL.format("owner"),w,hh,init="localStorage.setItem('mitView','grid');");await p.wait_for_timeout(1000)
+      bar=await p.locator(".bar").bounding_box()
+      ok(bar["height"]<=120,f"[{w}] 上方區域高度 {bar['height']:.0f}px（原本約 270px）")
+      th=await p.locator("#gw thead").bounding_box()
+      ok(th["height"]<=125,f"[{w}] 表頭高度 {th['height']:.0f}px（原本約 250px）")
+      ok(await p.locator('.bar [data-a="comp"]').count()==0 and await p.locator('.bar [data-a="skills"]').count()==0,f"[{w}] 工具平常收起來")
+      ok(await p.locator('.bar [data-a="io"]').is_visible() and await p.locator('.bar [data-a="vmode"]').count()==2,f"[{w}] 匯出／匯入、檢視切換還在外面")
+      sh=p.locator("#gw .sh").nth(3)
+      ok((await sh.locator(".cdv").inner_text()).endswith("s") and await sh.locator(".nm").evaluate("e=>e.offsetWidth<=1") and "CD" in (await sh.get_attribute("title")),f"[{w}] 技能表頭只顯示圖示和 CD，名稱在提示裡")
+      if w==1440:await p.screenshot(path=OUT+"/LAY-grid-1440.png")
+      # 工具選單
+      await p.click('[data-a="tools"]');await p.wait_for_timeout(250)
+      ok(await p.get_attribute('[data-a="tools"]',"aria-expanded")=="true" and await p.locator(".tmenu button").count()==6,f"[{w}] 工具選單：6 個項目")
+      ok(await p.evaluate("document.activeElement.closest('.tmenu')!==null"),f"[{w}] 打開後焦點移到第一個項目")
+      if w==1440:await p.screenshot(path=OUT+"/LAY-menu-1440.png")
+      await p.keyboard.press("Escape");await p.wait_for_timeout(200)
+      ok(await p.locator(".tmenu").count()==0 and await p.evaluate("document.activeElement.dataset.a")=="tools",f"[{w}] Esc 收起來，焦點回到工具按鈕")
+      await p.click('[data-a="tools"]');await p.wait_for_timeout(200);await p.mouse.click(300,700);await p.wait_for_timeout(200)
+      ok(await p.locator(".tmenu").count()==0,f"[{w}] 點外面收起來")
+      on0=await p.locator("#gw .hc.h4").count()
+      await p.click('[data-a="tools"]');await p.click('.tmenu [data-a="hpchk"]');await p.wait_for_timeout(300)
+      ok(await p.locator(".tmenu").count()==0 and (await p.locator("#gw .hc.h4").count())!=on0,f"[{w}] 選單裡切換血量檢查欄位，選完自動收起")
+      await p.click('[data-a="tools"]');ok(await p.get_attribute('.tmenu [data-a="hpchk"]',"aria-checked")==("false" if on0 else "true"),f"[{w}] 開關狀態有打勾顯示")
+      await p.click('.tmenu [data-a="hpchk"]');await p.wait_for_timeout(300)
+      await p.click('[data-a="tools"]');await p.click('.tmenu [data-a="comp"]');await p.wait_for_timeout(300)
+      ok(await p.locator("#modal").count()==1,f"[{w}] 選單裡的陣容可以打開")
+      ok(errs==[],f"[{w}] 沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
+    # 一般成員：沒有副本設定
+    ctx,p,errs,calls=await open_page(b,URL.format("plain"),1440,900,init="localStorage.setItem('mitView','grid');");await p.wait_for_timeout(900)
+    await p.click('[data-a="tools"]');await p.wait_for_timeout(200)
+    ok(await p.locator('.tmenu [data-a="dutyset"]').count()==0 and await p.locator('.tmenu [data-a="skills"]').count()==1,"一般成員的工具選單沒有副本設定")
+    ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
+    for w in (360,390):
+      ctx,p,errs,calls=await open_page(b,URL.format("member"),w,800);await p.wait_for_timeout(900)
+      ok(await p.evaluate("document.documentElement.scrollWidth-innerWidth")<=0,f"[{w}] 無水平溢位")
+      await p.click('[data-a="tools"]');await p.wait_for_timeout(250)
+      mb=await p.locator(".tmenu").bounding_box()
+      ok(mb["x"]>=0 and mb["x"]+mb["width"]<=w,f"[{w}] 工具選單在畫面內")
+      ok(all([(await x.bounding_box())["height"]>=40 for x in await p.locator(".tmenu button").all()]),f"[{w}] 選單項目夠大好按")
+      await p.screenshot(path=OUT+f"/LAY-menu-{w}.png")
+      ok(errs==[],f"[{w}] 沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
+    await b.close();print(RES)
+asyncio.run(m())
