@@ -148,6 +148,7 @@ tr.on .ct,tr.on .cm{box-shadow:inset 3px 0 0 var(--accent)}
 .bx.pot{background:#7A3FB0;color:#FFFFFF}
 .lb{position:relative;display:inline-block;width:32px;height:32px;vertical-align:middle}
 .lb img{width:32px;height:32px;border-radius:6px;display:block}
+.lbn{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
 .lb b{position:absolute;right:-3px;bottom:-4px;background:var(--ink);color:var(--bg);font-size:10px;line-height:14px;padding:0 3px;border-radius:4px}
 .lbh img{width:32px;height:32px;border-radius:6px;display:block}
 .g tr.tk .ct,.g tr.tk .cm{background:color-mix(in srgb,var(--tank) 30%,var(--surface))}
@@ -551,6 +552,7 @@ function hpCellsHTML(r,H){
 const CLS={tank:"tank",phys:"ranged",magic:"caster"};
 const slotCls=s=>{const j=compOf(s);return j&&JOB[j]?(CLS[JOB[j].c]||JOB[j].c):(SLOT_ROLE[s]==="tank"?"tank":"");};
 let hpSkipped=0;
+const TANK_LB={pct:80,dur:8};
 function hpEffects(rs,E){const fx=[];hpSkipped=0;if(!tid)return fx;
   dSlots().forEach(s=>{const j=compOf(s);jobSkills(j).forEach(sk=>{const tr=tierAt(sk,LV());if(!tr||!(tr.fx||[]).length)return;const D=+tr.dur||0;
     rs.forEach((r,i)=>{if(r.virt||!assign(s,r.id).includes(sk.id))return;const t=E[i].v;if(t==null)return;const s0=t-early(s,r.id,sk.id);
@@ -562,6 +564,9 @@ function hpEffects(rs,E){const fx=[];hpSkipped=0;if(!tid)return fx;
         else if(f.k==="mit"){const p=parseFloat(v);if(p>0&&p<=100)fx.push({...base,k:"mit",t:f.t||"all",pct:p});}
         else if(/%$/.test(v)){const p=parseFloat(v);if(p>0&&p<=100)fx.push({...base,k:"shield",hpPct:p});}
         else{const a=parseDmg(v);if(a)fx.push({...base,k:"shield",amt:a});}});});});});
+  /* 坦克 LB3：全員受到的傷害減輕 80%，8 秒（標在哪一列就從那一列的時間開始） */
+  rs.forEach((r,i)=>{if(r.virt)return;const p=prow(r.id),t=E[i].v;if(!p.lb||t==null||!dSlots().includes(p.lb)||slotCls(p.lb)!=="tank")return;
+    fx.push({start:t-.5,end:t-.5+TANK_LB.dur,who:"all",k:"mit",t:"all",pct:TANK_LB.pct,name:"坦克 LB3"});});
   return fx;}
 function hpOf(rs,E){return hpOn?hpCheck(rs,E.map(x=>x.v),hpCfg(duty),hpEffects(rs,E)):{};}
 /* ===== 我的減傷：依位置列出要放的技能（和完整時間軸用同一份資料與計算） ===== */
@@ -686,7 +691,7 @@ function renderDrawer(){
   let iT=h.length,iS=h.length,iE=h.length;
   if(tid){iT=h.length;
     h+='<div class="sec">本團設定</div><div class="two"><label class="fld"><span>爆發</span><select class="f" data-p="burst"'+(ca?"":" disabled")+'>'+BURST.map(t=>'<option value="'+esc(t)+'"'+((p.burst||"")===t?" selected":"")+'>'+(t?t+" 爆發":"—")+'</option>').join("")+'</select></label><label class="fld"><span>藥水</span><select class="f" data-p="pot"'+(ca?"":" disabled")+'><option value="">—</option><option value="1"'+(p.pot?" selected":"")+'>吃爆發藥</option></select></label></div>';
-    h+='<label class="fld"><span>LB 施放者</span><select class="f" data-p="lb"'+(ca?"":" disabled")+'><option value="">—</option>'+dSlots().map(s=>'<option value="'+esc(s)+'"'+(p.lb===s?" selected":"")+'>'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</option>').join("")+'</select></label>';
+    h+='<label class="fld"><span>LB 施放者<small class="lbn">坦克放的是 LB3：全員減傷 80%、8 秒，會算進血量檢查</small></span><select class="f" data-p="lb"'+(ca?"":" disabled")+'><option value="">—</option>'+dSlots().map(s=>'<option value="'+esc(s)+'"'+(p.lb===s?" selected":"")+'>'+s+(compOf(s)?" "+esc((JOB[compOf(s)]||{}).n||compOf(s)):"")+'</option>').join("")+'</select></label>';
     h+='<div class="fld"><span>減傷分工</span><div class="uses">';
     dSlots().forEach(s=>{const j=compOf(s),l=jobSkills(j),role=(JOB[j]||{}).r||SLOT_ROLE[s],ed=canSlot(s),a=assign(s,r.id);
       h+='<div class="uj"><span class="jn '+role+'">'+s+' '+esc(j?((JOB[j]||{}).n||j):"")+'</span>';if(!l.length)h+='<span class="hint">沒有技能</span>';
