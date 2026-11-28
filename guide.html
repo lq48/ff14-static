@@ -95,6 +95,7 @@ figcaption{color:var(--muted);font-size:13px;margin-top:6px;text-align:center}
 .vplay:hover .vbtn,.vplay:focus-visible .vbtn{background:#e0243a}
 .vplay .vsrc{position:absolute;top:12px;left:14px;font-weight:900;color:#4fc3f7;font-size:18px}
 .vplay .vt{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.7);border-radius:6px;padding:2px 8px;font-size:13px;font-variant-numeric:tabular-nums}
+.bl{margin:-4px 0 12px;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .warnbox{padding:12px 14px;border-radius:12px;background:var(--surface2);color:var(--muted);font-size:14px}
 /* 編輯 */
 .ed-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-bottom:14px}
@@ -345,11 +346,25 @@ function tocHTML(list, g) {
   return h;
 }
 const gHref = (id, b) => "guide.html?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did) + "&g=" + encodeURIComponent(id) + (b ? "#b-" + b : "");
+/* 反向連結：減傷軸上哪些時間點連到這篇（或這一段），自動列出 */
+function backlinks(g) {
+  const out = {}, rows = (plans[did] || {}).rows || {};
+  Object.entries(rows).forEach(([rid, p]) => { (Array.isArray(p && p.gl) ? p.gl : []).slice(0, 3).forEach(x => { if (!x || x.g !== g.id || !MIT_ID.test(rid)) return; const k = MIT_ID.test(x.b || "") ? x.b : ""; (out[k] || (out[k] = [])).push(rid); }); });
+  return out;
+}
+function blHTML(ids) {
+  if (!ids || !ids.length) return "";
+  const rs = ids.map(id => rowOf(id)).filter(Boolean).sort((a, b) => (secs(a.t) ?? 1e9) - (secs(b.t) ?? 1e9));
+  if (!rs.length) return "";
+  return '<p class="bl">減傷軸連到這裡：' + rs.map(r => '<a class="gl" href="' + esc(linkHref("mit:" + r.id).href) + '">' + esc((r.t ? r.t + " " : "") + (r.mech || "")) + '</a>').join(" ") + '</p>';
+}
+const secs = t => { const m = String(t || "").match(/^(\d+):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null; };
 function viewHTML(g) {
-  const bs = cleanBlocks(g.blocks);
+  const bs = cleanBlocks(g.blocks), BL = backlinks(g);
   let h = '<article class="art"><h2>' + esc(g.title || "未命名") + '</h2><div class="meta"><span>' + esc(userName(g.by)) + ' 寫' + (g.updatedAt ? "・" + new Date(g.updatedAt).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" }) + " 更新" : "") + '</span><span class="sp"></span>' + (canEdit(g) ? '<button class="btn" data-a="edit">' + IC.edit + '編輯</button>' : "") + '</div>';
+  h += blHTML(BL[""]);
   if (!bs.length) h += '<p class="hint">這篇還沒有內容。</p>';
-  bs.forEach(b => { h += blockView(b); });
+  bs.forEach(b => { h += blockView(b) + (b.t === "h" ? blHTML(BL[b.id]) : ""); });
   return h + '</article>';
 }
 function blockView(b) {
