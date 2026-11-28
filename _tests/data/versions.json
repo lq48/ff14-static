@@ -1,0 +1,38 @@
+{
+ "away-core.js": {
+  "v": 3,
+  "sha": "3cf5a91d6c1f6e63"
+ },
+ "common.js": {
+  "v": 5,
+  "sha": "e82c7907043299ca"
+ },
+ "icons.js": {
+  "v": 5,
+  "sha": "4deb8fbbaf312d13"
+ },
+ "mit-hp.js": {
+  "v": 3,
+  "sha": "e08dd004d666a32c"
+ },
+ "nav.js": {
+  "v": 2,
+  "sha": "33412342b9e73de3"
+ },
+ "photo.js": {
+  "v": 1,
+  "sha": "96b82412c133535a"
+ },
+ "ui.js": {
+  "v": 1,
+  "sha": "acd8ac833cbcd8d9"
+ },
+ "xivplan.js": {
+  "v": 2,
+  "sha": "4276c8e0084d7647"
+ },
+ "xp-render.js": {
+  "v": 6,
+  "sha": "513e7f8c340fe74a"
+ }
+}
