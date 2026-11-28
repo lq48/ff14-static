@@ -109,7 +109,7 @@ async def m():
     await row(p,"全體 AOE A").locator(".mb .n").click();await p.wait_for_timeout(800)
     await p.click('#dr [data-a="drtab"][data-k="s"]');await p.wait_for_timeout(800)
     ok(await p.locator("#dr .xpv-err").count()==1 and await p.locator("#dr .xpv-err a").get_attribute("rel")=="noopener noreferrer","讀不出來的站位圖：顯示提示和原始連結")
-    th=await p.evaluate("""async(u)=>{const m=await import('./xp-render.js?v=6');return await m.xpThumb(u,{me:'',job:()=>''});}""",FIRE)
+    th=await p.evaluate("""async(u)=>{const m=await import('./xp-render.js?v=8');return await m.xpThumb(u,{me:'',job:()=>''});}""",FIRE)
     ok(">MT<" in th and "<image" not in th,"沒設定職業時用位置文字")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # ---- 手機清單 ----
