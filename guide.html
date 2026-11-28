@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="skin.js?v=2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>攻略法｜光之戰士飛地</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23DD7655%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.1%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21 12l-9-9-9 9h2v7a2 2 0 0 0 2 2h6%27/%3E%3Cpath d=%27M9 21v-6a2 2 0 0 1 2-2h2%27/%3E%3Cpath d=%27M18 22l3.35-3.284a2.143 2.143 0 0 0 .005-3.071 2.242 2.242 0 0 0-3.129-.006l-.224.22-.223-.22a2.242 2.242 0 0 0-3.128-.006 2.143 2.143 0 0 0-.006 3.071L18 22z%27/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#E8ECF3; --surface:#F7F9FC; --ink:#1B2232; --muted:#5A6377; --line:#C9D1DE;
+  --accent:#2F63C9; --accent-ink:#FFFFFF; --gold:#B8860B; --danger:#C23A4F;
+  --tank:#2F63C9; --heal:#2E8B57; --dps:#C0392B; --raid:#7A45C2;
+  --surface2:#EDF1F7; --headbg:#E1E4EA; --warnbg:#FFE7CF; --warn:#A9520A;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+    --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
+    --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF;
+    --surface2:#202940; --headbg:#262C38; --warnbg:#4A3118; --warn:#F2A65A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111622; --surface:#192031; --ink:#E5E9F2; --muted:#97A0B3; --line:#2C3549;
+  --accent:#6E9BFF; --accent-ink:#0D1320; --gold:#E9BE4B; --danger:#FF7D8F;
+  --tank:#7FA6FF; --heal:#5FCB8E; --dps:#FF8A7A; --raid:#C3A0FF;
+  --surface2:#202940; --headbg:#262C38; --warnbg:#4A3118; --warn:#F2A65A;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+#app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.bar{padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;border-bottom:1px solid var(--line);background:var(--surface)}
+.ttl{display:flex;flex-direction:column}.ttl2{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.back{font-size:13px;color:var(--muted);text-decoration:none}.back:hover{color:var(--accent)}
+h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:20px;margin:0}
+.perm{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}.perm.ed{border-color:var(--heal);color:var(--heal)}
+.tools{display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap}.tools .sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;min-height:38px;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--danger)}.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:15px;height:15px}
+.f{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-height:38px;width:100%}
+textarea.f{min-height:110px;resize:vertical;line-height:1.6}
+select.f{width:auto;max-width:100%}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.lay{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;flex:1;min-height:0}
+.toc{border-right:1px solid var(--line);padding:14px 10px;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto}
+.toc h5{margin:12px 6px 4px;font-size:12px;color:var(--muted);font-weight:700}
+.toc a{display:block;padding:6px 8px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px;line-height:1.4}
+.toc a:hover{background:var(--surface2)}
+.toc a.on{background:var(--surface2);font-weight:700}
+.toc a.sub{padding:4px 8px 4px 20px;font-size:13px;color:var(--muted)}
+.toc .newg{margin:12px 6px 0;width:calc(100% - 12px)}
+.tocm{display:none}
+main{padding:18px 24px 80px;min-width:0}
+.art{max-width:820px;margin:0 auto}
+.art>h2{font-family:"Noto Serif TC",serif;font-size:26px;margin:0}
+.meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px;margin:6px 0 18px;flex-wrap:wrap}
+.meta .sp{flex:1}
+.blk{margin:0 0 14px}
+.bh{font-size:19px;font-weight:900;margin:26px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line);scroll-margin-top:16px;display:flex;align-items:center;gap:8px}
+.bh .anc{opacity:0;color:var(--muted);text-decoration:none;font-size:14px}.bh:hover .anc,.bh .anc:focus-visible{opacity:1}
+.bp{line-height:1.85;font-size:15.5px;margin:0 0 12px;white-space:pre-wrap;word-break:break-word}
+.bul{line-height:1.85;font-size:15.5px;margin:0 0 12px;padding-left:22px}
+.bp b,.bul b{color:var(--ink)}
+.gl{display:inline-block;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-radius:6px;padding:0 6px;text-decoration:none;font-weight:700;font-size:.92em;white-space:nowrap}
+.gl:hover{text-decoration:underline}
+.gl.ext{background:none;padding:0;text-decoration:underline;text-underline-offset:2px;font-weight:400;white-space:normal}
+figure{margin:0 0 16px}
+figcaption{color:var(--muted);font-size:13px;margin-top:6px;text-align:center}
+.bimg img{display:block;max-width:100%;height:auto;margin:0 auto;border-radius:12px;cursor:zoom-in}
+.bimg .ld{display:block;height:160px;border-radius:12px;background:var(--surface2)}
+.bxp{max-width:520px;margin:0 auto 16px}
+.bxp .ref{font-size:13px;margin-top:4px;text-align:center}
+.vid{position:relative;max-width:680px;margin:0 auto;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000}
+.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vplay{position:absolute;inset:0;width:100%;height:100%;border:0;padding:0;background:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff}
+.vplay img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85}
+.vplay .vbtn{position:relative;width:68px;height:68px;border-radius:50%;background:rgba(0,0,0,.65);display:grid;place-items:center}.vplay .vbtn svg{width:34px;height:34px}
+.vplay:hover .vbtn,.vplay:focus-visible .vbtn{background:#e0243a}
+.vplay .vsrc{position:absolute;top:12px;left:14px;font-weight:900;color:#4fc3f7;font-size:18px}
+.vplay .vt{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,.7);border-radius:6px;padding:2px 8px;font-size:13px;font-variant-numeric:tabular-nums}
+.warnbox{padding:12px 14px;border-radius:12px;background:var(--surface2);color:var(--muted);font-size:14px}
+/* 編輯 */
+.ed-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-bottom:14px}
+.ed-top label{display:grid;gap:4px;font-size:12px;color:var(--muted);font-weight:700}
+.ed-title{font-size:20px;font-weight:900}
+.eb{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px;margin-bottom:10px}
+.eb-h{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.eb-h b{font-size:12.5px;color:var(--muted)}
+.eb-h .sp{flex:1}
+.ib{width:34px;height:34px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.ib svg{width:15px;height:15px}.ib:disabled{opacity:.35}
+.eb .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.eb .row .f{flex:1;min-width:140px}
+.fmt{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}.fmt .btn{min-height:32px;padding:2px 10px;font-size:13px}
+.addbar{position:sticky;bottom:0;background:var(--bg);padding:10px 0;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);z-index:5}
+.addbar .btn{min-height:36px}
+.savebar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.savebar .sp{flex:1}
+.arm{background:var(--danger)!important;color:#fff!important;border-color:var(--danger)!important}
+.thumb{max-height:120px;border-radius:8px;display:block}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px}
+.sheet{background:var(--surface);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow:auto;padding:16px}
+.sheet h2{font-size:17px;margin:0 0 10px}
+.sheet.wide{max-width:min(1100px,94vw);width:min(1100px,94vw);max-height:94vh}
+.sheet.wide .xpv-edit .xpv-stage{max-width:min(100%,calc(94vh - 170px));margin:0 auto;width:100%}
+.sheet.img{max-width:1100px;padding:8px}.sheet.img img{width:100%;height:auto;display:block;border-radius:10px}
+.pick{display:grid;gap:4px;max-height:50vh;overflow:auto;margin:8px 0}
+.pick button{text-align:left;border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:8px 10px;min-height:40px}
+.pick button small{color:var(--muted);margin-left:6px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;min-height:34px}.tabs button[aria-pressed=true]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:60}
+@media (max-width:860px){.lay{grid-template-columns:1fr}.toc{display:none}.tocm{display:block;margin-bottom:12px}.tocm summary{cursor:pointer;font-weight:700;min-height:40px;display:flex;align-items:center}.tocm .toc2 a{display:block;padding:8px;color:var(--ink);text-decoration:none}.tocm .toc2 a.sub{padding-left:22px;color:var(--muted);font-size:13px}main{padding:14px 14px 80px}.art>h2{font-size:22px}.ed-top{grid-template-columns:1fr}}
+a.btn{text-decoration:none;color:inherit}
+</style>
+<link rel="stylesheet" href="cozy.css?v=14">
+</head>
+<body>
+<header class="sitebar" id="sitebar"></header>
+<div id="app"><div class="empty">載入中…</div></div>
+<script type="module">
+import { FIREBASE_CONFIG, OWNER_EMAIL, OWNER_DISCORD_ID } from "./config.js";
+import { mountNav } from "./nav.js?v=2";
+import { safeUrl } from "./common.js?v=5";
+import { xpIs, xpEncode } from "./xivplan.js?v=2";
+import { xpMount } from "./xp-render.js?v=8";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const fb = initializeApp(FIREBASE_CONFIG), auth = getAuth(fb), db = getFirestore(fb);
+mountNav({ page: "team", auth, bottom: false });
+
+/* ===== 攻略法：圖文攻略（每個固團各寫各的）=====
+   資料：statics/{tid}/guides/{gid} = {did, stage, title, order, blocks:[…], by, createdAt, updatedAt, updatedBy}
+         statics/{tid}/guideImgs/{id} = {gid, data, by, createdAt}（壓縮後的圖片）
+   區塊：h 小標題、p 文字、ul 條列、img 圖片、xp 站位圖（文章自己的）、xpref 站位圖（從減傷軸挑）、video 影片
+   文字裡可以用 **粗體**、[文字](連結)；連結只接受：mit:列 id（減傷軸）、g:文章 id#區塊 id（攻略）、https 網址
+   顯示時一律跳脫成純文字，影片只接受 YouTube／Bilibili 的影片編號，圖片只接受我們自己存的圖 */
+const qs = new URLSearchParams(location.search);
+const tid = qs.get("team") || "";
+let did = qs.get("duty") || "", gid = qs.get("g") || "";
+let me = null, isOwner = false, st = null, members = {}, users = {}, duties = [], dutyDoc = {}, guides = [], plans = {}, ready = { guides: false, duties: false };
+let editing = false, draft = null, dirty = false, saving = false, modal = null, toastT = null, guideErr = "", armT = null;
+const imgCache = {};
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const LIM = { title: 80, text: 4000, blocks: 300, items: 50, cap: 120 };
+const IC = {
+  up: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  down: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  x: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round"/></svg>',
+  edit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3z"/></svg>',
+  plus: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke-linecap="round"/></svg>'
+};
+function toast(m) { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); } el.textContent = m; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2400); }
+
+/* ===== 權限（要和 firestore.rules 一致）===== */
+const isLeader = () => !!(me && st && (st.leaders || {})[me.uid]);
+const myMem = () => (me && members[me.uid]) || null;
+const active = () => { const m = myMem(); return !!(m && m.status === "active"); };
+const myPerm = () => ((myMem() || {}).perms || {}).guide || "none";
+function canView() {
+  if (!tid || !me) return false;
+  if (isOwner || isLeader()) return true;
+  if (!active()) return false;
+  const s = ((st && st.modules) || {}).guide || "owner";
+  return s === "all" || (s === "selected" && myPerm() !== "none");
+}
+const canAll = () => isOwner || isLeader() || (active() && canView() && myPerm() === "all");
+const canOwn = () => canAll() || (active() && canView() && myPerm() === "own");
+const canEdit = g => !!g && (canAll() || (canOwn() && g.by === me.uid));
+const permTxt = () => canAll() ? "可編輯全部" : canOwn() ? "可寫自己的攻略" : "僅檢視";
+
+/* ===== 文字格式：**粗體**、[文字](連結) ===== */
+const MIT_ID = /^[A-Za-z0-9_-]{1,40}$/;
+function linkHref(t) {
+  t = String(t || "").trim();
+  let m = t.match(/^mit:([A-Za-z0-9_-]{1,40})$/);
+  if (m) return { href: "mit.html?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did) + "&row=" + encodeURIComponent(m[1]), cls: "gl", kind: "mit", id: m[1] };
+  m = t.match(/^g:([A-Za-z0-9_-]{1,40})(?:#([A-Za-z0-9_-]{1,40}))?$/);
+  if (m) return { href: "guide.html?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did) + "&g=" + encodeURIComponent(m[1]) + (m[2] ? "#b-" + m[2] : ""), cls: "gl", kind: "g", id: m[1], b: m[2] || "" };
+  if (/^https:\/\/[^\s"<>]+$/i.test(t)) { const u = safeUrl(t); if (u && u !== "#") return { href: u, cls: "gl ext", kind: "ext", ext: true }; }
+  return null;
+}
+function rich(s) {
+  s = String(s || "").slice(0, LIM.text);
+  let out = "", i = 0;
+  const re = /\*\*([^*\n]{1,200})\*\*|\[([^\]\n]{1,120})\]\(([^)\s]{1,400})\)/g;
+  let m;
+  while ((m = re.exec(s))) {
+    out += esc(s.slice(i, m.index));
+    if (m[1] != null) out += "<b>" + esc(m[1]) + "</b>";
+    else { const L = linkHref(m[3]); out += L ? '<a class="' + L.cls + '" href="' + esc(L.href) + '"' + (L.ext ? ' target="_blank" rel="noopener noreferrer"' : "") + ">" + esc(m[2]) + "</a>" : esc(m[2]); }
+    i = re.lastIndex;
+  }
+  return out + esc(s.slice(i));
+}
+
+/* ===== 影片：YouTube、Bilibili，從指定秒數開始 ===== */
+function parseVideo(url) {
+  url = String(url || "").trim();
+  let m = url.match(/^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if (m) { const t = (url.match(/[?&](?:t|start)=([0-9hms]+)/) || [])[1]; return { src: "yt", vid: m[1], s: parseT(t) }; }
+  m = url.match(/^https?:\/\/(?:www\.|m\.)?bilibili\.com\/video\/(BV[0-9A-Za-z]{10})/);
+  if (m) { const p = +((url.match(/[?&]p=(\d{1,3})/) || [])[1] || 1), t = (url.match(/[?&]t=([0-9.hms]+)/) || [])[1]; return { src: "bili", vid: m[1], p: Math.max(1, p), s: parseT(t) }; }
+  return null;
+}
+function parseT(t) {
+  if (!t) return 0; t = String(t).trim();
+  let m = t.match(/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/); if (m) return m[3] != null ? +m[1] * 3600 + +m[2] * 60 + +m[3] : +m[1] * 60 + +m[2];
+  m = t.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s?)?$/); if (m && t) return Math.floor((+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0));
+  return 0;
+}
+const fmtT = s => { s = Math.max(0, Math.floor(+s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function videoSrc(b) {
+  const s = Math.max(0, Math.floor(+b.s || 0));
+  if (b.src === "yt" && /^[A-Za-z0-9_-]{11}$/.test(b.vid || "")) return "https://www.youtube-nocookie.com/embed/" + b.vid + "?rel=0" + (s ? "&start=" + s : "");
+  if (b.src === "bili" && /^BV[0-9A-Za-z]{10}$/.test(b.vid || "")) return "https://player.bilibili.com/player.html?bvid=" + b.vid + "&page=" + Math.max(1, Math.min(999, +b.p || 1)) + (s ? "&t=" + s : "") + "&autoplay=0&high_quality=1";
+  return "";
+}
+
+/* ===== 資料 ===== */
+const gRef = id => doc(db, "statics", tid, "guides", id);
+const imgRef = id => doc(db, "statics", tid, "guideImgs", id);
+const dutyName = d => (duties.find(x => x.id === d) || {}).name || "";
+const stagesOf = d => ((dutyDoc[d] || {}).stages || []).map(s => ({ id: s.id, name: s.name || "" }));
+const myGuides = () => guides.filter(g => g.did === did).sort((a, b) => (stageIdx(a.stage) - stageIdx(b.stage)) || ((+a.order || 0) - (+b.order || 0)) || String(a.title).localeCompare(String(b.title), "zh-Hant"));
+function stageIdx(s) { const i = stagesOf(did).findIndex(x => x.id === s); return i < 0 ? 999 : i; }
+const curGuide = () => guides.find(g => g.id === gid && g.did === did) || null;
+const userName = u => { const x = users[u] || {}; return x.nick || x.dcName || "成員"; };
+async function loadUser(u) { if (!u || users[u]) return; users[u] = {}; try { const s = await getDoc(doc(db, "users", u)); if (s.exists()) { users[u] = s.data(); render(); } } catch (e) { } }
+function cleanBlocks(bs) {
+  return (Array.isArray(bs) ? bs : []).slice(0, LIM.blocks).filter(b => b && typeof b === "object" && typeof b.t === "string").map(b => {
+    const id = MIT_ID.test(b.id || "") ? b.id : uid(), cap = String(b.cap || "").slice(0, LIM.cap);
+    if (b.t === "h") return { id, t: "h", text: String(b.text || "").slice(0, 120) };
+    if (b.t === "p") return { id, t: "p", text: String(b.text || "").slice(0, LIM.text) };
+    if (b.t === "ul") return { id, t: "ul", items: (Array.isArray(b.items) ? b.items : []).map(x => String(x || "").slice(0, 400)).filter(x => x.trim()).slice(0, LIM.items) };
+    if (b.t === "img") return MIT_ID.test(b.img || "") ? { id, t: "img", img: b.img, cap } : null;
+    if (b.t === "xp") return xpIs(b.url) ? { id, t: "xp", url: b.url, cap } : null;
+    if (b.t === "xpref") return MIT_ID.test(b.row || "") ? { id, t: "xpref", row: b.row, v: Math.max(0, Math.min(5, +b.v || 0)), cap } : null;
+    if (b.t === "video") return videoSrc(b) ? { id, t: "video", src: b.src, vid: b.vid, p: +b.p || 1, s: Math.max(0, Math.floor(+b.s || 0)), cap } : null;
+    return null;
+  }).filter(Boolean);
+}
+
+/* 減傷軸：本團的站位圖（從減傷軸挑的站位圖要用），讀不到（沒有減傷軸權限）就顯示提示 */
+function watchPlan(d) {
+  if (!d || plans[d]) return;
+  plans[d] = { rows: {}, comp: {}, err: "" };
+  onSnapshot(doc(db, "statics", tid, "mit", d), s => { plans[d] = { ...(s.exists() ? s.data() : {}), err: "" }; plans[d].rows = plans[d].rows || {}; render(); }, e => { plans[d] = { rows: {}, comp: {}, err: e.code || "error" }; render(); });
+}
+const mySlot = () => { if (!me || !st) return ""; const r = st.roles || {}; return Object.keys(r).find(k => r[k] === me.uid) || ""; };
+const memberJob = u => { if (!u) return ""; const m = members[u] || {}; return m.job || ((users[u] || {}).job) || ""; };
+function xpOpts() {
+  const pl = plans[did] || {};
+  return { me: mySlot(), job: s => ((pl.comp || {})[s]) || memberJob(((st && st.roles) || {})[s]) || "", jobImg: j => "icons/jobs/" + j + ".webp" };
+}
+const rowOf = id => ((dutyDoc[did] || {}).stages || []).flatMap(s => (s.rows || []).map(r => ({ ...r, stage: s.name }))).find(r => r.id === id) || null;
+const rowXp = (id) => { const p = ((plans[did] || {}).rows || {})[id] || {}; return (Array.isArray(p.xp) ? p.xp : []).filter(x => x && xpIs(x.url)); };
+
+/* ===== 圖片（壓縮後存，一張一份）===== */
+function loadImg(id) {
+  if (imgCache[id] !== undefined) return; imgCache[id] = null;
+  getDoc(imgRef(id)).then(s => { imgCache[id] = s.exists() ? s.data().data : ""; fillImgs(id); }).catch(() => { imgCache[id] = ""; fillImgs(id); });
+}
+function fillImgs(id) {
+  document.querySelectorAll('[data-gimg="' + CSS.escape(id) + '"]').forEach(el => {
+    const v = imgCache[id];
+    if (v && /^data:image\/(webp|jpeg|png);base64,/.test(v)) el.outerHTML = '<img src="' + esc(v) + '" alt="' + esc(el.dataset.alt || "攻略圖片") + '" data-a="zoom" data-id="' + esc(id) + '"' + (el.dataset.thumb ? ' class="thumb"' : "") + ">";
+    else if (v === "") el.textContent = "圖片讀取失敗";
+  });
+}
+function compress(f) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(img.src); let scale = Math.min(1, 1800 / Math.max(img.width, img.height)), q = .84, out = "";
+      for (let i = 0; i < 8; i++) {
+        const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(img.width * scale)); c.height = Math.max(1, Math.round(img.height * scale));
+        const x = c.getContext("2d"); x.fillStyle = "#FFFFFF"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL("image/webp", q); if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/jpeg", q); if (out.length <= 880000) break; if (q > .55) q -= .12; else scale *= .8;
+      }
+      out.length <= 880000 ? res(out) : rej(new Error("too big"));
+    };
+    img.onerror = () => rej(new Error("decode")); img.src = URL.createObjectURL(f);
+  });
+}
+
+/* ===== 畫面 ===== */
+function render() {
+  const app = $("#app");
+  if (!tid) { app.innerHTML = '<div class="empty">請從固團頁面的「攻略法整理」進來。</div>'; return; }
+  if (!me) { app.innerHTML = '<div class="empty">請先登入。</div>'; return; }
+  if (!st) { app.innerHTML = '<div class="empty">載入中…</div>'; return; }
+  if (!canView()) { app.innerHTML = '<div class="empty">你沒有這個固團「攻略法整理」的檢視權限。<br><a href="index.html?team=' + encodeURIComponent(tid) + '">回固團</a></div>'; return; }
+  const ae = document.activeElement, keep = ae && ae.dataset && (ae.dataset.f || ae.dataset.bf) ? { f: ae.dataset.f, bf: ae.dataset.bf, b: ae.dataset.b, s: ae.selectionStart, e: ae.selectionEnd } : null, sy = scrollY;
+  let h = '<div class="bar"><div class="ttl"><a class="back" href="index.html?team=' + encodeURIComponent(tid) + '">← 回 ' + esc(st.name || "固團") + '</a><div class="ttl2"><h1>攻略法</h1><span class="perm' + (canOwn() ? " ed" : "") + '">' + permTxt() + '</span></div></div><div class="tools">';
+  h += '<select class="f" id="dutySel" aria-label="選擇副本"' + (editing ? " disabled" : "") + '>' + (duties.length ? "" : '<option value="">（還沒有副本）</option>') + duties.map(d => '<option value="' + esc(d.id) + '"' + (d.id === did ? " selected" : "") + '>' + esc(d.name) + '</option>').join("") + '</select>';
+  if (did) h += '<a class="btn" href="mit.html?team=' + encodeURIComponent(tid) + '&duty=' + encodeURIComponent(did) + '">減傷軸</a>';
+  h += '<span class="sp"></span>' + (canOwn() && did && !editing ? '<button class="btn primary" data-a="newg">' + IC.plus + '新增文章</button>' : "") + '</div></div>';
+  if (guideErr) { app.innerHTML = h + '<div class="empty">攻略讀取失敗（' + esc(guideErr) + '）。如果是剛開放這個功能，請確認 Firebase 的權限規則已經發布。</div>'; return; }
+  const list = myGuides(), g = curGuide();
+  const toc = tocHTML(list, g);
+  h += '<div class="lay"><nav class="toc" aria-label="文章目錄">' + toc + '</nav><main id="main">';
+  h += '<details class="tocm"><summary>目錄（' + list.length + ' 篇）</summary><div class="toc2">' + toc + '</div></details>';
+  if (!ready.guides || !ready.duties) h += '<div class="empty">載入中…</div>';
+  else if (!did) h += '<div class="empty">還沒有副本。</div>';
+  else if (!g) h += '<div class="empty">' + (list.length ? "從左邊選一篇文章。" : "這個副本還沒有攻略。" + (canOwn() ? "按右上「新增文章」開始寫。" : "")) + '</div>';
+  else h += editing && draft ? editHTML(g) : viewHTML(g);
+  h += '</main></div>';
+  app.innerHTML = h;
+  mountAll();
+  document.querySelectorAll("[data-gimg]").forEach(el => { const id = el.dataset.gimg; if (imgCache[id]) fillImgs(id); else loadImg(id); });
+  if (keep) { const sel = keep.f ? '[data-f="' + keep.f + '"]' : '[data-bf="' + keep.bf + '"][data-b="' + keep.b + '"]'; const el = document.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { el.setSelectionRange(keep.s, keep.e); } catch (e) { } } }
+  scrollTo(0, sy);
+}
+function tocHTML(list, g) {
+  if (!list.length) return '<p class="hint" style="padding:6px">還沒有文章</p>' + (canOwn() && did && !editing ? '<button class="btn newg" data-a="newg">' + IC.plus + '新增文章</button>' : "");
+  let h = "", last = null;
+  list.forEach(x => {
+    const sn = (stagesOf(did).find(s => s.id === x.stage) || {}).name || "其他";
+    if (sn !== last) { h += '<h5>' + esc(sn) + '</h5>'; last = sn; }
+    const on = g && x.id === g.id;
+    h += '<a href="' + esc(gHref(x.id)) + '" data-g="' + esc(x.id) + '"' + (on ? ' class="on" aria-current="page"' : "") + '>' + esc(x.title || "未命名") + '</a>';
+    if (on) ((editing && draft ? draft.blocks : x.blocks) || []).filter(b => b.t === "h" && String(b.text || "").trim()).forEach(b => { h += '<a class="sub" href="#b-' + esc(b.id) + '">' + esc(b.text) + '</a>'; });
+  });
+  return h;
+}
+const gHref = (id, b) => "guide.html?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did) + "&g=" + encodeURIComponent(id) + (b ? "#b-" + b : "");
+function viewHTML(g) {
+  const bs = cleanBlocks(g.blocks);
+  let h = '<article class="art"><h2>' + esc(g.title || "未命名") + '</h2><div class="meta"><span>' + esc(userName(g.by)) + ' 寫' + (g.updatedAt ? "・" + new Date(g.updatedAt).toLocaleDateString("zh-TW", { month: "numeric", day: "numeric" }) + " 更新" : "") + '</span><span class="sp"></span>' + (canEdit(g) ? '<button class="btn" data-a="edit">' + IC.edit + '編輯</button>' : "") + '</div>';
+  if (!bs.length) h += '<p class="hint">這篇還沒有內容。</p>';
+  bs.forEach(b => { h += blockView(b); });
+  return h + '</article>';
+}
+function blockView(b) {
+  const cap = b.cap ? '<figcaption>' + esc(b.cap) + '</figcaption>' : "";
+  if (b.t === "h") return '<h3 class="bh" id="b-' + esc(b.id) + '">' + esc(b.text) + '<a class="anc" href="#b-' + esc(b.id) + '" aria-label="這一段的連結" data-a="copylink" data-b="' + esc(b.id) + '">#</a></h3>';
+  if (b.t === "p") return '<p class="bp blk">' + rich(b.text) + '</p>';
+  if (b.t === "ul") return '<ul class="bul blk">' + b.items.map(x => '<li>' + rich(x) + '</li>').join("") + '</ul>';
+  if (b.t === "img") return '<figure class="bimg"><span class="ld" data-gimg="' + esc(b.img) + '" data-alt="' + esc(b.cap || "攻略圖片") + '"></span>' + cap + '</figure>';
+  if (b.t === "xp") return '<figure class="bxp"><div class="xpm" data-xp="' + esc(b.id) + '"></div>' + cap + '</figure>';
+  if (b.t === "xpref") {
+    const r = rowOf(b.row), pl = plans[did] || {};
+    const ref = r ? '<div class="ref"><a class="gl" href="' + esc(linkHref("mit:" + b.row).href) + '">減傷軸 ' + esc((r.t ? r.t + " " : "") + (r.mech || "")) + '</a></div>' : "";
+    if (pl.err) return '<figure class="bxp"><div class="warnbox">這張站位圖來自減傷軸，你目前沒有減傷軸的檢視權限。</div>' + ref + cap + '</figure>';
+    return '<figure class="bxp">' + (rowXp(b.row).length ? '<div class="xpm" data-xpr="' + esc(b.id) + '"></div>' : '<div class="warnbox">減傷軸上這一列已經沒有站位圖了。</div>') + ref + cap + '</figure>';
+  }
+  /* 影片：先放封面，按播放才載入播放器（一篇很多影片時不會一次載入好幾個播放器） */
+  if (b.t === "video") { const src = videoSrc(b); return src ? '<figure><div class="vid"><button class="vplay" data-a="vplay" data-src="' + esc(src) + '" data-title="' + esc(b.cap || "攻略影片") + '" aria-label="播放影片' + (b.cap ? "：" + esc(b.cap) : "") + (b.s ? "（從 " + fmtT(b.s) + " 開始）" : "") + '">' + (b.src === "yt" ? '<img src="https://i.ytimg.com/vi/' + esc(b.vid) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">' : '<span class="vsrc">bilibili</span>') + '<span class="vbtn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span>' + (b.s ? '<span class="vt">從 ' + fmtT(b.s) + '</span>' : "") + '</button></div>' + (b.cap || b.s ? '<figcaption>' + esc(b.cap || "") + (b.s ? (b.cap ? "・" : "") + "從 " + fmtT(b.s) + " 開始" : "") + '</figcaption>' : "") + '</figure>' : ""; }
+  return "";
+}
+/* 站位圖播放器：重畫時保留步驟 */
+const xpState = {};
+function mountAll() {
+  const g = curGuide(); if (!g) return;
+  const bs = editing && draft ? draft.blocks : cleanBlocks(g.blocks);
+  document.querySelectorAll("[data-xp]").forEach(el => { const b = bs.find(x => x.id === el.dataset.xp); if (!b || !xpIs(b.url)) return; mountOne(el, b.id, [{ label: "站位圖", url: b.url }]); });
+  document.querySelectorAll("[data-xpr]").forEach(el => { const b = bs.find(x => x.id === el.dataset.xpr); if (!b) return; const xs = rowXp(b.row); if (!xs.length) return; mountOne(el, b.id, xs, Math.min(b.v || 0, xs.length - 1)); });
+}
+function mountOne(el, key, entries, v0) {
+  const s = xpState[key] || (xpState[key] = { v: v0 || 0, i: 0, mine: true });
+  xpMount(el, entries, { ...xpOpts(), v: s.v, i: s.i, mine: s.mine, onVersion: v => { s.v = v; }, onStep: i => { s.i = i; }, onMine: m => { s.mine = m; } });
+}
+
+/* ===== 編輯 ===== */
+const TYPE_N = { h: "小標題", p: "文字", ul: "條列", img: "圖片", xp: "站位圖（這篇文章的）", xpref: "站位圖（減傷軸）", video: "影片" };
+function editHTML(g) {
+  const d = draft, n = d.blocks.length;
+  let h = '<div class="art"><div class="savebar"><b>編輯中</b><span class="hint">' + (dirty ? "還沒儲存" : "沒有變更") + '</span><span class="sp"></span>' +
+    (canAll() ? '<button class="btn danger" data-a="delg">刪除這篇</button>' : "") + '<button class="btn" data-a="cancel">取消</button><button class="btn primary" data-a="save"' + (saving ? " disabled" : "") + '>' + (saving ? "儲存中…" : "儲存") + '</button></div>';
+  h += '<div class="ed-top"><label>標題<input class="f ed-title" data-f="title" maxlength="' + LIM.title + '" value="' + esc(d.title) + '"></label><label>階段<select class="f" data-f="stage"><option value="">其他</option>' + stagesOf(did).map(s => '<option value="' + esc(s.id) + '"' + (s.id === d.stage ? " selected" : "") + '>' + esc(s.name) + '</option>').join("") + '</select></label></div>';
+  d.blocks.forEach((b, i) => {
+    h += '<div class="eb" data-bid="' + esc(b.id) + '"><div class="eb-h"><b>' + TYPE_N[b.t] + '</b><span class="sp"></span>' +
+      '<button class="ib" data-a="bup" data-b="' + esc(b.id) + '" aria-label="上移"' + (i ? "" : " disabled") + '>' + IC.up + '</button>' +
+      '<button class="ib" data-a="bdown" data-b="' + esc(b.id) + '" aria-label="下移"' + (i < n - 1 ? "" : " disabled") + '>' + IC.down + '</button>' +
+      '<button class="ib" data-a="bdel" data-b="' + esc(b.id) + '" aria-label="刪除這個區塊">' + IC.x + '</button></div>';
+    if (b.t === "h") h += '<input class="f" data-bf="text" data-b="' + esc(b.id) + '" value="' + esc(b.text) + '" maxlength="120" placeholder="例：暴風破">';
+    else if (b.t === "p" || b.t === "ul") {
+      h += '<div class="fmt"><button class="btn" data-a="fbold" data-b="' + esc(b.id) + '"><b>粗體</b></button><button class="btn" data-a="flink" data-b="' + esc(b.id) + '">插入連結</button></div>';
+      h += '<textarea class="f" data-bf="' + (b.t === "p" ? "text" : "items") + '" data-b="' + esc(b.id) + '" maxlength="' + LIM.text + '" placeholder="' + (b.t === "p" ? "內文。**粗體**、[文字](連結)" : "一行一項") + '">' + esc(b.t === "p" ? b.text : b.items.join("\n")) + '</textarea>';
+    } else if (b.t === "img") h += '<span data-gimg="' + esc(b.img) + '" data-thumb="1">載入中…</span><div class="row"><input class="f" data-bf="cap" data-b="' + esc(b.id) + '" value="' + esc(b.cap) + '" maxlength="' + LIM.cap + '" placeholder="圖說（可不填）"></div>';
+    else if (b.t === "xp") h += '<div class="bxp" style="margin:0"><div class="xpm" data-xp="' + esc(b.id) + '"></div></div><div class="row"><button class="btn" data-a="xped" data-b="' + esc(b.id) + '">' + IC.edit + '調整站位</button><input class="f" data-bf="cap" data-b="' + esc(b.id) + '" value="' + esc(b.cap) + '" maxlength="' + LIM.cap + '" placeholder="圖說（可不填）"></div>';
+    else if (b.t === "xpref") { const r = rowOf(b.row); h += '<p class="hint">減傷軸 ' + esc(r ? (r.stage ? r.stage + " " : "") + (r.t ? r.t + " " : "") + (r.mech || "") : "（找不到這一列）") + '・站位圖會跟著減傷軸更新</p><div class="row"><input class="f" data-bf="cap" data-b="' + esc(b.id) + '" value="' + esc(b.cap) + '" maxlength="' + LIM.cap + '" placeholder="圖說（可不填）"></div>'; }
+    else if (b.t === "video") h += '<p class="hint">' + (b.src === "yt" ? "YouTube" : "Bilibili") + '・' + esc(b.vid) + '</p><div class="row"><label class="hint">從<input class="f" style="width:90px;display:inline-block;margin:0 6px" data-bf="s" data-b="' + esc(b.id) + '" value="' + fmtT(b.s) + '" inputmode="numeric" aria-label="從幾分幾秒開始">開始</label><input class="f" data-bf="cap" data-b="' + esc(b.id) + '" value="' + esc(b.cap) + '" maxlength="' + LIM.cap + '" placeholder="說明（可不填）"></div>';
+    h += '</div>';
+  });
+  h += '<div class="addbar"><span class="hint" style="align-self:center">新增：</span>' + [["h", "小標題"], ["p", "文字"], ["ul", "條列"], ["img", "圖片"], ["xpnew", "站位圖"], ["video", "影片"]].map(([k, t]) => '<button class="btn" data-a="add" data-t="' + k + '">' + IC.plus + t + '</button>').join("") + '<input type="file" accept="image/*" multiple id="up" hidden></div>';
+  return h + '</div>';
+}
+const dB = id => draft.blocks.find(b => b.id === id);
+function touch() { dirty = true; const s = document.querySelector(".savebar .hint"); if (s) s.textContent = "還沒儲存"; }
+function startEdit() { const g = curGuide(); if (!canEdit(g)) return; draft = { title: g.title || "", stage: g.stage || "", blocks: cleanBlocks(g.blocks) }; editing = true; dirty = false; render(); }
+function stopEdit() { editing = false; draft = null; dirty = false; render(); }
+async function save() {
+  const g = curGuide(); if (!g || !canEdit(g) || saving) return;
+  const blocks = cleanBlocks(draft.blocks.map(b => b.t === "ul" ? b : b));
+  saving = true; render();
+  try {
+    await setDoc(gRef(g.id), { did: g.did, stage: draft.stage || "", title: (draft.title || "").trim().slice(0, LIM.title) || "未命名", order: +g.order || 0, blocks, by: g.by, createdAt: g.createdAt || Date.now(), updatedAt: Date.now(), updatedBy: me.uid });
+    saving = false; editing = false; draft = null; dirty = false; render(); toast("已儲存");
+  } catch (e) { console.error(e); saving = false; render(); toast("儲存失敗：" + (e.code === "permission-denied" ? "沒有權限" : e.code || e.message)); }
+}
+async function newGuide() {
+  if (!canOwn() || !did) return;
+  const id = uid() + uid(), list = myGuides(), order = list.reduce((m, x) => Math.max(m, +x.order || 0), 0) + 1, now = Date.now();
+  const cs = curGuide(), stage = cs ? cs.stage || "" : (stagesOf(did)[0] || {}).id || "";
+  try {
+    await setDoc(gRef(id), { did, stage, title: "未命名攻略", order, blocks: [], by: me.uid, createdAt: now, updatedAt: now, updatedBy: me.uid });
+    gid = id; history.replaceState(null, "", gHref(id)); guides = guides.filter(x => x.id !== id).concat([{ id, did, stage, title: "未命名攻略", order, blocks: [], by: me.uid, createdAt: now, updatedAt: now }]);
+    startEdit(); setTimeout(() => { const t = document.querySelector('[data-f="title"]'); if (t) { t.focus(); t.select(); } }, 0);
+  } catch (e) { console.error(e); toast("新增失敗：" + (e.code === "permission-denied" ? "沒有權限" : e.code || e.message)); }
+}
+function armed(b, txt) { if (b.dataset.armed) return true; b.dataset.armed = "1"; const o = b.innerHTML; b.textContent = txt; b.classList.add("arm"); clearTimeout(armT); armT = setTimeout(() => { if (b.isConnected) { b.innerHTML = o; delete b.dataset.armed; b.classList.remove("arm"); } }, 3000); return false; }
+function insertAround(id, before, after, ph) {
+  const ta = document.querySelector('textarea[data-b="' + CSS.escape(id) + '"]'); if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value, mid = v.slice(s, e) || ph;
+  ta.value = v.slice(0, s) + before + mid + after + v.slice(e); ta.focus(); ta.setSelectionRange(s + before.length, s + before.length + mid.length);
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+}
+/* 新文章用的空白站位圖：圓形場地、八個場地標記、王在中間、八個人站內圈 */
+function blankScene() {
+  let id = 1; const P = (b, r) => [Math.round(r * Math.sin(b * Math.PI / 180) * 10) / 10, Math.round(r * Math.cos(b * Math.PI / 180) * 10) / 10];
+  const objs = [];
+  [["A", "waymark_a.png", "circle", "#ff6a7b", 0], ["B", "waymark_b.png", "circle", "#ffe15a", 90], ["C", "waymark_c.png", "circle", "#5ab7ff", 180], ["D", "waymark_d.png", "circle", "#d48bff", 270],
+   ["1", "waymark_1.png", "square", "#ff6a7b", 45], ["2", "waymark_2.png", "square", "#ffe15a", 135], ["3", "waymark_3.png", "square", "#5ab7ff", 225], ["4", "waymark_4.png", "square", "#d48bff", 315]]
+    .forEach(([n, img, sh, c, b]) => { const [x, y] = P(b, 230); objs.push({ type: "marker", id: id++, name: n, image: "/marker/" + img, shape: sh, color: c, x, y, width: 34, height: 34, rotation: 0, opacity: 70 }); });
+  objs.push({ type: "enemy", id: id++, name: "王", icon: "large", radius: 60, ring: "directional", rotation: 0, color: "#ff0000", opacity: 60, x: 0, y: 0 });
+  const B = { MT: 0, D4: 45, H2: 90, D2: 135, ST: 180, D1: 225, H1: 270, D3: 315 }, IMG = { MT: "tank1", ST: "tank2", H1: "healer1", H2: "healer2", D1: "melee1", D2: "melee2", D3: "ranged1", D4: "ranged2" };
+  Object.entries(B).forEach(([k, b]) => { const [x, y] = P(b, 110); objs.push({ type: "party", id: id++, name: k, image: "/actor/" + IMG[k] + ".png", x, y, width: 30, height: 30, rotation: 0, opacity: 100 }); });
+  return { nextId: id, arena: { shape: "circle", width: 600, height: 600, padding: 120, grid: { type: "radial", angularDivs: 8, radialDivs: 2 }, ticks: { type: "radial", majorStart: 0, majorCount: 8, minorStart: 0, minorCount: 72 } }, steps: [{ objects: objs }] };
+}
+
+/* ===== 點擊 ===== */
+async function onClick(e) {
+  const b = e.target.closest("[data-a],[data-g]"); if (!b) return;
+  if (b.dataset.g != null && !b.dataset.a) { if (editing) { e.preventDefault(); toast("先儲存或取消編輯"); return; } e.preventDefault(); gid = b.dataset.g; history.replaceState(null, "", gHref(gid)); render(); const d = b.closest("details"); if (d) d.open = false; scrollTo(0, 0); return; }
+  const a = b.dataset.a;
+  if (a === "newg") newGuide();
+  else if (a === "edit") startEdit();
+  else if (a === "cancel") { if (dirty && !armed(b, "再按一次放棄變更")) return; stopEdit(); }
+  else if (a === "save") save();
+  else if (a === "delg") { if (!canAll() || !armed(b, "再按一次刪除這篇")) return; const g = curGuide(); try { await deleteDoc(gRef(g.id)); guides = guides.filter(x => x.id !== g.id); stopEdit(); gid = (myGuides()[0] || {}).id || ""; history.replaceState(null, "", gid ? gHref(gid) : "guide.html?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did)); render(); toast("已刪除"); } catch (er) { toast("刪除失敗：" + (er.code === "permission-denied" ? "沒有權限" : er.code || er.message)); } }
+  else if (a === "bup" || a === "bdown") { const i = draft.blocks.findIndex(x => x.id === b.dataset.b), j = i + (a === "bup" ? -1 : 1); if (i < 0 || j < 0 || j >= draft.blocks.length) return; [draft.blocks[i], draft.blocks[j]] = [draft.blocks[j], draft.blocks[i]]; touch(); render(); const n = document.querySelector('[data-a="' + a + '"][data-b="' + CSS.escape(b.dataset.b) + '"]'); if (n && !n.disabled) n.focus(); }
+  else if (a === "bdel") { if (!armed(b, "再按一次")) return; draft.blocks = draft.blocks.filter(x => x.id !== b.dataset.b); touch(); render(); }
+  else if (a === "fbold") insertAround(b.dataset.b, "**", "**", "粗體文字");
+  else if (a === "flink") { modal = { k: "link", b: b.dataset.b, tab: "mit" }; renderModal(); }
+  else if (a === "add") {
+    const t = b.dataset.t;
+    if (draft.blocks.length >= LIM.blocks) { toast("區塊太多了，分成兩篇吧"); return; }
+    if (t === "img") { $("#up").click(); return; }
+    if (t === "xpnew") { modal = { k: "xpnew" }; renderModal(); return; }
+    if (t === "video") { modal = { k: "video" }; renderModal(); return; }
+    const nb = { id: uid(), t, text: "", items: [], cap: "" }; draft.blocks.push(nb); touch(); render();
+    const el = document.querySelector('[data-b="' + nb.id + '"][data-bf]'); if (el) { el.focus(); el.scrollIntoView({ block: "center" }); }
+  }
+  else if (a === "xped") openXpEditor(b.dataset.b);
+  else if (a === "zoom") { const v = imgCache[b.dataset.id]; if (v) { modal = { k: "img", src: v }; renderModal(); } }
+  else if (a === "copylink") { e.preventDefault(); const u = location.origin + location.pathname + "?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did) + "&g=" + encodeURIComponent(gid) + "#b-" + b.dataset.b; history.replaceState(null, "", "#b-" + b.dataset.b); document.getElementById("b-" + b.dataset.b)?.scrollIntoView({ block: "start" }); try { await navigator.clipboard.writeText(u); toast("已複製這一段的連結"); } catch (er) { } }
+  else if (a === "vplay") { const src = b.dataset.src; if (!/^https:\/\/(www\.youtube-nocookie\.com\/embed\/|player\.bilibili\.com\/player\.html\?)/.test(src)) return; const f = document.createElement("iframe"); f.src = src.replace("autoplay=0", "autoplay=1") + (src.includes("youtube") ? "&autoplay=1" : ""); f.title = b.dataset.title; f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen"; f.allowFullscreen = true; f.referrerPolicy = "strict-origin-when-cross-origin"; b.replaceWith(f); }
+  else if (a === "mclose") closeModal();
+  else if (a === "ltab") { modal.tab = b.dataset.t; renderModal(); }
+  else if (a === "lpick") { insertAround(modal.b, "[", "](" + b.dataset.v + ")", b.dataset.l); closeModal(); }
+  else if (a === "lurl") { const u = ($("#lu").value || "").trim(), l = ($("#ll").value || "").trim() || u; if (!/^https:\/\/\S+$/i.test(u)) { toast("請貼 https:// 開頭的網址"); return; } insertAround(modal.b, "[", "](" + u + ")", l.replace(/[\[\]]/g, "")); closeModal(); }
+  else if (a === "vadd") { const v = parseVideo($("#vu").value); if (!v) { toast("請貼 YouTube 或 Bilibili 的影片網址"); return; } const t = ($("#vt").value || "").trim(); if (t) v.s = parseT(t); draft.blocks.push({ id: uid(), t: "video", ...v, cap: ($("#vc").value || "").trim().slice(0, LIM.cap) }); touch(); closeModal(); render(); }
+  else if (a === "xpblank") { try { const url = await xpEncode(blankScene()); const nb = { id: uid(), t: "xp", url, cap: "" }; draft.blocks.push(nb); touch(); closeModal(); render(); openXpEditor(nb.id); } catch (er) { console.error(er); toast("建立失敗"); } }
+  else if (a === "xppaste") { const u = ($("#xu").value || "").trim(); if (!xpIs(u)) { toast("請貼 xivplan 的分享連結"); return; } draft.blocks.push({ id: uid(), t: "xp", url: u, cap: "" }); touch(); closeModal(); render(); }
+  else if (a === "xpref") { draft.blocks.push({ id: uid(), t: "xpref", row: b.dataset.r, v: +b.dataset.v || 0, cap: "" }); touch(); closeModal(); render(); }
+}
+function onInput(e) {
+  const t = e.target;
+  if (t.dataset.f && draft) { if (t.dataset.f === "title") draft.title = t.value.slice(0, LIM.title); else if (t.dataset.f === "stage") { draft.stage = t.value; } touch(); return; }
+  if (t.dataset.bf && draft) {
+    const b = dB(t.dataset.b); if (!b) return;
+    if (t.dataset.bf === "items") b.items = t.value.split("\n").slice(0, LIM.items);
+    else if (t.dataset.bf === "s") b.s = parseT(t.value);
+    else b[t.dataset.bf] = t.value;
+    touch();
+    if (b.t === "h") { const tc = document.querySelector('.toc a.sub[href="#b-' + CSS.escape(b.id) + '"]'); if (tc) tc.textContent = b.text; }
+  }
+}
+async function onUpload(files) {
+  const g = curGuide(); if (!g || !files || !files.length) return;
+  for (const f of files) {
+    try { const data = await compress(f), id = uid() + uid(); await setDoc(imgRef(id), { gid: g.id, data, by: me.uid, createdAt: Date.now() }); imgCache[id] = data; draft.blocks.push({ id: uid(), t: "img", img: id, cap: "" }); touch(); }
+    catch (er) { console.error(er); toast(er.message === "too big" ? "這張圖太大，壓縮後還是超過上限" : er.message === "decode" ? "讀不到這張圖片" : "上傳失敗：" + (er.code === "permission-denied" ? "沒有權限" : er.code || er.message)); }
+  }
+  render(); toast("已上傳");
+}
+
+/* ===== 視窗 ===== */
+function closeModal() { const m = $("#modal"); if (m) m.remove(); modal = null; }
+function renderModal() {
+  let m = $("#modal");
+  if (!m) { m = document.createElement("div"); m.id = "modal"; m.className = "modal"; document.body.appendChild(m); m.addEventListener("click", ev => { if (ev.target === m) { if (modal && modal.k === "xped" && modal.h && modal.h.dirty()) { toast("還有沒儲存的調整：按「儲存」或「取消」"); return; } closeModal(); return; } onClick(ev); }); }
+  const close = '<button class="ib" data-a="mclose" aria-label="關閉" style="float:right">' + IC.x + '</button>';
+  if (modal.k === "img") { m.innerHTML = '<div class="sheet img" role="dialog" aria-modal="true" aria-label="圖片">' + close + '<img src="' + esc(modal.src) + '" alt=""></div>'; return; }
+  if (modal.k === "video") { m.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mh">' + close + '<h2 id="mh">加入影片</h2><label class="hint">YouTube 或 Bilibili 影片網址<input class="f" id="vu" inputmode="url" placeholder="https://www.youtube.com/watch?v=…"></label><div class="row" style="display:flex;gap:8px;margin-top:8px"><label class="hint" style="flex:1">從幾分幾秒開始（可不填，網址裡有 t= 也會自動讀）<input class="f" id="vt" placeholder="3:25"></label></div><label class="hint" style="display:block;margin-top:8px">說明（可不填）<input class="f" id="vc" maxlength="' + LIM.cap + '"></label><div class="end"><button class="btn" data-a="mclose">取消</button><button class="btn primary" data-a="vadd">加入</button></div></div>'; setTimeout(() => $("#vu") && $("#vu").focus(), 0); return; }
+  if (modal.k === "xpnew") {
+    const rows = ((dutyDoc[did] || {}).stages || []).flatMap(s => (s.rows || []).map(r => ({ ...r, stage: s.name }))).filter(r => rowXp(r.id).length);
+    m.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mh">' + close + '<h2 id="mh">加入站位圖</h2>' +
+      '<div class="tabs"><button data-a="xptab" data-t="ref" aria-pressed="' + (modal.tab !== "new") + '">從減傷軸挑</button><button data-a="xptab" data-t="new" aria-pressed="' + (modal.tab === "new") + '">新增一張</button></div>' +
+      (modal.tab === "new" ? '<p class="hint">不屬於任何時間點的示意圖。可以從空白圖開始拖人，或貼 xivplan 的分享連結。</p><div class="end" style="justify-content:flex-start"><button class="btn primary" data-a="xpblank">從空白圖開始</button></div><label class="hint" style="display:block;margin-top:12px">或貼 xivplan 分享連結<input class="f" id="xu" inputmode="url"></label><div class="end"><button class="btn" data-a="xppaste">加入</button></div>'
+        : ((plans[did] || {}).err ? '<p class="warnbox">你沒有減傷軸的檢視權限，沒辦法從減傷軸挑。</p>' : rows.length ? '<div class="pick">' + rows.flatMap(r => rowXp(r.id).map((x, v) => '<button data-a="xpref" data-r="' + esc(r.id) + '" data-v="' + v + '">' + esc((r.t ? r.t + " " : "") + (r.mech || "")) + '<small>' + esc(r.stage || "") + "・" + esc(x.label || "站位圖") + '</small></button>')).join("") + '</div>' : '<p class="hint">減傷軸上還沒有站位圖。</p>')) + '</div>';
+    m.querySelectorAll('[data-a="xptab"]').forEach(x => x.addEventListener("click", ev => { ev.stopPropagation(); modal.tab = x.dataset.t; renderModal(); }));
+    return;
+  }
+  if (modal.k === "link") {
+    const tab = modal.tab, rows = ((dutyDoc[did] || {}).stages || []).flatMap(s => (s.rows || []).filter(r => r.kind !== "head").map(r => ({ ...r, stage: s.name })));
+    let body = "";
+    if (tab === "mit") body = '<div class="pick">' + (rows.length ? rows.map(r => '<button data-a="lpick" data-v="mit:' + esc(r.id) + '" data-l="' + esc((r.t ? r.t + " " : "") + (r.mech || "")) + '">' + esc((r.t ? r.t + " " : "") + (r.mech || "（未命名）")) + '<small>' + esc(r.stage || "") + '</small></button>').join("") : '<p class="hint">減傷軸還沒有機制。</p>') + '</div>';
+    else if (tab === "g") { const gs = myGuides(), bs = gs.flatMap(x => [{ g: x, b: null }].concat((x.id === gid && draft ? draft.blocks : x.blocks || []).filter(y => y.t === "h" && String(y.text || "").trim()).map(y => ({ g: x, b: y })))); body = '<div class="pick">' + bs.map(o => '<button data-a="lpick" data-v="g:' + esc(o.g.id) + (o.b ? "#" + esc(o.b.id) : "") + '" data-l="' + esc(o.b ? o.b.text : o.g.title) + '"' + (o.b ? ' style="margin-left:18px"' : "") + '>' + esc(o.b ? o.b.text : (o.g.title || "未命名")) + (o.b ? "" : "<small>整篇</small>") + '</button>').join("") + '</div>'; }
+    else body = '<label class="hint">網址<input class="f" id="lu" inputmode="url" placeholder="https://"></label><label class="hint" style="display:block;margin-top:8px">顯示的文字<input class="f" id="ll"></label><div class="end"><button class="btn primary" data-a="lurl">插入</button></div>';
+    m.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mh">' + close + '<h2 id="mh">插入連結</h2><div class="tabs">' + [["mit", "減傷軸的機制"], ["g", "攻略的段落"], ["url", "網址"]].map(([k, t]) => '<button data-a="ltab" data-t="' + k + '" aria-pressed="' + (tab === k) + '">' + t + '</button>').join("") + '</div>' + body + '</div>';
+    return;
+  }
+}
+function openXpEditor(bid) {
+  const b = dB(bid); if (!b || !xpIs(b.url)) return;
+  modal = { k: "xped", b: bid };
+  let m = $("#modal"); if (!m) { renderModal(); m = $("#modal"); }
+  m.innerHTML = '<div class="sheet wide" role="dialog" aria-modal="true" aria-label="調整站位"><h2>調整站位</h2><div class="xpm"></div></div>';
+  modal.h = xpMount(m.querySelector(".xpm"), [{ label: "站位圖", url: b.url }], { ...xpOpts(), me: "", edit: true, v: 0, i: 0,
+    onClose: () => closeModal(), onError: () => toast("存檔失敗，請再試一次"),
+    onSave: async url => { if (!xpIs(url)) throw new Error("站位圖太大或格式不對"); const x = dB(bid); if (x) { x.url = url; touch(); } closeModal(); render(); toast("站位圖已更新（記得按「儲存」）"); } });
+}
+
+/* ===== 啟動 ===== */
+function switchDuty(d) { if (editing) return; did = d; gid = ""; const g = myGuides()[0]; if (g) gid = g.id; history.replaceState(null, "", did ? (gid ? gHref(gid) : "guide.html?team=" + encodeURIComponent(tid) + "&duty=" + encodeURIComponent(did)) : "guide.html?team=" + encodeURIComponent(tid)); watchDuty(did); watchPlan(did); render(); }
+const dutyWatched = {};
+function watchDuty(d) { if (!d || dutyWatched[d]) return; dutyWatched[d] = 1; onSnapshot(doc(db, "mitDuties", d), s => { dutyDoc[d] = s.exists() ? s.data() : {}; render(); }, e => console.error(e)); }
+function start() {
+  onSnapshot(doc(db, "statics", tid), s => { st = s.exists() ? { id: s.id, ...s.data() } : { name: "（找不到固團）" }; render(); }, e => console.error(e));
+  onSnapshot(collection(db, "statics", tid, "members"), s => { members = {}; s.forEach(d => { members[d.id] = d.data(); }); render(); subGuides(); }, e => console.error(e));
+  onSnapshot(collection(db, "mitDuties"), s => { duties = s.docs.map(d => ({ id: d.id, name: d.data().name || d.id })).sort((a, b) => a.name.localeCompare(b.name, "zh-Hant")); ready.duties = true; if (!did && duties.length) { switchDuty(duties[0].id); return; } render(); }, e => console.error(e));
+  if (did) { watchDuty(did); watchPlan(did); }
+}
+let guideSub = null;
+function subGuides() {
+  if (guideSub || !canView()) return;
+  guideSub = onSnapshot(collection(db, "statics", tid, "guides"), s => {
+    guideErr = ""; guides = s.docs.map(d => ({ id: d.id, ...d.data() })); ready.guides = true;
+    guides.forEach(g => loadUser(g.by));
+    if (!gid || !guides.some(g => g.id === gid)) { const g = myGuides()[0]; if (g && !editing) gid = g.id; }
+    if (editing && !curGuide()) { editing = false; draft = null; }
+    if (!editing) render(); else { const tc = document.querySelector(".toc"); if (tc) tc.innerHTML = tocHTML(myGuides(), curGuide()); }
+    if (location.hash && !editing) { const el = document.getElementById(location.hash.slice(1)); if (el && !jumped) { jumped = true; el.scrollIntoView({ block: "start" }); } }
+  }, e => { console.error(e); guideErr = e.code || "error"; ready.guides = true; render(); });
+}
+let jumped = false;
+document.getElementById("app").addEventListener("click", onClick);
+document.addEventListener("input", onInput);
+document.addEventListener("change", e => { if (e.target.id === "dutySel") switchDuty(e.target.value); else if (e.target.id === "up") { onUpload([...e.target.files]); e.target.value = ""; } else onInput(e); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && modal) { if (modal.k === "xped" && modal.h && modal.h.dirty()) { toast("還有沒儲存的調整：按「儲存」或「取消」"); return; } closeModal(); } });
+window.addEventListener("beforeunload", e => { if (editing && dirty) { e.preventDefault(); e.returnValue = ""; } });
+let started = false;
+onAuthStateChanged(auth, async u => {
+  if (!u) { me = null; render(); return; }
+  me = u; try { const tr = await u.getIdTokenResult(); isOwner = tr.claims.dc === OWNER_DISCORD_ID || (u.email === OWNER_EMAIL && u.emailVerified); } catch (e) { isOwner = false; }
+  if (!started && tid) { started = true; start(); }
+  subGuides(); render();
+});
+</script>
+</body>
+</html>
