@@ -141,7 +141,9 @@ function enemySVG(o) {
   if (facing) {
     const t = Math.max(9, r * .22);
     s += `<path d="M0 ${-(r + t * 1.25)}L${t * .62} ${-r + 1}L${-t * .62} ${-r + 1}Z" fill="${c}"/>`;
-    const ch = (sx) => { const h = Math.max(5, r * .1), X = sx * r; return [0, 1].map(k => { const d = k * h * .9; return `<path d="M${X - sx * (h * .2 - d)} ${-h}L${X + sx * (h * .75 + d)} 0L${X - sx * (h * .2 - d)} ${h}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`; }).join(""); };
+    /* 兩側：跨在外圈上的雙「^」，尖端朝王的正面（上大下小） */
+    const ch = sx => { const X = sx * r, h = Math.max(6, r * .13);
+      return [[0, 1], [h * .95, .62]].map(([dy, k]) => `<path d="M${(X - h * k).toFixed(1)} ${(dy + h * .55 * k).toFixed(1)}L${X} ${(dy - h * .45 * k).toFixed(1)}L${(X + h * k).toFixed(1)} ${(dy + h * .55 * k).toFixed(1)}" fill="none" stroke="${c}" stroke-width="${k < 1 ? 1.8 : 2.4}" stroke-linejoin="round" stroke-linecap="round"/>`).join(""); };
     s += ch(1) + ch(-1);
   }
   /* 王的圖示（自己畫的惡魔盾牌）：大小跟著身位圈，不跟著轉 */
