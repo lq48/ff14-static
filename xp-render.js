@@ -115,7 +115,7 @@ function zone(o) {
 function arrowSVG(o, mine) {
   /* 箭頭終點通常就是隊員現在的位置，會被圖示蓋住：終點縮到圖示邊緣；自己的箭頭起點畫一個虛線圈（上一步站的地方） */
   const x = num(o.x), y = -num(o.y), L0 = Math.max(4, num(o.length, 40)), b = num(o.rotation), L = L0 > 40 ? L0 - 23 : L0;
-  const [dx, dy] = dir(b, L), w = mine ? 7 : 4.5, c = mine ? ME_RING : col(o.color, "#ffffff"), hd = w * 2.6;
+  const [dx, dy] = dir(b, L), w = mine ? 5 : 3.5, c = mine ? ME_RING : col(o.color, "#ffffff"), hd = w * 2.6;
   const [ux, uy] = dir(b, 1), ex = x + dx, ey = y + dy, bx = ex - ux * hd, by = ey - uy * hd, px = -uy, py = ux;
   return `<g class="xa${mine ? " me" : ""}" opacity="${mine ? 1 : Math.max(.55, op(o))}">` + (mine ? `<circle cx="${x}" cy="${y}" r="21" fill="${ME_RING}" fill-opacity=".12" stroke="${ME_RING}" stroke-width="2.5" stroke-dasharray="5 4"/>` : "") +
     `<line x1="${x}" y1="${y}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#0d1220" stroke-width="${w + 3}" stroke-linecap="round"/>` +
@@ -124,7 +124,7 @@ function arrowSVG(o, mine) {
 }
 function markerSVG(o) {
   const x = num(o.x), y = -num(o.y), n = String(o.name || "").trim().slice(0, 2), c = col(o.color, MARK_COLOR[n] || "#cccccc"), s = 34, sq = o.shape === "square";
-  return `<g class="xm" transform="translate(${x} ${y})">` + (sq ? `<rect x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" rx="4" fill="${c}" fill-opacity=".22" stroke="${c}" stroke-width="2.5"/>` : `<circle r="${s / 2}" fill="${c}" fill-opacity=".22" stroke="${c}" stroke-width="2.5"/>`) +
+  return `<g class="xm" transform="translate(${x} ${y})">` + (sq ? `<rect x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" rx="4" fill="${c}" fill-opacity=".1" stroke="${c}" stroke-width="2" stroke-dasharray="5 3.5"/>` : `<circle r="${s / 2}" fill="${c}" fill-opacity=".1" stroke="${c}" stroke-width="2" stroke-dasharray="5 3.5"/>`) +
     `<text y="7.5" fill="${c}">${esc(n)}</text></g>`;
 }
 function enemySVG(o) {
@@ -163,9 +163,8 @@ function layerSVG(sc, i, me, owners) {
     else if (o.type === "marker") mk += markerSVG(o);
     else if (o.type === "enemy") en += enemySVG(o);
     else if (o.type === "arrow") {
-      const k = owners.get(o) || "";
-      if (me && k && k !== me) return;
-      ar += arrowSVG(o, !!me && k === me);
+      if (owners.get(o)) return;   // 隊員的移動箭頭不畫，改用自動算出的細虛線軌跡
+      ar += arrowSVG(o, false);
     } else if (o.type === "text" && !isCap(o, sc)) tx += textSVG(o);
   });
   return z + mk + en + ar + tx;
@@ -187,6 +186,24 @@ function spread(P, prev) {
     grp.forEach((j, i) => { const o = (i - (grp.length - 1) / 2) * gap; pos.set(j, [cx + tx * o, cy + ty * o]); });
   });
   return pos;
+}
+/* 兩點之間的路徑：都離中心夠遠就繞著中心走弧線（像繞王走位），否則直線 */
+function lerp(a, b, t) {
+  const ra = Math.hypot(a[0], a[1]), rb = Math.hypot(b[0], b[1]);
+  if (ra > 40 && rb > 40) {
+    const aa = Math.atan2(a[1], a[0]); let d = Math.atan2(b[1], b[0]) - aa;
+    while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+    if (Math.abs(d) < 2.2) { const an = aa + d * t, r = ra + (rb - ra) * t; return [r * Math.cos(an), r * Math.sin(an)]; }
+  }
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+}
+/* 軌跡：上一步位置 → 這一步位置的細虛線，起點留一個淡淡的小點 */
+function trailSVG(a, b, me) {
+  if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 8) return "";
+  const pts = []; for (let i = 0; i <= 16; i++) { const p = lerp(a, b, i / 16); pts.push(p[0].toFixed(1) + " " + p[1].toFixed(1)); }
+  const c = me ? ME_RING : "#ffffff", so = me ? .9 : .45;
+  return `<g class="trl${me ? " me" : ""}"><circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="${me ? 5 : 4}" fill="${c}" fill-opacity="${me ? .55 : .35}"/>` +
+    `<path d="M${pts.join("L")}" fill="none" stroke="${c}" stroke-opacity="${so}" stroke-width="${me ? 3 : 2}" stroke-dasharray="${me ? "7 6" : "5 6"}" stroke-linecap="round"/></g>`;
 }
 function partyOf(st) {
   const m = new Map();
@@ -252,7 +269,7 @@ export function xpMount(el, entries, opts = {}) {
     let h = '<div class="xpv-top">';
     if (entries.length > 1) h += '<div class="xpv-seg" role="group" aria-label="版本">' + entries.map((e, k) => '<button type="button" data-xv="' + k + '" aria-pressed="' + (k === st.v) + '">' + esc(e.label || "站位圖") + '</button>').join("") + '</div>';
     if (me) h += '<label class="xpv-me"><input type="checkbox" data-xme' + (st.mine ? " checked" : "") + '>只看我（' + esc(me) + '）</label>';
-    h += '</div><div class="xpv-stage"><svg xmlns="' + NS + '" viewBox="' + vb.map(v => v.toFixed(1)).join(" ") + '" role="img" aria-label="站位圖"><g class="flr">' + floorSVG(sc) + '</g><g class="lay"></g><g class="pty"></g></svg></div>';
+    h += '</div><div class="xpv-stage"><svg xmlns="' + NS + '" viewBox="' + vb.map(v => v.toFixed(1)).join(" ") + '" role="img" aria-label="站位圖"><g class="flr">' + floorSVG(sc) + '</g><g class="lay"></g><g class="trls"></g><g class="pty"></g></svg></div>';
     h += '<p class="xpv-cap" aria-live="polite"></p>';
     if (n > 1) h += '<div class="xpv-nav"><button type="button" class="xpv-arr xpv-play" data-xp aria-label="自動播放">' + PLAY + '</button><button type="button" class="xpv-arr" data-xs="-1" aria-label="上一步">‹</button><div class="xpv-steps">' + sc.steps.map((s, k) => '<button type="button" data-xi="' + k + '">' + esc(stepLabel(sc, k)) + '</button>').join("") + '</div><button type="button" class="xpv-arr" data-xs="1" aria-label="下一步">›</button></div>';
     h += '<div class="xpv-foot"><span>' + (un.length ? "有部分內容這裡沒畫出來，" : "") + '</span><a href="' + esc(entries[st.v].url) + '" target="_blank" rel="noopener noreferrer">在 xivplan 開啟</a></div>';
@@ -262,15 +279,6 @@ export function xpMount(el, entries, opts = {}) {
   /* 隊員移動動畫：繞著場地中心走弧線（像遊戲裡繞王走位），不在中心附近的才用弧線；約 0.9 秒、慢進慢出 */
   const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const place = (g, p) => g.setAttribute("transform", `translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`);
-  function lerp(a, b, t) {
-    const ra = Math.hypot(a[0], a[1]), rb = Math.hypot(b[0], b[1]);
-    if (ra > 40 && rb > 40) {
-      const aa = Math.atan2(a[1], a[0]); let d = Math.atan2(b[1], b[0]) - aa;
-      while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
-      if (Math.abs(d) < 2.2) { const an = aa + d * t, r = ra + (rb - ra) * t; return [r * Math.cos(an), r * Math.sin(an)]; }
-    }
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  }
   function animate(moves) {
     cancelAnimationFrame(st.raf);
     if (!moves.length) return;
@@ -287,6 +295,14 @@ export function xpMount(el, entries, opts = {}) {
     const lay = svg.querySelector(".lay"), nl = document.createElementNS(NS, "g");
     nl.setAttribute("class", "lay"); nl.innerHTML = layerSVG(sc, st.i, me, st.owners); lay.replaceWith(nl);
     const pty = svg.querySelector(".pty"), P = partyOf(step), XY = spread(P, st.i > 0 ? partyOf(sc.steps[st.i - 1]) : null), seen = new Set(), moves = [];
+    /* 軌跡：和上一步比，有移動的人畫細虛線；只看我時只畫自己的 */
+    let tr = "";
+    if (st.i > 0) {
+      const PP = partyOf(sc.steps[st.i - 1]), PXY = spread(PP, st.i > 1 ? partyOf(sc.steps[st.i - 2]) : null);
+      const ks = [...P.keys()].filter(k => PXY.has(k)).sort((a, b) => (a === st.me) - (b === st.me));
+      ks.forEach(k => { const isMe = !!st.me && k === st.me; if (me && !isMe) return; tr += trailSVG(PXY.get(k), XY.get(k), isMe && st.mine); });
+    }
+    const trl = svg.querySelector(".trls"), nt = document.createElementNS(NS, "g"); nt.setAttribute("class", "trls lay"); nt.innerHTML = tr; trl.replaceWith(nt);
     /* 自己畫在最上面 */
     const order = [...P.keys()].sort((a, b) => (a === st.me) - (b === st.me));
     order.forEach(k => {

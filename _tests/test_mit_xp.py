@@ -48,7 +48,7 @@ async def m():
     xy=lambda a:[float(v) for v in a[a.index("(")+1:-1].split()]
     ok(abs(sum(v*v for v in xy(am))**.5-sum(v*v for v in xy(a0))**.5)<12,"繞著王走弧線，不是直線切過去")
     ok("0:17" in await p.inner_text("#dr .xpv-cap") and await tok("MT").get_attribute("data-pos")!=t0,"切到 0:17：說明換了、自己移動了")
-    ok(await p.locator("#dr .xa.me").count()==1 and await p.locator("#dr .xa:not(.me)").count()==0,"只看我：只剩自己的移動箭頭")
+    ok(await p.locator("#dr .trl.me").count()==1 and await p.locator("#dr .trl:not(.me)").count()==0 and await p.locator("#dr .xa").count()==0,"只看我：只剩自己的細虛線軌跡，不畫箭頭")
     await p.screenshot(path=OUT+"/XP-drawer-owner-1440.png")
     # 自動播放
     await p.click('#dr [data-xp]');await p.wait_for_timeout(1600)
@@ -87,6 +87,12 @@ async def m():
     ok(d4[1]<h2[1] and abs(d4[0]-h2[0])<40,"火分攤：D4 在上、H2 略下，兩個人並排 "+str((d4,h2)))
     mt=[float(v) for v in (await tok("MT").get_attribute("data-pos")).split(",")];d3=[float(v) for v in (await tok("D3").get_attribute("data-pos")).split(",")]
     ok(mt[0]>d3[0],"MT 從 A 往逆時針、D3 從 4 往順時針：MT 在東側、D3 在西側")
+    await p.click('#dr [data-xv="1"]');await p.wait_for_timeout(600);await p.click('#dr [data-xi="3"]');await p.wait_for_timeout(1200)
+    rs=[]
+    for k in ["MT","ST","H1","H2","D1","D2","D3","D4"]:
+      x,y=[float(v) for v in (await tok(k).get_attribute("data-pos")).split(",")];rs.append(round((x*x+y*y)**.5))
+    ok(all(95<=r<=115 for r in rs),"雷 0:21：所有人回到內圈（不用再散開） "+str(rs))
+    ok(await p.locator("#dr .xm [stroke-dasharray]").count()==8,"場地標記是虛線框")
     ok(errs==[],"沒有 JS 錯誤 "+str(errs[:1]));await ctx.close()
     # ---- 一般成員（不能編輯）、XSS、壞掉的資料 ----
     ctx,p,errs,calls=await open_page(b,URL.format("plain"),1440,900,init="localStorage.removeItem('mitView');");await p.wait_for_timeout(900);await view(p,"grid")
