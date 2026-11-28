@@ -479,6 +479,25 @@ function cdState(L,E){const out={};dSlots().forEach(s=>{const j=compOf(s);jobSki
   const ok=uses.filter(u=>u.ok&&u.st!=null);
   L.forEach((r,i)=>{const k=r.id+"|"+s+"|"+sk.id,t=E[i].v;if(out[k]||t==null)return;let last=null;ok.forEach(u=>{if(u.st<=t&&(last==null||u.st>last))last=u.st;});if(last==null)return;const d=t-last;
     if(dur&&d<=dur)out[k]={act:1,left:dur-d};else if(cd&&d<cd){if(ch<=1)out[k]={cd:1,left:cd-d};else{const q=chargesAt(t);if(q.c<=0)out[k]={cd:1,left:q.n-t};}}});});});return out;}
+/* ===== 占星的抽卡（只提醒、不擋）=====
+   - 星極抽卡、靈極抽卡共用冷卻
+   - 放浪神之箭、建築神之塔要先有星極抽卡；世界樹之幹、河流神之瓶要先有靈極抽卡；每次抽卡每張卡只能用一次，再抽一次手上的卡會換掉
+   - P1 開場：手上已經有星極抽卡的卡（放浪神、建築神），靈極抽卡可以直接用
+   - 之後每個階段：冷卻當作已經好了，手上的卡延續上一個階段結束時的狀態（轉場時間不固定，算不準） */
+const AST_DRAW={"星極抽卡":["放浪神之箭","建築神之塔"],"靈極抽卡":["世界樹之幹","河流神之瓶"]};
+const AST_NEED={};Object.entries(AST_DRAW).forEach(([d,cs])=>cs.forEach(c=>{AST_NEED[c]=d;}));
+function astUses(s,rs,E){const j=compOf(s),sks=jobSkills(j),ev=[];
+  rs.forEach((r,i)=>{if(r.virt)return;const t=E[i].v;if(t==null)return;assign(s,r.id).forEach(id=>{const sk=sks.find(x=>x.id===id);if(!sk)return;
+    const nm=String(sk.name||"").trim();if(!AST_DRAW[nm]&&!AST_NEED[nm])return;ev.push({r,id,nm,st:t-early(s,r.id,id),draw:!!AST_DRAW[nm],sk});});});
+  return ev.sort((a,b)=>a.st-b.st||(b.draw-a.draw));}
+function astState(rs,E,out){if(!duty)return;
+  dSlots().forEach(s=>{if(compOf(s)!=="AST")return;
+    let hand=new Set(AST_DRAW["星極抽卡"]);
+    (duty.stages||[]).slice(0,cur).forEach(st=>{const R=st.rows||[];astUses(s,R,est(R)).forEach(u=>{if(u.draw)hand=new Set(AST_DRAW[u.nm]);else hand.delete(u.nm);});});
+    let last=null;
+    astUses(s,rs,E).forEach(u=>{const k=u.r.id+"|"+s+"|"+u.id,o=out[k]||(out[k]={use:1});
+      if(u.draw){const cd=sv(u.sk).cd||60;if(last&&last.nm!==u.nm&&u.st-last.st<cd&&!o.bad){o.bad=cd-(u.st-last.st);o.shared=last.nm;}if(!o.bad){last=u;hand=new Set(AST_DRAW[u.nm]);}}
+      else{if(hand.has(u.nm))hand.delete(u.nm);else o.nocard=AST_NEED[u.nm];}});});}
 function teamState(rs,E){const out={};let lb=null,lbv="",lp=null;rs.forEach((r,i)=>{const t=E[i].v,p=prow(r.id);
   if(p.burst){out[r.id+"|B"]={use:1};if(t!=null){lb=t;lbv=p.burst;}}else if(lb!=null&&t!=null&&t-lb<=BURST_DUR)out[r.id+"|B"]={act:1,left:BURST_DUR-(t-lb),v:lbv};
   const d=(lp!=null&&t!=null)?t-lp:null;if(p.pot){if(d!=null&&d<POT.cd)out[r.id+"|P"]={bad:POT.cd-d};else{out[r.id+"|P"]={use:1};if(t!=null)lp=t;}}else if(d!=null){if(d<=POT.dur)out[r.id+"|P"]={act:1,left:POT.dur-d};else if(d<POT.cd)out[r.id+"|P"]={cd:1,left:POT.cd-d};}});return out;}
@@ -567,7 +586,7 @@ function hpOf(rs,E){return hpOn?hpCheck(rs,E.map(x=>x.v),hpCfg(duty),hpEffects(r
 /* ===== 我的減傷：依位置列出要放的技能（和完整時間軸用同一份資料與計算） ===== */
 function renderList(){
   const gw=$("#gw");if(!gw)return;
-  const V=vSlots(),all=filt==="all",rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),ms=mySlot(),H=hpOf(rs,E);
+  const V=vSlots(),all=filt==="all",rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),ms=mySlot(),H=hpOf(rs,E);astState(rs,E,C);
   if(!all&&!V.length){gw.innerHTML='<div class="empty">這個副本沒有符合的位置。</div>';return;}
   const R2=(st&&st.roles)||{};
   let h='<div class="mlist">';
@@ -578,7 +597,7 @@ function renderList(){
     if(r.virt)return; // 讀條的虛擬列只用來推算時間，和完整時間軸一樣
     if(r.kind==="head"){head=r;}
     const p=prow(r.id),sk=[];
-    V.forEach(x=>{const j=compOf(x);assign(x,r.id).forEach(id=>{const k=skillOf(j,id);if(!k)return;const c=C[r.id+"|"+x+"|"+id]||{};sk.push({x,j,k,eo:early(x,r.id,id),tg:target(x,r.id,id),bad:c.bad,short:c.short});});});
+    V.forEach(x=>{const j=compOf(x);assign(x,r.id).forEach(id=>{const k=skillOf(j,id);if(!k)return;const c=C[r.id+"|"+x+"|"+id]||{};sk.push({x,j,k,eo:early(x,r.id,id),tg:target(x,r.id,id),bad:c.bad,short:c.short,shared:c.shared,nocard:c.nocard});});});
     const lb=p.lb&&V.includes(p.lb);
     const lvs=V.length===1?V[0]:(all?viewSlot():""),lrn=rnOf(p),lxp=xpOf(p).length;
     if(!sk.length&&!lb&&!(lvs&&(lrn[lvs]||lxp))&&!(all&&(r.kind==="head"||p.note||(p.imgs||[]).length||(p.links||[]).length||lxp||Object.keys(lrn).length||H[r.id])))return;
@@ -590,7 +609,7 @@ function renderList(){
       '<div class="lmech"><b>'+esc(r.mech||"（未命名機制）")+'</b>'+(r.tag?'<span class="pill t-'+esc(r.tag)+'">'+esc(r.tag)+'</span>':'')+(r.ctag?'<span class="pill c">'+esc(r.ctag)+'</span>':'')+
         ((r.hits||[]).length?'<span class="ldmg">'+r.hits.map(x=>dIco(x.dtype)+esc(x.dmg||(DTYPE[x.dtype]?DTYPE[x.dtype].n:""))+(+x.n>1?"×"+(+x.n):"")).join(" → ")+'</span>':'')+'</div>'+(H[r.id]?hpBar(H[r.id],true):'')+
       (sk.length?'<ul class="lsk">'+sk.map(o=>'<li data-r="'+esc(r.id)+'" data-s="'+esc(o.x)+'" data-k="'+esc(o.k.id)+'">'+skIco(o.j,o.k)+'<span><b>'+esc(o.k.name)+'</b>'+(V.length>1?'<small class="lslot">'+o.x+'</small>':'')+(o.tg?'<small>→ '+esc(o.tg)+'</small>':'')+(o.eo?'<small class="warn2">提前 '+o.eo+' 秒放</small>':'')+
-        (o.bad?'<small class="bad2">CD 還差 '+Math.ceil(o.bad)+' 秒</small>':o.short==="judge"?'<small class="bad2">效果在判定前就結束</small>':o.short==="tail"?'<small class="warn2">效果撐不到最後一下</small>':'')+'</span></li>').join("")+'</ul>':'')+
+        (o.bad?'<small class="bad2">'+(o.shared?'和'+esc(o.shared)+'共用 CD，':'')+'CD 還差 '+Math.ceil(o.bad)+' 秒</small>':o.nocard?'<small class="warn2">沒有'+esc(o.nocard)+'的卡可用</small>':o.short==="judge"?'<small class="bad2">效果在判定前就結束</small>':o.short==="tail"?'<small class="warn2">效果撐不到最後一下</small>':'')+'</span></li>').join("")+'</ul>':'')+
       (lb?'<p class="lflag"><img src="'+LB_ICON+'" alt="">'+esc(p.lb)+' 放 LB</p>':'')+
       ((p.burst||p.pot)?'<p class="lteam">'+(p.burst?'全隊 '+esc(p.burst)+' 爆發':'')+(p.burst&&p.pot?'・':'')+(p.pot?'吃爆發藥':'')+'</p>':(tb.act&&tb.v==="120"?'<p class="lteam">120 爆發中</p>':''))+
       rnHTML(p,lvs)+xpThumbBtn(p,r.id,lvs)+
@@ -608,7 +627,7 @@ function renderGrid(){
   const gw=$("#gw");if(!gw)return;
   if(vmode==="list"&&duty){renderList();return;}
   if(!duty){gw.innerHTML='<div class="empty">'+(!ready.duties?"載入中…":duties.length?"找不到這個副本。":isOwner?"還沒有副本。按「副本設定」新增，或用「匯出／匯入」匯入資料。":"還沒有副本，請等團長建立。")+'</div>';return;}
-  const sx=gw.scrollLeft,sy=gw.scrollTop,rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),V=vSlots(),ms=mySlot(),ca=canAll(),H=hpOf(rs,E),HC=hpCfg(duty);
+  const sx=gw.scrollLeft,sy=gw.scrollTop,rs=dispRows(rows()),E=est(rs),C=cdState(rs,E),T=teamState(rs,E),V=vSlots(),ms=mySlot(),ca=canAll(),H=hpOf(rs,E),HC=hpCfg(duty);astState(rs,E,C);
   let h='<table class="g'+(showNames?" names":"")+'"><thead><tr class="r1"><th class="ct" rowspan="2">時間</th><th class="cm" rowspan="2" style="text-align:left;padding-left:8px">機制</th>'+(hpOn?'<th class="hc h1" rowspan="2">類型</th><th class="hc h2" rowspan="2">對象</th><th class="hc h3" rowspan="2">原始傷害</th><th class="hc h5" rowspan="2">減傷後</th><th class="hc h4" rowspan="2" title="物理看法系、魔法看遠敏、死刑看坦克；'+HC.chain+' 秒內接連的傷害會疊加，不算補血">血量檢查</th>':'')+'<th class="jh bh" colspan="2">爆發</th><th class="jh bh">LB</th>';
   V.forEach(s=>{const j=compOf(s),n=jobSkills(j).length,role=(JOB[j]||{}).r||SLOT_ROLE[s],u=((st&&st.roles)||{})[s];
     const U=u&&users[u],pid=U?(U.charName||nameOf(U)):"",full=s+" "+(j?((JOB[j]||{}).n||j):"未設定")+(U?"・"+nameOf(U)+(U.charName&&U.charName!==nameOf(U)?"（"+U.charName+"）":""):"");
@@ -633,9 +652,9 @@ function renderGrid(){
     h+='<td class="cell first'+(caR?" ed":"")+'" '+(caR?'data-a="lcell" ':'')+'data-r="'+esc(r.id)+'" title="'+esc(p.lb?"LB："+p.lb+(ca?"（點一下換人）":""):ca?"點一下標記 LB，再點換下一個位置":"")+'">'+(p.lb?'<span class="lb"><img src="'+LB_ICON+'" alt="LB"><b>'+esc(p.lb)+'</b></span>':'')+'</td>';
     V.forEach(s=>{const j=compOf(s),l=jobSkills(j),ed=canSlot(s)&&!vr;if(!l.length){h+='<td class="cell first"></td>';return;}
       l.forEach((sk,k)=>{const c=C[r.id+"|"+s+"|"+sk.id]||{},role=(JOB[j]||{}).r||"dps";
-        const cls="cell"+(k===0?" first":"")+(ed?" ed":"")+(c.bad?" bad":c.act?" act-"+role:c.cd?" cd":"")+(c.short?" short":"");
+        const cls="cell"+(k===0?" first":"")+(ed?" ed":"")+(c.bad?" bad":c.act?" act-"+role:c.cd?" cd":"")+(c.short||c.nocard?" short":"");
         const tg=(c.use||c.bad)?target(s,r.id,sk.id):"",tt=tgtOf(sk);
-        const lab=s+" "+sk.name+(tg?" → "+tg:"")+(c.eo?"（提前 "+c.eo+" 秒開）":"")+(c.short==="judge"?"（開太早，判定時效果已結束）":c.short==="tail"?"（效果沒蓋到最後一段傷害）":"")+(c.bad?"（CD 還差 "+Math.ceil(c.bad)+" 秒）":c.use?"（使用）":c.act?"（效果中，剩約 "+Math.round(c.left)+" 秒）":c.cd?"（CD 中，還要約 "+Math.round(c.left)+" 秒）":"");
+        const lab=s+" "+sk.name+(tg?" → "+tg:"")+(c.eo?"（提前 "+c.eo+" 秒開）":"")+(c.short==="judge"?"（開太早，判定時效果已結束）":c.short==="tail"?"（效果沒蓋到最後一段傷害）":"")+(c.nocard?"（沒有"+c.nocard+"的卡可用）":"")+(c.bad?"（"+(c.shared?"和"+c.shared+"共用 CD，":"")+"CD 還差 "+Math.ceil(c.bad)+" 秒）":c.use?"（使用）":c.act?"（效果中，剩約 "+Math.round(c.left)+" 秒）":c.cd?"（CD 中，還要約 "+Math.round(c.left)+" 秒）":"");
         h+='<td class="'+cls+'" '+(ed?'data-a="cell" ':'')+'data-r="'+esc(r.id)+'" data-s="'+esc(s)+'" data-k="'+esc(sk.id)+'" title="'+esc(lab)+'" aria-label="'+esc(lab)+'">'+(c.use||c.bad?skIco(j,sk)+(tg?(tt==="ally"?'<span class="tb">'+esc(tg)+'</span>':'<span class="tb en">!</span>'):'')+(c.eo?'<span class="eb">-'+c.eo+'</span>':''):"")+'</td>';});});
     h+='</tr>';});
   h+='</tbody></table>';
